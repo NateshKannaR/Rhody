@@ -14,33 +14,67 @@ const AUTH_SECRET = process.env.AUTH_SECRET || 'roadpulse_secret_key_2026';
 
 let db;
 let client;
+let clientPromise;
 
-async function connectToMongo() {
-  try {
+async function getDb() {
+  if (db) return db;
+  if (!clientPromise) {
     client = new MongoClient(MONGODB_URI, {
       serverApi: {
         version: ServerApiVersion.v1,
         strict: true,
         deprecationErrors: true,
-      }
+      },
+      connectTimeoutMS: 15000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
     });
-    await client.connect();
-    db = client.db(DB_NAME);
-    // Create indexes for high query performance
-    await db.collection('trips').createIndex({ startTime: -1 });
-    await db.collection('trips').createIndex({ userEmail: 1, startTime: -1 });
-    await db.collection('track_points').createIndex({ tripId: 1, timestamp: 1 });
-    await db.collection('users').createIndex({ email: 1 }, { unique: true });
-    console.log(`[RoadPulse] Successfully connected to MongoDB Atlas database: ${DB_NAME}`);
-  } catch (err) {
-    console.error('[RoadPulse] Failed to connect to MongoDB Atlas:', err.message);
+    clientPromise = client.connect().then(async (c) => {
+      const database = c.db(DB_NAME);
+      try {
+        await database.collection('trips').createIndex({ startTime: -1 });
+        await database.collection('trips').createIndex({ userEmail: 1, startTime: -1 });
+        await database.collection('track_points').createIndex({ tripId: 1, timestamp: 1 });
+        await database.collection('users').createIndex({ email: 1 }, { unique: true });
+      } catch (err) {
+        console.warn('[RoadPulse] Index creation notice:', err.message);
+      }
+      db = database;
+      console.log(`[RoadPulse] Successfully connected to MongoDB Atlas database: ${DB_NAME}`);
+      return db;
+    }).catch(err => {
+      console.error('[RoadPulse] Failed to connect to MongoDB Atlas:', err.message);
+      clientPromise = null;
+      throw err;
+    });
   }
+  return await clientPromise;
 }
-connectToMongo();
+
+// Initial eager connect attempt
+getDb().catch(() => {});
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Serverless-ready MongoDB injection middleware
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api') && req.path !== '/api/status') {
+    try {
+      req.db = await getDb();
+      next();
+    } catch (err) {
+      console.error('[RoadPulse] Database error on request:', err.message);
+      return res.status(503).json({
+        error: 'Database disconnected. Please check MongoDB Atlas IP whitelist (ensure 0.0.0.0/0 is added in Network Access for Vercel cloud hosting).',
+        details: err.message
+      });
+    }
+  } else {
+    next();
+  }
+});
 
 // Password & Token Utilities
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
@@ -203,15 +237,22 @@ app.get('/api/auth/me', async (req, res) => {
 
 // API: System & MongoDB Status
 app.get('/api/status', async (req, res) => {
-  const isConnected = !!db;
+  let isConnected = false;
+  let database = null;
+  try {
+    database = await getDb();
+    isConnected = !!database;
+  } catch (e) {
+    isConnected = false;
+  }
   let tripCount = 0;
   let pointCount = 0;
   let userCount = 0;
-  if (isConnected) {
+  if (isConnected && database) {
     try {
-      tripCount = await db.collection('trips').countDocuments();
-      pointCount = await db.collection('track_points').countDocuments();
-      userCount = await db.collection('users').countDocuments();
+      tripCount = await database.collection('trips').countDocuments();
+      pointCount = await database.collection('track_points').countDocuments();
+      userCount = await database.collection('users').countDocuments();
     } catch (e) {
       console.error(e);
     }

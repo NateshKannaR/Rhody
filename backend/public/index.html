@@ -77,6 +77,11 @@
       box-shadow: 0 10px 30px -10px rgba(0, 245, 212, 0.12);
     }
 
+    /* Cyberpunk Dark Tiles filter for OpenStreetMap (100% Free, Zero API Keys, Zero Watermarks) */
+    .cyber-dark-tiles {
+      filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(120%) !important;
+    }
+
     /* Custom Scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
@@ -402,9 +407,10 @@
             </div>
 
             <!-- Map View Mode Selector (Bottom Left) -->
-            <div class="absolute bottom-5 left-5 z-[400] flex bg-obsidian/90 backdrop-blur-md border border-panelBorder rounded-xl p-1 text-[11px] font-bold">
-              <button onclick="setMapLayer('dark')" class="px-2.5 py-1 rounded-lg bg-panelBorder text-neonCyan">Dark Canvas</button>
-              <button onclick="setMapLayer('osm')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white">Standard</button>
+            <div class="absolute bottom-5 left-5 z-[400] flex bg-obsidian/90 backdrop-blur-md border border-panelBorder rounded-xl p-1 text-[11px] font-bold space-x-1">
+              <button id="btnLayerDark" onclick="setMapLayer('dark')" class="px-2.5 py-1 rounded-lg bg-panelBorder text-neonCyan transition">Dark Canvas</button>
+              <button id="btnLayerCyber" onclick="setMapLayer('cyber')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition">Cyberpunk</button>
+              <button id="btnLayerOsm" onclick="setMapLayer('osm')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition">Standard</button>
             </div>
           </div>
         </div>
@@ -775,28 +781,69 @@
     // ----------------------------------------------------
     // MAP CONFIGURATION
     // ----------------------------------------------------
+    let esriDarkTileLayer, cyberDarkTileLayer, osmTileLayer;
+    let currentActiveTileLayer;
+
     function initMap() {
       map = L.map('map', { zoomControl: false }).setView([37.7749, -122.4194], 13);
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      darkTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      // 1. Esri Dark Gray Canvas: No API key required, zero watermarks
+      esriDarkTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+        maxNativeZoom: 16,
         maxZoom: 19
-      }).addTo(map);
+      });
 
-      osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      // 2. Cyberpunk Dark OSM: OpenStreetMap with CSS dark filter, zero watermarks
+      cyberDarkTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        className: 'cyber-dark-tiles',
+        maxZoom: 19
+      });
+
+      // 3. Standard OpenStreetMap
+      osmTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19
+      });
+
+      // Set Esri Dark Gray as default
+      esriDarkTileLayer.addTo(map);
+      currentActiveTileLayer = esriDarkTileLayer;
+
+      // Fail-safe auto-fallback if Esri is unreachable
+      esriDarkTileLayer.on('tileerror', function() {
+        if (currentActiveTileLayer === esriDarkTileLayer) {
+          console.warn('Esri dark tiles unreachable, switching to Cyberpunk Dark OSM');
+          setMapLayer('cyber');
+        }
       });
     }
 
     function setMapLayer(layer) {
+      if (currentActiveTileLayer) map.removeLayer(currentActiveTileLayer);
+
+      const btnDark = document.getElementById('btnLayerDark');
+      const btnCyber = document.getElementById('btnLayerCyber');
+      const btnOsm = document.getElementById('btnLayerOsm');
+
+      [btnDark, btnCyber, btnOsm].forEach(b => {
+        if (b) b.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition';
+      });
+
       if (layer === 'dark') {
-        map.removeLayer(osmTileLayer);
-        darkTileLayer.addTo(map);
+        esriDarkTileLayer.addTo(map);
+        currentActiveTileLayer = esriDarkTileLayer;
+        if (btnDark) btnDark.className = 'px-2.5 py-1 rounded-lg bg-panelBorder text-neonCyan transition';
+      } else if (layer === 'cyber') {
+        cyberDarkTileLayer.addTo(map);
+        currentActiveTileLayer = cyberDarkTileLayer;
+        if (btnCyber) btnCyber.className = 'px-2.5 py-1 rounded-lg bg-panelBorder text-neonCyan transition';
       } else {
-        map.removeLayer(darkTileLayer);
         osmTileLayer.addTo(map);
+        currentActiveTileLayer = osmTileLayer;
+        if (btnOsm) btnOsm.className = 'px-2.5 py-1 rounded-lg bg-panelBorder text-neonCyan transition';
       }
     }
 
@@ -818,21 +865,34 @@
         const headers = currentAuthToken ? { 'Authorization': `Bearer ${currentAuthToken}` } : {};
 
         const [statusRes, tripsRes] = await Promise.all([
-          fetch('/api/status'),
-          fetch(tripsUrl, { headers })
+          fetch('/api/status').catch(() => null),
+          fetch(tripsUrl, { headers }).catch(() => null)
         ]);
-        const status = await statusRes.json();
-        const trips = await tripsRes.json();
+
+        const status = statusRes ? await statusRes.json().catch(() => ({})) : {};
+        const trips = tripsRes ? await tripsRes.json().catch(() => []) : [];
+
+        if (!Array.isArray(trips)) {
+          const errMsg = trips && trips.error ? trips.error : 'Database connecting...';
+          console.warn('[RoadPulse] Server returned non-array trips response:', trips);
+          showToast(errMsg, 'warning');
+          allTripsData = [];
+          renderKpis([]);
+          renderTripsTable([]);
+          populateTripDropdown([]);
+          showEmptyTripState();
+          return;
+        }
 
         allTripsData = trips;
         renderKpis(trips);
         renderTripsTable(trips);
         populateTripDropdown(trips);
 
-        if (status.totalUsers !== undefined) {
+        if (status && status.totalUsers !== undefined) {
           document.getElementById('cloudStatUsers').innerText = status.totalUsers;
         }
-        if (status.totalPoints !== undefined) {
+        if (status && status.totalPoints !== undefined) {
           document.getElementById('cloudStatPoints').innerText = status.totalPoints.toLocaleString();
         }
 
