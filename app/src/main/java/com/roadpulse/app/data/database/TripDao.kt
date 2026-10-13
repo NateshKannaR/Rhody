@@ -34,6 +34,9 @@ interface TripDao {
     @Query("SELECT * FROM trips ORDER BY startTime DESC")
     fun getAllTripsFlow(): Flow<List<TripEntity>>
 
+    @Query("SELECT * FROM trips ORDER BY startTime DESC")
+    suspend fun getAllTrips(): List<TripEntity>
+
     @Query("UPDATE trips SET title = :title, notes = :notes WHERE id = :tripId")
     suspend fun updateTripMetadata(tripId: Long, title: String, notes: String?)
 }

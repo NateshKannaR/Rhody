@@ -13,6 +13,8 @@ class RoadPulseApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        com.roadpulse.app.data.auth.AuthManager.init(this)
+        com.roadpulse.app.data.sync.CloudSyncManager.init(this)
         createNotificationChannel()
     }
 

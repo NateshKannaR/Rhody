@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,6 +10,7 @@ const PORT = process.env.PORT || 3000;
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://Natesh:Natesh@cluster0.wwp3oig.mongodb.net/?retryWrites=true&w=majority';
 const DB_NAME = 'roadpulse';
+const AUTH_SECRET = process.env.AUTH_SECRET || 'roadpulse_secret_key_2026';
 
 let db;
 let client;
@@ -26,7 +28,9 @@ async function connectToMongo() {
     db = client.db(DB_NAME);
     // Create indexes for high query performance
     await db.collection('trips').createIndex({ startTime: -1 });
+    await db.collection('trips').createIndex({ userEmail: 1, startTime: -1 });
     await db.collection('track_points').createIndex({ tripId: 1, timestamp: 1 });
+    await db.collection('users').createIndex({ email: 1 }, { unique: true });
     console.log(`[RoadPulse] Successfully connected to MongoDB Atlas database: ${DB_NAME}`);
   } catch (err) {
     console.error('[RoadPulse] Failed to connect to MongoDB Atlas:', err.message);
@@ -38,15 +42,176 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Password & Token Utilities
+function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return { hash, salt };
+}
+
+function verifyPassword(password, hash, salt) {
+  const checkHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return checkHash === hash;
+}
+
+function generateToken(user) {
+  const payload = Buffer.from(JSON.stringify({
+    userId: user._id.toString(),
+    email: user.email,
+    name: user.name || '',
+    iat: Date.now()
+  })).toString('base64url');
+  const signature = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function verifyToken(token) {
+  if (!token) return null;
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [payload, signature] = parts;
+  const expectedSig = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('base64url');
+  if (signature !== expectedSig) return null;
+  try {
+    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+  } catch (e) {
+    return null;
+  }
+}
+
+// ----------------------------------------------------
+// AUTHENTICATION ROUTES
+// ----------------------------------------------------
+
+// POST /api/auth/register
+app.post('/api/auth/register', async (req, res) => {
+  if (!db) return res.status(503).json({ error: 'Database disconnected' });
+  try {
+    const { email, password, name } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const existing = await db.collection('users').findOne({ email: cleanEmail });
+    if (existing) {
+      return res.status(409).json({ error: 'An account with this email already exists' });
+    }
+
+    const { hash, salt } = hashPassword(password);
+    const userDoc = {
+      email: cleanEmail,
+      name: (name || '').trim() || cleanEmail.split('@')[0],
+      passwordHash: hash,
+      salt: salt,
+      createdAt: new Date(),
+      lastLoginAt: new Date()
+    };
+
+    const insertResult = await db.collection('users').insertOne(userDoc);
+    userDoc._id = insertResult.insertedId;
+    const token = generateToken(userDoc);
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully',
+      token,
+      user: {
+        id: userDoc._id.toString(),
+        email: userDoc.email,
+        name: userDoc.name
+      }
+    });
+  } catch (err) {
+    console.error('[Auth Register Error]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/auth/login
+app.post('/api/auth/login', async (req, res) => {
+  if (!db) return res.status(503).json({ error: 'Database disconnected' });
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await db.collection('users').findOne({ email: cleanEmail });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const isValid = verifyPassword(password, user.passwordHash, user.salt);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    await db.collection('users').updateOne(
+      { _id: user._id },
+      { $set: { lastLoginAt: new Date() } }
+    );
+
+    const token = generateToken(user);
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id.toString(),
+        email: user.email,
+        name: user.name || user.email.split('@')[0]
+      }
+    });
+  } catch (err) {
+    console.error('[Auth Login Error]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/auth/me
+app.get('/api/auth/me', async (req, res) => {
+  if (!db) return res.status(503).json({ error: 'Database disconnected' });
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const decoded = verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ error: 'Unauthorized or invalid token' });
+  }
+  try {
+    const user = await db.collection('users').findOne({ email: decoded.email.toLowerCase() });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name || user.email.split('@')[0]
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------------------
+// SYSTEM & TELEMETRY ROUTES
+// ----------------------------------------------------
+
 // API: System & MongoDB Status
 app.get('/api/status', async (req, res) => {
   const isConnected = !!db;
   let tripCount = 0;
   let pointCount = 0;
+  let userCount = 0;
   if (isConnected) {
     try {
       tripCount = await db.collection('trips').countDocuments();
       pointCount = await db.collection('track_points').countDocuments();
+      userCount = await db.collection('users').countDocuments();
     } catch (e) {
       console.error(e);
     }
@@ -55,18 +220,32 @@ app.get('/api/status', async (req, res) => {
     status: isConnected ? 'online' : 'disconnected',
     database: DB_NAME,
     cluster: 'cluster0.wwp3oig.mongodb.net',
+    totalUsers: userCount,
     totalTrips: tripCount,
     totalPoints: pointCount,
     timestamp: new Date().toISOString()
   });
 });
 
-// API: Get all trips
+// API: Get trips (filtered by user if requested or authenticated)
 app.get('/api/trips', async (req, res) => {
   if (!db) return res.status(503).json({ error: 'Database disconnected' });
   try {
+    let query = {};
+    const emailParam = req.query.email;
+    if (emailParam) {
+      query.userEmail = emailParam.toLowerCase();
+    } else {
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+      const decoded = verifyToken(token);
+      if (decoded && decoded.email) {
+        query.userEmail = decoded.email.toLowerCase();
+      }
+    }
+
     const trips = await db.collection('trips')
-      .find({})
+      .find(query)
       .sort({ startTime: -1 })
       .toArray();
     res.json(trips);
@@ -105,12 +284,26 @@ app.get('/api/trips/:id', async (req, res) => {
 app.post('/api/trips/sync', async (req, res) => {
   if (!db) return res.status(503).json({ error: 'Database disconnected' });
   try {
-    const { trip, points } = req.body;
+    const { trip, points, userEmail } = req.body;
     if (!trip) return res.status(400).json({ error: 'Missing trip data' });
+
+    let email = userEmail || trip.userEmail;
+    if (!email) {
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+      const decoded = verifyToken(token);
+      if (decoded && decoded.email) {
+        email = decoded.email;
+      }
+    }
+    if (email) {
+      email = email.trim().toLowerCase();
+    }
 
     const tripDoc = {
       ...trip,
       localId: trip.id || trip.localId,
+      userEmail: email || null,
       updatedAt: new Date()
     };
     delete tripDoc.id;
@@ -118,9 +311,9 @@ app.post('/api/trips/sync', async (req, res) => {
     // Upsert trip by title & startTime or existing _id
     const filter = trip._id && ObjectId.isValid(trip._id)
       ? { _id: new ObjectId(trip._id) }
-      : { startTime: trip.startTime, title: trip.title };
+      : { startTime: trip.startTime, title: trip.title, ...(email ? { userEmail: email } : {}) };
 
-    const tripResult = await db.collection('trips').updateOne(
+    await db.collection('trips').updateOne(
       filter,
       { $set: tripDoc },
       { upsert: true }
@@ -135,6 +328,7 @@ app.post('/api/trips/sync', async (req, res) => {
       const pointDocs = points.map((p, idx) => ({
         ...p,
         tripId: savedTripId,
+        userEmail: email || null,
         pointIndex: idx + 1
       }));
       delete pointDocs.id;
@@ -144,7 +338,8 @@ app.post('/api/trips/sync', async (req, res) => {
     res.json({
       success: true,
       message: 'Trip synced successfully with MongoDB',
-      tripId: savedTripId
+      tripId: savedTripId,
+      userEmail: email || null
     });
   } catch (err) {
     console.error('Sync error:', err);

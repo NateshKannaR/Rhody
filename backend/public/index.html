@@ -47,12 +47,24 @@
         </div>
       </div>
 
-      <!-- MongoDB Atlas Connection Status -->
-      <div class="flex items-center space-x-4">
+      <!-- MongoDB Atlas Connection Status & User Profile -->
+      <div class="flex items-center space-x-3">
         <div id="mongoStatusPill" class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-[#16191F] border border-[#232832] text-xs">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span class="text-slate-300 font-medium">MongoDB: <strong class="text-emerald-400 font-mono">Connected</strong></span>
         </div>
+
+        <div id="userProfilePill" class="hidden items-center space-x-2 px-3 py-1.5 rounded-full bg-[#16191F] border border-[#232832] text-xs">
+          <span class="w-2 h-2 rounded-full bg-[#00F5D4]"></span>
+          <span id="navUserEmail" class="text-slate-300 font-medium font-mono text-[11px]"></span>
+          <button onclick="handleLogout()" class="text-slate-400 hover:text-[#FF3366] ml-2 text-xs font-bold transition">Sign Out</button>
+        </div>
+
+        <button id="navLoginBtn" onclick="openAuthModal()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-[#00F5D4] to-[#00E5FF] text-[#0D0F12] hover:opacity-90 transition flex items-center space-x-1.5 shadow-md shadow-[#00F5D4]/20">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          <span>Sign In</span>
+        </button>
+
         <button onclick="refreshData()" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#1E232B] hover:bg-[#282F3B] text-slate-200 border border-[#2B3240] transition flex items-center space-x-1.5">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           <span>Refresh</span>
@@ -221,6 +233,54 @@
 
   </main>
 
+  <!-- Auth Modal -->
+  <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm hidden">
+    <div class="bg-[#16191F] border border-[#232832] rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 shadow-2xl space-y-6 relative">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+
+      <div class="text-center space-y-1">
+        <div class="w-12 h-12 mx-auto rounded-xl bg-gradient-to-tr from-[#00F5D4] via-[#00E5FF] to-[#FF3366] flex items-center justify-center p-0.5 mb-2 shadow-lg shadow-[#00F5D4]/20">
+          <div class="w-full h-full bg-[#0D0F12] rounded-[10px] flex items-center justify-center">
+            <svg class="w-6 h-6 text-[#00F5D4]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          </div>
+        </div>
+        <h3 id="authModalTitle" class="text-xl font-black text-white">Sign In to RoadPulse</h3>
+        <p id="authModalSubtitle" class="text-xs text-slate-400">Access your cloud telemetry & GPS rides</p>
+      </div>
+
+      <!-- Auth Mode Toggle -->
+      <div class="flex rounded-lg bg-[#12151B] p-1 border border-[#232832]">
+        <button id="tabSignIn" onclick="setAuthMode('signin')" class="flex-1 py-1.5 text-xs font-bold rounded-md bg-[#1E232B] text-[#00F5D4] transition">Sign In</button>
+        <button id="tabSignUp" onclick="setAuthMode('signup')" class="flex-1 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition">Create Account</button>
+      </div>
+
+      <div id="authAlert" class="hidden p-3 rounded-lg text-xs font-medium"></div>
+
+      <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+        <div id="nameFieldGroup" class="hidden space-y-1.5">
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Full Name</label>
+          <input id="authName" type="text" placeholder="John Doe" class="w-full bg-[#12151B] border border-[#2B3240] rounded-lg px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-[#00F5D4] outline-none" />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
+          <input id="authEmail" type="email" required placeholder="rider@roadpulse.io" class="w-full bg-[#12151B] border border-[#2B3240] rounded-lg px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-[#00F5D4] outline-none" />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Password</label>
+          <input id="authPassword" type="password" required minlength="6" placeholder="••••••••" class="w-full bg-[#12151B] border border-[#2B3240] rounded-lg px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-[#00F5D4] outline-none" />
+        </div>
+
+        <button id="authSubmitBtn" type="submit" class="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-[#00F5D4] to-[#00E5FF] text-[#0D0F12] font-black text-sm hover:opacity-90 transition shadow-lg shadow-[#00F5D4]/20">
+          Sign In
+        </button>
+      </form>
+    </div>
+  </div>
+
   <footer class="border-t border-[#232832] py-6 text-center text-xs text-slate-500">
     RoadPulse GPS Telemetry • Powered by MongoDB Atlas • Native Android & Web Companion
   </footer>
@@ -232,6 +292,125 @@
     let speedChartInstance;
     let allTripsData = [];
     let currentTripData = null;
+    let currentAuthUser = null;
+    let currentAuthToken = null;
+    let currentAuthMode = 'signin';
+
+    function checkAuthSession() {
+      const savedUser = localStorage.getItem('rp_auth_user');
+      const savedToken = localStorage.getItem('rp_auth_token');
+      if (savedUser && savedToken) {
+        try {
+          currentAuthUser = JSON.parse(savedUser);
+          currentAuthToken = savedToken;
+        } catch (e) {
+          localStorage.removeItem('rp_auth_user');
+          localStorage.removeItem('rp_auth_token');
+        }
+      }
+      updateAuthUI();
+    }
+
+    function updateAuthUI() {
+      const pill = document.getElementById('userProfilePill');
+      const btn = document.getElementById('navLoginBtn');
+      const navEmail = document.getElementById('navUserEmail');
+      if (currentAuthUser) {
+        pill.classList.remove('hidden');
+        pill.classList.add('flex');
+        btn.classList.add('hidden');
+        navEmail.textContent = currentAuthUser.email;
+      } else {
+        pill.classList.add('hidden');
+        pill.classList.remove('flex');
+        btn.classList.remove('hidden');
+      }
+    }
+
+    function openAuthModal() {
+      document.getElementById('authModal').classList.remove('hidden');
+      document.getElementById('authAlert').classList.add('hidden');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.add('hidden');
+    }
+
+    function setAuthMode(mode) {
+      currentAuthMode = mode;
+      const nameGrp = document.getElementById('nameFieldGroup');
+      const title = document.getElementById('authModalTitle');
+      const sub = document.getElementById('authModalSubtitle');
+      const submitBtn = document.getElementById('authSubmitBtn');
+      const tabIn = document.getElementById('tabSignIn');
+      const tabUp = document.getElementById('tabSignUp');
+
+      if (mode === 'signup') {
+        nameGrp.classList.remove('hidden');
+        title.textContent = 'Create an Account';
+        sub.textContent = 'Join RoadPulse to sync and analyze your telemetry';
+        submitBtn.textContent = 'Create Account';
+        tabUp.className = 'flex-1 py-1.5 text-xs font-bold rounded-md bg-[#1E232B] text-[#00F5D4] transition';
+        tabIn.className = 'flex-1 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition';
+      } else {
+        nameGrp.classList.add('hidden');
+        title.textContent = 'Sign In to RoadPulse';
+        sub.textContent = 'Access your cloud telemetry & personal rides';
+        submitBtn.textContent = 'Sign In';
+        tabIn.className = 'flex-1 py-1.5 text-xs font-bold rounded-md bg-[#1E232B] text-[#00F5D4] transition';
+        tabUp.className = 'flex-1 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition';
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const alertEl = document.getElementById('authAlert');
+      alertEl.classList.add('hidden');
+
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const name = document.getElementById('authName').value.trim();
+
+      const endpoint = currentAuthMode === 'signup' ? '/api/auth/register' : '/api/auth/login';
+      const payload = currentAuthMode === 'signup' ? { email, password, name } : { email, password };
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alertEl.className = 'p-3 rounded-lg text-xs font-medium bg-rose-950/60 border border-rose-800 text-rose-300';
+          alertEl.textContent = data.error || 'Authentication failed';
+          alertEl.classList.remove('hidden');
+          return;
+        }
+
+        currentAuthUser = data.user;
+        currentAuthToken = data.token;
+        localStorage.setItem('rp_auth_user', JSON.stringify(data.user));
+        localStorage.setItem('rp_auth_token', data.token);
+
+        updateAuthUI();
+        closeAuthModal();
+        refreshData();
+      } catch (err) {
+        alertEl.className = 'p-3 rounded-lg text-xs font-medium bg-rose-950/60 border border-rose-800 text-rose-300';
+        alertEl.textContent = err.message;
+        alertEl.classList.remove('hidden');
+      }
+    }
+
+    function handleLogout() {
+      currentAuthUser = null;
+      currentAuthToken = null;
+      localStorage.removeItem('rp_auth_user');
+      localStorage.removeItem('rp_auth_token');
+      updateAuthUI();
+      refreshData();
+    }
 
     // Initialize Map with OpenFreeMap / OSM
     function initMap() {
@@ -247,9 +426,12 @@
 
     async function refreshData() {
       try {
+        const tripsUrl = currentAuthUser ? `/api/trips?email=${encodeURIComponent(currentAuthUser.email)}` : '/api/trips';
+        const headers = currentAuthToken ? { 'Authorization': `Bearer ${currentAuthToken}` } : {};
+
         const [statusRes, tripsRes] = await Promise.all([
           fetch('/api/status'),
-          fetch('/api/trips')
+          fetch(tripsUrl, { headers })
         ]);
         const status = await statusRes.json();
         const trips = await tripsRes.json();
@@ -261,6 +443,13 @@
 
         if (trips.length > 0 && (!currentTripData || !trips.find(t => t._id === currentTripData._id))) {
           loadTripDetails(trips[0]._id);
+        } else if (trips.length === 0) {
+          currentTripData = null;
+          document.getElementById('activeTripTitle').innerText = 'No rides logged yet';
+          document.getElementById('activeTripDate').innerText = 'Sync a ride from the mobile app to view telemetry';
+          if (polylineLayer) map.removeLayer(polylineLayer);
+          if (scrubberMarker) map.removeLayer(scrubberMarker);
+          if (speedChartInstance) speedChartInstance.destroy();
         }
       } catch (err) {
         console.error('Error refreshing data:', err);
@@ -555,8 +744,15 @@
 
       await fetch('/api/trips/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trip, points })
+        headers: {
+          'Content-Type': 'application/json',
+          ...(currentAuthToken ? { 'Authorization': `Bearer ${currentAuthToken}` } : {})
+        },
+        body: JSON.stringify({
+          trip,
+          points,
+          userEmail: currentAuthUser ? currentAuthUser.email : null
+        })
       });
 
       refreshData();
@@ -573,6 +769,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       initMap();
+      checkAuthSession();
       refreshData();
     });
   </script>

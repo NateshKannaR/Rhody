@@ -28,6 +28,7 @@ import com.roadpulse.app.ui.screens.dashboard.DashboardScreen
 import com.roadpulse.app.ui.screens.history.HistoryScreen
 import com.roadpulse.app.ui.screens.history.TripDetailScreen
 import com.roadpulse.app.ui.screens.livetrip.LiveTripScreen
+import com.roadpulse.app.ui.screens.profile.ProfileScreen
 import com.roadpulse.app.ui.theme.CarbonDark
 import com.roadpulse.app.ui.theme.RoadPulseTheme
 import kotlinx.coroutines.launch
@@ -94,6 +95,9 @@ class MainActivity : ComponentActivity() {
                             DashboardScreen(
                                 onNavigateToLiveTrip = {
                                     navController.navigate(Screen.LiveTrip.route)
+                                },
+                                onNavigateToProfile = {
+                                    navController.navigate(Screen.Profile.route)
                                 }
                             )
                         }
@@ -112,6 +116,10 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(Screen.createTripDetailRoute(tripId))
                                 }
                             )
+                        }
+
+                        composable(Screen.Profile.route) {
+                            ProfileScreen()
                         }
 
                         composable(

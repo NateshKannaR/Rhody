@@ -20,6 +20,10 @@ class TripRepository(
 
     val allTrips: Flow<List<TripEntity>> = tripDao.getAllTripsFlow()
 
+    suspend fun getAllTrips(): List<TripEntity> = withContext(Dispatchers.IO) {
+        tripDao.getAllTrips()
+    }
+
     fun getTripFlow(tripId: Long): Flow<TripEntity?> = tripDao.getTripFlow(tripId)
 
     fun getPointsFlow(tripId: Long): Flow<List<TrackPointEntity>> =

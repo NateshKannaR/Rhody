@@ -7,6 +7,8 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,9 +24,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Speed
@@ -43,12 +47,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.roadpulse.app.data.auth.AuthManager
 import com.roadpulse.app.domain.calculator.TripCalculator
 import com.roadpulse.app.domain.model.GpsStatus
 import com.roadpulse.app.domain.model.TripStatus
@@ -57,11 +63,13 @@ import com.roadpulse.app.ui.components.GpsStatusBadge
 import com.roadpulse.app.ui.components.SpeedometerGauge
 import com.roadpulse.app.ui.components.StatCard
 import com.roadpulse.app.ui.theme.CarbonDark
+import com.roadpulse.app.ui.theme.CardBorder
 import com.roadpulse.app.ui.theme.ElectricBlue
 import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
 import com.roadpulse.app.ui.theme.RacingRed
 import com.roadpulse.app.ui.theme.SportAmber
+import com.roadpulse.app.ui.theme.SuccessGreen
 import com.roadpulse.app.ui.theme.TextPrimary
 import com.roadpulse.app.ui.theme.TextSecondary
 import java.util.Locale
@@ -69,9 +77,11 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(
     onNavigateToLiveTrip: () -> Unit,
+    onNavigateToProfile: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val authState by AuthManager.authState.collectAsState()
     val metrics by TripRecordingController.metrics.collectAsState()
     val liveGForce by TripRecordingController.liveGForce.collectAsState()
     val livePoints by TripRecordingController.livePoints.collectAsState()
@@ -126,10 +136,48 @@ fun DashboardScreen(
                 )
             }
 
-            GpsStatusBadge(
-                gpsStatus = metrics.gpsStatus,
-                accuracyMeters = metrics.accuracyMeters
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // User Auth Pill
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(MidnightCard)
+                        .border(
+                            1.dp,
+                            if (authState.isLoggedIn) SuccessGreen.copy(alpha = 0.5f) else CardBorder,
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .clickable { onNavigateToProfile() }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = if (authState.isLoggedIn) Icons.Default.AccountCircle else Icons.Default.Person,
+                        contentDescription = "Profile",
+                        tint = if (authState.isLoggedIn) SuccessGreen else TextSecondary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = if (authState.isLoggedIn) {
+                            authState.user?.name?.ifEmpty { "Pilot" } ?: "Pilot"
+                        } else {
+                            "Sign In"
+                        },
+                        color = if (authState.isLoggedIn) TextPrimary else TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                GpsStatusBadge(
+                    gpsStatus = metrics.gpsStatus,
+                    accuracyMeters = metrics.accuracyMeters
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(20.dp))

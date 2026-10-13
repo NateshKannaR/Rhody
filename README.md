@@ -136,9 +136,39 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ---
 
+## 🔐 Email ID Authentication & MongoDB Atlas Cloud
+
+RoadPulse supports unified user accounts powered by MongoDB Atlas:
+
+### Features & Security
+- **Email ID Registration & Login**: Drivers and riders can sign up with their email and password.
+- **Salted Hash Security**: Passwords are securely hashed with per-user cryptographic salts using Node.js `pbkdf2Sync` (SHA-512, 1000 iterations).
+- **HMAC Session Tokens**: Cryptographically signed bearer tokens authenticate API operations and tie telemetry records to specific user profiles.
+- **User-Filtered Cloud Trips**: When logged in, both the Android app and the Web Dashboard query and synchronize trips specific to the logged-in email.
+- **Native Android Account Screen**:
+  - Accessible via the Account tab (bottom navigation) or the top header profile pill.
+  - One-tap toggle between Sign In and Account Creation.
+  - Active MongoDB Atlas connection indicator.
+  - One-tap "Sync All Local Trips Now" pushing Room database trips to MongoDB Atlas.
+  - Configurable backend server gateway endpoint.
+- **Web Dashboard Auth Modal**:
+  - Sleek dark-mode modal for instant sign-in or account registration.
+  - Local session storage with real-time reactive UI update.
+  - Live simulation & upload tied directly to the logged-in email.
+
+### Authentication Endpoints
+- `POST /api/auth/register`: Create account (`{ email, password, name }`)
+- `POST /api/auth/login`: Authenticate (`{ email, password }`)
+- `GET /api/auth/me`: Get current authenticated user profile (`Authorization: Bearer <token>`)
+- `GET /api/trips?email=<user@example.com>`: Fetch trips associated with user
+- `POST /api/trips/sync`: Sync trip and GPS points associated with user
+
+---
+
 ## 🔒 Permissions & Security
 - `ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION`: Required for sub-second GPS telemetry.
 - `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_LOCATION`: Required by Android 14 for uninterrupted background tracking.
 - `POST_NOTIFICATIONS`: Android 13+ active trip tracking controls notification.
 - `WAKE_LOCK`: Retains CPU execution state while phone is locked in a motorcycle mount or pocket.
 - `INTERNET` and `ACCESS_NETWORK_STATE`: For vector map tiles and syncing with MongoDB Atlas.
+

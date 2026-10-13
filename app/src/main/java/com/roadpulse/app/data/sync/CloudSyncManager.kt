@@ -1,5 +1,6 @@
 package com.roadpulse.app.data.sync
 
+import android.content.Context
 import com.roadpulse.app.data.database.TrackPointEntity
 import com.roadpulse.app.data.database.TripEntity
 import kotlinx.coroutines.Dispatchers
@@ -13,9 +14,46 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 object CloudSyncManager {
-    // Default server address: 10.0.2.2 points to host machine from Android Emulator.
-    // Can be configured to local LAN IP or production cloud domain.
+    private const val PREFS_NAME = "roadpulse_sync_prefs"
+    private const val KEY_SERVER_URL = "server_base_url"
+
     var serverBaseUrl: String = "http://10.0.2.2:3000"
+        private set
+
+    fun init(context: Context) {
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        serverBaseUrl = prefs.getString(KEY_SERVER_URL, "http://10.0.2.2:3000") ?: "http://10.0.2.2:3000"
+    }
+
+    fun setServerUrl(context: Context, newUrl: String) {
+        serverBaseUrl = newUrl.trim().trimEnd('/')
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_SERVER_URL, serverBaseUrl).apply()
+    }
+
+    suspend fun checkServerHealth(): Result<JSONObject> = withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
+        try {
+            val url = URL("$serverBaseUrl/api/status")
+            connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 4000
+                readTimeout = 6000
+                setRequestProperty("Accept", "application/json")
+            }
+            val responseCode = connection.responseCode
+            if (responseCode in 200..299) {
+                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                Result.success(JSONObject(responseText))
+            } else {
+                Result.failure(Exception("HTTP $responseCode"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        } finally {
+            connection?.disconnect()
+        }
+    }
 
     suspend fun syncTripToMongo(
         trip: TripEntity,
@@ -24,10 +62,14 @@ object CloudSyncManager {
         var connection: HttpURLConnection? = null
         try {
             val url = URL("$serverBaseUrl/api/trips/sync")
+            val authState = com.roadpulse.app.data.auth.AuthManager.authState.value
             connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 setRequestProperty("Content-Type", "application/json; charset=UTF-8")
                 setRequestProperty("Accept", "application/json")
+                if (!authState.token.isNullOrEmpty()) {
+                    setRequestProperty("Authorization", "Bearer ${authState.token}")
+                }
                 connectTimeout = 8000
                 readTimeout = 15000
                 doOutput = true
@@ -50,6 +92,9 @@ object CloudSyncManager {
                 put("totalDurationMs", trip.totalDurationMs)
                 put("pauseDurationMs", trip.pauseDurationMs)
                 put("createdAt", trip.createdAt)
+                if (authState.user?.email != null) {
+                    put("userEmail", authState.user.email)
+                }
             }
 
             // Build Points JSON Array
@@ -73,6 +118,9 @@ object CloudSyncManager {
             val payload = JSONObject().apply {
                 put("trip", tripJson)
                 put("points", pointsArray)
+                if (authState.user?.email != null) {
+                    put("userEmail", authState.user.email)
+                }
             }
 
             // Send payload
