@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -59,11 +60,13 @@ import com.roadpulse.app.domain.calculator.TripCalculator
 import com.roadpulse.app.domain.model.GpsStatus
 import com.roadpulse.app.domain.model.TripStatus
 import com.roadpulse.app.service.TripRecordingController
+import com.roadpulse.app.ui.components.GForceMeter
 import com.roadpulse.app.ui.components.GpsStatusBadge
 import com.roadpulse.app.ui.components.SpeedometerGauge
 import com.roadpulse.app.ui.components.StatCard
 import com.roadpulse.app.ui.theme.CarbonDark
 import com.roadpulse.app.ui.theme.CardBorder
+import com.roadpulse.app.ui.theme.CardSurfaceLight
 import com.roadpulse.app.ui.theme.ElectricBlue
 import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
@@ -110,32 +113,54 @@ fun DashboardScreen(
             .fillMaxSize()
             .background(CarbonDark)
             .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = 18.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top App Header
+        // ================= TOP HEADER BAR =================
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = "ROADPULSE",
-                    color = NeonCyan,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp
-                )
-                Text(
-                    text = "DRIVING & RIDING TRACKER",
-                    color = TextSecondary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
+            // App Identity
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MidnightCard)
+                        .border(1.dp, NeonCyan.copy(alpha = 0.4f), RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Speed,
+                        contentDescription = null,
+                        tint = NeonCyan,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column {
+                    Text(
+                        text = "ROADPULSE",
+                        color = TextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.5.sp
+                    )
+                    Text(
+                        text = "TELEMETRY CLOUD",
+                        color = NeonCyan,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.2.sp
+                    )
+                }
             }
 
+            // Top Status Actions: Profile pill + GPS lock badge
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -154,12 +179,20 @@ fun DashboardScreen(
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = if (authState.isLoggedIn) Icons.Default.AccountCircle else Icons.Default.Person,
-                        contentDescription = "Profile",
-                        tint = if (authState.isLoggedIn) SuccessGreen else TextSecondary,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(if (authState.isLoggedIn) SuccessGreen.copy(alpha = 0.2f) else CardBorder),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (authState.isLoggedIn) Icons.Default.AccountCircle else Icons.Default.Person,
+                            contentDescription = "Profile",
+                            tint = if (authState.isLoggedIn) SuccessGreen else TextSecondary,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.width(5.dp))
                     Text(
                         text = if (authState.isLoggedIn) {
@@ -168,8 +201,8 @@ fun DashboardScreen(
                             "Sign In"
                         },
                         color = if (authState.isLoggedIn) TextPrimary else TextSecondary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
 
@@ -180,154 +213,170 @@ fun DashboardScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        // Speedometer Gauge
-        SpeedometerGauge(
-            currentSpeedKmh = metrics.currentSpeedKmh,
-            maxSpeedKmh = metrics.maxSpeedKmh
-        )
+        // ================= HERO COCKPIT GAUGE CARD =================
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(MidnightCard)
+                .border(1.dp, CardBorder, RoundedCornerShape(24.dp))
+                .padding(vertical = 20.dp, horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Precision Speedometer Gauge
+            SpeedometerGauge(
+                currentSpeedKmh = metrics.currentSpeedKmh,
+                maxSpeedKmh = metrics.maxSpeedKmh
+            )
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-        // Action Buttons Row
-        if (!hasPermissions) {
-            Button(
-                onClick = {
-                    val permissionsToRequest = mutableListOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    )
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                    permissionLauncher.launch(permissionsToRequest.toTypedArray())
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = SportAmber,
-                    contentColor = CarbonDark
-                ),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Icon(imageVector = Icons.Default.Lock, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Grant Location Permissions",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        } else {
-            when (metrics.tripStatus) {
-                TripStatus.IDLE, TripStatus.FINISHED -> {
-                    Button(
-                        onClick = {
-                            TripRecordingController.startTrip(context)
-                            onNavigateToLiveTrip()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(54.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = NeonCyan,
-                            contentColor = CarbonDark
-                        ),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "START TRIP",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp
+            // Action Buttons
+            if (!hasPermissions) {
+                Button(
+                    onClick = {
+                        val permissionsToRequest = mutableListOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
                         )
-                    }
-                }
-                TripStatus.RECORDING -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { TripRecordingController.pauseTrip(context) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = SportAmber
-                            )
-                        ) {
-                            Icon(imageVector = Icons.Default.Pause, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("PAUSE", fontWeight = FontWeight.Bold)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
                         }
-
-                        Button(
-                            onClick = { TripRecordingController.finishTrip(context) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = RacingRed,
-                                contentColor = TextPrimary
-                            )
-                        ) {
-                            Icon(imageVector = Icons.Default.Stop, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("FINISH", fontWeight = FontWeight.Bold)
-                        }
-                    }
+                        permissionLauncher.launch(permissionsToRequest.toTypedArray())
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SportAmber,
+                        contentColor = CarbonDark
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Lock, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Grant Location Access",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-                TripStatus.PAUSED -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
+            } else {
+                when (metrics.tripStatus) {
+                    TripStatus.IDLE, TripStatus.FINISHED -> {
                         Button(
-                            onClick = { TripRecordingController.resumeTrip(context) },
+                            onClick = {
+                                TripRecordingController.startTrip(context)
+                                onNavigateToLiveTrip()
+                            },
                             modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
+                                .fillMaxWidth()
+                                .height(54.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = NeonCyan,
                                 contentColor = CarbonDark
-                            )
+                            ),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
-                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("RESUME", fontWeight = FontWeight.Bold)
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "START RECORDING",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 1.sp
+                            )
                         }
-
-                        Button(
-                            onClick = { TripRecordingController.finishTrip(context) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = RacingRed,
-                                contentColor = TextPrimary
-                            )
+                    }
+                    TripStatus.RECORDING -> {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(imageVector = Icons.Default.Stop, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("FINISH", fontWeight = FontWeight.Bold)
+                            OutlinedButton(
+                                onClick = { TripRecordingController.pauseTrip(context) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = SportAmber
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, SportAmber)
+                            ) {
+                                Icon(imageVector = Icons.Default.Pause, contentDescription = null)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("PAUSE", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+
+                            Button(
+                                onClick = { TripRecordingController.finishTrip(context) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = RacingRed,
+                                    contentColor = TextPrimary
+                                )
+                            ) {
+                                Icon(imageVector = Icons.Default.Stop, contentDescription = null)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("FINISH", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                        }
+                    }
+                    TripStatus.PAUSED -> {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Button(
+                                onClick = { TripRecordingController.resumeTrip(context) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = NeonCyan,
+                                    contentColor = CarbonDark
+                                )
+                            ) {
+                                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("RESUME", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+
+                            Button(
+                                onClick = { TripRecordingController.finishTrip(context) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = RacingRed,
+                                    contentColor = TextPrimary
+                                )
+                            ) {
+                                Icon(imageVector = Icons.Default.Stop, contentDescription = null)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("FINISH", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
                         }
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        // Primary Metric Cards Grid
+        // ================= METRICS 2X2 GRID =================
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -365,8 +414,8 @@ fun DashboardScreen(
                 modifier = Modifier.weight(1f)
             )
             StatCard(
-                label = "Elapsed Time",
-                value = TripCalculator.formatDuration(metrics.elapsedTimeMs),
+                label = "Moving Time",
+                value = TripCalculator.formatDuration(metrics.movingDurationMs),
                 unit = "",
                 icon = Icons.Default.Timer,
                 accentColor = SportAmber,
@@ -374,41 +423,17 @@ fun DashboardScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            StatCard(
-                label = "Moving Time",
-                value = TripCalculator.formatDuration(metrics.movingDurationMs),
-                unit = "",
-                icon = Icons.Default.Timer,
-                accentColor = NeonCyan,
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                label = "Overall Avg",
-                value = String.format(Locale.US, "%.1f", metrics.avgOverallSpeedKmh),
-                unit = "KM/H",
-                icon = Icons.Default.Speed,
-                accentColor = TextSecondary,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // G-Force Telemetry Crosshairs
-        com.roadpulse.app.ui.components.GForceMeter(
+        // ================= G-FORCE TELEMETRY =================
+        GForceMeter(
             gForce = liveGForce,
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Live Sprint Acceleration Cards
+        // ================= LIVE SPRINT ACCELERATION BENCHMARKS =================
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -431,7 +456,7 @@ fun DashboardScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 

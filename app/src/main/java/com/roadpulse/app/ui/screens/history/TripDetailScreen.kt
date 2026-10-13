@@ -147,15 +147,20 @@ fun TripDetailScreen(
         ) {
             IconButton(
                 onClick = onNavigateBack,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(MidnightCard)
+                    .border(1.dp, CardBorder, androidx.compose.foundation.shape.CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
-                    tint = TextPrimary
+                    tint = TextPrimary,
+                    modifier = Modifier.size(20.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -166,6 +171,7 @@ fun TripDetailScreen(
                         modifier = Modifier.weight(1f, fill = false),
                         maxLines = 1
                     )
+                    Spacer(modifier = Modifier.width(4.dp))
                     IconButton(
                         onClick = {
                             newTitle = currentTrip.title
@@ -196,8 +202,8 @@ fun TripDetailScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(260.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
+                .clip(RoundedCornerShape(20.dp))
+                .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
         ) {
             RouteMapView(
                 points = points,
@@ -206,6 +212,25 @@ fun TripDetailScreen(
                 isLiveTracking = false,
                 modifier = Modifier.fillMaxSize()
             )
+
+            // Route Badge Overlay
+            Box(
+                modifier = Modifier
+                    .padding(12.dp)
+                    .align(Alignment.TopStart)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MidnightCard.copy(alpha = 0.92f))
+                    .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = "GPS ROUTE TRACE",
+                    color = NeonCyan,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(18.dp))
@@ -369,42 +394,44 @@ fun TripDetailScreen(
                 onClick = { ExportManager.shareGpx(context, currentTrip, points) },
                 modifier = Modifier
                     .weight(1f)
-                    .height(50.dp),
-                shape = RoundedCornerShape(12.dp),
+                    .height(52.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MidnightCard,
                     contentColor = NeonCyan
-                )
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
             ) {
                 Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("GPX Route", fontWeight = FontWeight.Bold)
+                Text("GPX Route", fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
 
             Button(
                 onClick = { ExportManager.shareCsv(context, currentTrip, points) },
                 modifier = Modifier
                     .weight(1f)
-                    .height(50.dp),
-                shape = RoundedCornerShape(12.dp),
+                    .height(52.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MidnightCard,
                     contentColor = ElectricBlue
-                )
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
             ) {
                 Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("CSV Data", fontWeight = FontWeight.Bold)
+                Text("CSV Data", fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Cloud Telemetry (MongoDB Atlas)
         Text(
             text = "CLOUD TELEMETRY (MONGODB ATLAS)",
             color = TextSecondary,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp
         )
@@ -424,12 +451,13 @@ fun TripDetailScreen(
             enabled = !isSyncing,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(14.dp),
+                .height(54.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = NeonCyan,
                 contentColor = CarbonDark
-            )
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
         ) {
             if (isSyncing) {
                 CircularProgressIndicator(
@@ -455,13 +483,13 @@ fun TripDetailScreen(
         }
 
         if (syncStatusMessage != null) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(MidnightCard)
-                    .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                    .border(1.dp, NeonCyan.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                     .padding(12.dp)
             ) {
                 Text(
@@ -480,18 +508,19 @@ fun TripDetailScreen(
             onClick = { isDeleting = true },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
-            shape = RoundedCornerShape(12.dp),
+                .height(52.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = RacingRed
-            )
+            ),
+            border = androidx.compose.foundation.BorderStroke(1.dp, RacingRed.copy(alpha = 0.6f))
         ) {
             Icon(imageVector = Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text("Delete Trip", fontWeight = FontWeight.Bold)
+            Text("Delete Trip", fontWeight = FontWeight.Bold, fontSize = 14.sp)
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
     }
 
     // Rename Dialog

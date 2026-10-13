@@ -5,15 +5,16 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,11 +36,11 @@ import com.roadpulse.app.ui.theme.ElectricBlue
 import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
 import com.roadpulse.app.ui.theme.RacingRed
-import com.roadpulse.app.ui.theme.SportAmber
 import com.roadpulse.app.ui.theme.TextMuted
 import com.roadpulse.app.ui.theme.TextPrimary
 import com.roadpulse.app.ui.theme.TextSecondary
 import java.util.Locale
+import kotlin.math.abs
 
 @Composable
 fun GForceMeter(
@@ -48,78 +49,129 @@ fun GForceMeter(
 ) {
     val animLat by animateFloatAsState(
         targetValue = gForce.lateralG.coerceIn(-1.5f, 1.5f),
-        animationSpec = tween(150),
+        animationSpec = tween(120),
         label = "LatG"
     )
     val animLong by animateFloatAsState(
         targetValue = gForce.longitudinalG.coerceIn(-1.5f, 1.5f),
-        animationSpec = tween(150),
+        animationSpec = tween(120),
         label = "LongG"
     )
 
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(18.dp))
             .background(MidnightCard)
-            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-            .padding(14.dp)
+            .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
+            .padding(16.dp)
     ) {
+        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(NeonCyan)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "G-FORCE TELEMETRY",
+                    text = "G-FORCE RADAR",
                     color = TextSecondary,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Black,
                     letterSpacing = 1.sp
                 )
+            }
+
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(RacingRed.copy(alpha = 0.12f))
+                    .border(1.dp, RacingRed.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            ) {
                 Text(
-                    text = "LAT: ${String.format(Locale.US, "%.2f", animLat)}G • LONG: ${String.format(Locale.US, "%.2f", animLong)}G",
-                    color = TextPrimary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "PEAK ${String.format(Locale.US, "%.2f", gForce.maxG)}G",
+                    color = RacingRed,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black
                 )
             }
-            Text(
-                text = "PEAK ${String.format(Locale.US, "%.2f", gForce.maxG)}G",
-                color = RacingRed,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Black
-            )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(130.dp),
-            contentAlignment = Alignment.Center
+        // Center Radar and Value Pill Columns
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceAround
         ) {
-            Canvas(modifier = Modifier.size(120.dp)) {
-                val center = Offset(size.width / 2f, size.height / 2f)
-                val radius = size.minDimension / 2f
+            // Lateral Indicator Pill
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "CORNERING",
+                    color = TextMuted,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${if (animLat >= 0) "▶" else "◀"} ${String.format(Locale.US, "%.2f", abs(animLat))}G",
+                    color = if (abs(animLat) > 0.8f) RacingRed else NeonCyan,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
 
-                // Outer and inner concentric rings (0.5G, 1.0G, 1.5G)
-                drawCircle(color = CardBorder, radius = radius * 0.33f, center = center, style = Stroke(1.dp.toPx()))
-                drawCircle(color = CardBorder, radius = radius * 0.66f, center = center, style = Stroke(1.dp.toPx()))
-                drawCircle(color = CardBorder, radius = radius, center = center, style = Stroke(1.5.dp.toPx()))
+            // Radar Circle Canvas
+            Box(
+                modifier = Modifier.size(110.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Canvas(modifier = Modifier.size(110.dp)) {
+                    val center = Offset(size.width / 2f, size.height / 2f)
+                    val radius = size.minDimension / 2f
 
-                // Crosshairs
-                drawLine(color = CardBorder, start = Offset(center.x, 0f), end = Offset(center.x, size.height), strokeWidth = 1.dp.toPx())
-                drawLine(color = CardBorder, start = Offset(0f, center.y), end = Offset(size.width, center.y), strokeWidth = 1.dp.toPx())
+                    // Concentric Laser Rings (0.5G, 1.0G, 1.5G)
+                    drawCircle(color = CardBorder.copy(alpha = 0.5f), radius = radius * 0.33f, center = center, style = Stroke(1.dp.toPx()))
+                    drawCircle(color = CardBorder.copy(alpha = 0.8f), radius = radius * 0.66f, center = center, style = Stroke(1.dp.toPx()))
+                    drawCircle(color = CardBorder, radius = radius, center = center, style = Stroke(1.5.dp.toPx()))
 
-                // Dynamic G-Force Position Dot
-                // Map [-1.5G, 1.5G] to [-radius, radius]
-                val dotX = center.x + (animLat / 1.5f) * radius
-                val dotY = center.y - (animLong / 1.5f) * radius
+                    // Crosshair Axes
+                    drawLine(color = CardBorder.copy(alpha = 0.6f), start = Offset(center.x, 0f), end = Offset(center.x, size.height), strokeWidth = 1.dp.toPx())
+                    drawLine(color = CardBorder.copy(alpha = 0.6f), start = Offset(0f, center.y), end = Offset(size.width, center.y), strokeWidth = 1.dp.toPx())
 
-                drawCircle(color = NeonCyan.copy(alpha = 0.3f), radius = 10.dp.toPx(), center = Offset(dotX, dotY))
-                drawCircle(color = NeonCyan, radius = 5.dp.toPx(), center = Offset(dotX, dotY))
-                drawCircle(color = CarbonDark, radius = 2.dp.toPx(), center = Offset(dotX, dotY))
+                    // Dynamic G-Force Position Dot
+                    val dotX = center.x + (animLat / 1.5f) * radius
+                    val dotY = center.y - (animLong / 1.5f) * radius
+
+                    // Soft ambient glow
+                    drawCircle(color = NeonCyan.copy(alpha = 0.25f), radius = 12.dp.toPx(), center = Offset(dotX, dotY))
+                    // Sharp core
+                    drawCircle(color = NeonCyan, radius = 5.dp.toPx(), center = Offset(dotX, dotY))
+                    drawCircle(color = Color.White, radius = 2.dp.toPx(), center = Offset(dotX, dotY))
+                }
+            }
+
+            // Longitudinal Indicator Pill
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = if (animLong >= 0) "ACCEL" else "BRAKE",
+                    color = TextMuted,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${if (animLong >= 0) "▲" else "▼"} ${String.format(Locale.US, "%.2f", abs(animLong))}G",
+                    color = if (animLong < -0.6f) RacingRed else ElectricBlue,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black
+                )
             }
         }
     }

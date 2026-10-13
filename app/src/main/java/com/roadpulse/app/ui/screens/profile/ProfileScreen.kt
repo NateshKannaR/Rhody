@@ -552,14 +552,15 @@ fun ProfileScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(CarbonDark, shape = RoundedCornerShape(12.dp))
+                        .background(CarbonDark, shape = RoundedCornerShape(14.dp))
+                        .border(1.dp, CardBorder, shape = RoundedCornerShape(14.dp))
                         .padding(4.dp)
                 ) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (isLoginMode) ElectricBlue else Color.Transparent)
+                            .background(if (isLoginMode) NeonCyan else Color.Transparent)
                             .clickable {
                                 isLoginMode = true
                                 errorMessage = null
@@ -569,10 +570,11 @@ fun ProfileScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Sign In",
-                            color = if (isLoginMode) TextPrimary else TextSecondary,
-                            fontWeight = if (isLoginMode) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 14.sp
+                            text = "SIGN IN",
+                            color = if (isLoginMode) CarbonDark else TextSecondary,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp,
+                            fontSize = 12.sp
                         )
                     }
 
@@ -580,7 +582,7 @@ fun ProfileScreen(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (!isLoginMode) ElectricBlue else Color.Transparent)
+                            .background(if (!isLoginMode) NeonCyan else Color.Transparent)
                             .clickable {
                                 isLoginMode = false
                                 errorMessage = null
@@ -590,10 +592,11 @@ fun ProfileScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Create Account",
-                            color = if (!isLoginMode) TextPrimary else TextSecondary,
-                            fontWeight = if (!isLoginMode) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 14.sp
+                            text = "CREATE ACCOUNT",
+                            color = if (!isLoginMode) CarbonDark else TextSecondary,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp,
+                            fontSize = 12.sp
                         )
                     }
                 }

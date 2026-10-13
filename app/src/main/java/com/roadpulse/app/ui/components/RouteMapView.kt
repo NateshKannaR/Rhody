@@ -1,6 +1,7 @@
 package com.roadpulse.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -182,7 +183,8 @@ fun RouteMapView(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)
-                    .size(48.dp),
+                    .size(48.dp)
+                    .border(1.dp, CardBorder, CircleShape),
                 containerColor = MidnightCard,
                 contentColor = NeonCyan,
                 shape = CircleShape

@@ -15,18 +15,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.roadpulse.app.ui.theme.CardBorder
-import com.roadpulse.app.ui.theme.CarbonDark
-import com.roadpulse.app.ui.theme.ElectricBlue
 import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
 import com.roadpulse.app.ui.theme.RacingRed
 import com.roadpulse.app.ui.theme.TextMuted
-import com.roadpulse.app.ui.theme.TextSecondary
 
 @Composable
 fun BottomBar(
@@ -38,10 +36,9 @@ fun BottomBar(
     val currentRoute = navBackStackEntry.value?.destination?.route
 
     NavigationBar(
-        modifier = modifier
-            .border(width = 1.dp, color = CardBorder),
+        modifier = modifier.border(width = 1.dp, color = CardBorder),
         containerColor = MidnightCard,
-        tonalElevation = 8.dp
+        tonalElevation = 6.dp
     ) {
         Screen.bottomNavItems.forEach { screen ->
             val selected = currentRoute == screen.route
@@ -63,7 +60,7 @@ fun BottomBar(
                         Icon(
                             imageVector = screen.icon,
                             contentDescription = screen.title,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                         // Active recording red dot badge on LiveTrip tab
                         if (screen == Screen.LiveTrip && isRecording) {
@@ -81,7 +78,8 @@ fun BottomBar(
                 label = {
                     Text(
                         text = screen.title,
-                        fontSize = 11.sp
+                        fontSize = 10.sp,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
@@ -89,7 +87,7 @@ fun BottomBar(
                     selectedTextColor = NeonCyan,
                     unselectedIconColor = TextMuted,
                     unselectedTextColor = TextMuted,
-                    indicatorColor = CarbonDark
+                    indicatorColor = NeonCyan.copy(alpha = 0.12f)
                 )
             )
         }

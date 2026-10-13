@@ -1,7 +1,9 @@
 package com.roadpulse.app.ui.screens.analytics
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.HourglassEmpty
@@ -41,7 +45,9 @@ import com.roadpulse.app.service.TripRecordingController
 import com.roadpulse.app.ui.components.InteractiveSpeedChart
 import com.roadpulse.app.ui.components.StatCard
 import com.roadpulse.app.ui.theme.CarbonDark
+import com.roadpulse.app.ui.theme.CardBorder
 import com.roadpulse.app.ui.theme.ElectricBlue
+import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
 import com.roadpulse.app.ui.theme.RacingRed
 import com.roadpulse.app.ui.theme.SportAmber
@@ -97,20 +103,44 @@ fun AnalyticsScreen(
             .verticalScroll(scrollState)
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Text(
-            text = "TRIP ANALYTICS",
-            color = NeonCyan,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Black,
-            letterSpacing = 2.sp
-        )
-        Text(
-            text = if (isLiveActive) "ACTIVE RECORDING TELEMETRY" else "LATEST TRIP PERFORMANCE",
-            color = TextSecondary,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "TRIP ANALYTICS",
+                    color = NeonCyan,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
+                Text(
+                    text = if (isLiveActive) "ACTIVE RECORDING TELEMETRY" else "PERFORMANCE & VELOCITY DYNAMICS",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
+                    .background(MidnightCard)
+                    .border(1.dp, if (isLiveActive) RacingRed else CardBorder, androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
+                .padding(horizontal = 10.dp, vertical = 5.dp)
+            ) {
+                Text(
+                    text = if (isLiveActive) "LIVE SESSION" else "SESSION LOG",
+                    color = if (isLiveActive) RacingRed else NeonCyan,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(18.dp))
 

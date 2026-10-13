@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -93,14 +95,14 @@ fun HistoryScreen(
         ) {
             Column {
                 Text(
-                    text = "TRIP HISTORY",
+                    text = "TRIP ARCHIVE",
                     color = NeonCyan,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 2.sp
                 )
                 Text(
-                    text = "RECORDED RIDES AND DRIVES",
+                    text = "RECORDED TELEMETRY & SESSIONS",
                     color = TextSecondary,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
@@ -109,7 +111,7 @@ fun HistoryScreen(
             }
 
             if (trips.isNotEmpty()) {
-                IconButton(
+                Button(
                     onClick = {
                         coroutineScope.launch {
                             isSyncingAll = true
@@ -123,11 +125,18 @@ fun HistoryScreen(
                             syncSummaryMessage = "Synced $syncedCount/${trips.size} trips to MongoDB Atlas"
                         }
                     },
-                    enabled = !isSyncingAll
+                    enabled = !isSyncingAll,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MidnightCard,
+                        contentColor = NeonCyan
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                    modifier = Modifier.height(38.dp)
                 ) {
                     if (isSyncingAll) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(16.dp),
                             color = NeonCyan,
                             strokeWidth = 2.dp
                         )
@@ -136,7 +145,14 @@ fun HistoryScreen(
                             imageVector = Icons.Default.CloudSync,
                             contentDescription = "Sync all to MongoDB",
                             tint = NeonCyan,
-                            modifier = Modifier.size(26.dp)
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "SYNC ALL",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp
                         )
                     }
                 }
@@ -148,10 +164,10 @@ fun HistoryScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(MidnightCard)
-                    .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
-                    .padding(10.dp)
+                    .border(1.dp, NeonCyan.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                    .padding(12.dp)
             ) {
                 Text(
                     text = syncSummaryMessage!!,
@@ -172,24 +188,35 @@ fun HistoryScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = null,
-                        tint = TextMuted,
-                        modifier = Modifier.size(54.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(MidnightCard)
+                            .border(1.dp, CardBorder, RoundedCornerShape(20.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = null,
+                            tint = NeonCyan.copy(alpha = 0.7f),
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "No Recorded Trips",
+                        text = "No Recorded Trips Yet",
                         color = TextPrimary,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Start a trip from the Dashboard to record your first ride.",
+                        text = "Launch a session from the Dashboard to record GPS and speed telemetry.",
                         color = TextMuted,
-                        fontSize = 13.sp
+                        fontSize = 13.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 24.dp)
                     )
                 }
             }
@@ -261,9 +288,9 @@ private fun TripItemCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(18.dp))
             .background(MidnightCard)
-            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)
             .padding(16.dp)
     ) {
@@ -273,20 +300,44 @@ private fun TripItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = trip.title,
-                        color = TextPrimary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = formattedDate,
-                        color = TextMuted,
-                        fontSize = 12.sp
-                    )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Vehicle / Route Badge
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(CarbonDark)
+                            .border(1.dp, NeonCyan.copy(alpha = 0.25f), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Route,
+                            contentDescription = null,
+                            tint = NeonCyan,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            text = trip.title,
+                            color = TextPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = formattedDate,
+                            color = TextMuted,
+                            fontSize = 11.sp
+                        )
+                    }
                 }
 
                 IconButton(
@@ -304,30 +355,62 @@ private fun TripItemCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Metrics Row
+            // 4-Column Metrics Grid
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 MetricSnippet(
                     label = "DISTANCE",
-                    value = String.format(Locale.US, "%.2f km", trip.totalDistanceKm),
-                    color = NeonCyan
+                    value = String.format(Locale.US, "%.2f", trip.totalDistanceKm),
+                    unit = "KM",
+                    color = NeonCyan,
+                    modifier = Modifier.weight(1f)
                 )
                 MetricSnippet(
-                    label = "DURATION",
+                    label = "TIME",
                     value = TripCalculator.formatDuration(trip.movingDurationMs),
-                    color = SportAmber
+                    unit = "",
+                    color = SportAmber,
+                    modifier = Modifier.weight(1.1f)
                 )
                 MetricSnippet(
-                    label = "MAX SPEED",
-                    value = "${trip.maxSpeedKmh.roundToInt()} km/h",
-                    color = RacingRed
+                    label = "PEAK SPEED",
+                    value = "${trip.maxSpeedKmh.roundToInt()}",
+                    unit = "KM/H",
+                    color = RacingRed,
+                    modifier = Modifier.weight(1.1f)
                 )
                 MetricSnippet(
                     label = "AVG SPEED",
-                    value = "${trip.avgMovingSpeedKmh.roundToInt()} km/h",
-                    color = ElectricBlue
+                    value = "${trip.avgMovingSpeedKmh.roundToInt()}",
+                    unit = "KM/H",
+                    color = ElectricBlue,
+                    modifier = Modifier.weight(1.1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Footer link
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "VIEW TELEMETRY & MAP",
+                    color = NeonCyan,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = NeonCyan,
+                    modifier = Modifier.size(14.dp)
                 )
             }
         }
@@ -335,10 +418,48 @@ private fun TripItemCard(
 }
 
 @Composable
-private fun MetricSnippet(label: String, value: String, color: androidx.compose.ui.graphics.Color) {
-    Column {
-        Text(text = label, color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(text = value, color = color, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+private fun MetricSnippet(
+    label: String,
+    value: String,
+    unit: String,
+    color: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(CarbonDark)
+            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+            .padding(horizontal = 8.dp, vertical = 7.dp)
+    ) {
+        Column {
+            Text(
+                text = label,
+                color = TextMuted,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = value,
+                    color = color,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+                if (unit.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = unit,
+                        color = TextSecondary,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 1.dp)
+                    )
+                }
+            }
+        }
     }
 }

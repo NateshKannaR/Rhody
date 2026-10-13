@@ -35,24 +35,24 @@ fun GpsStatusBadge(
     modifier: Modifier = Modifier
 ) {
     val (dotColor, text) = when (gpsStatus) {
-        GpsStatus.ACCURATE -> SuccessGreen to "GPS Locked (±${accuracyMeters.toInt()}m)"
-        GpsStatus.POOR_ACCURACY -> SportAmber to "Weak GPS (±${accuracyMeters.toInt()}m)"
-        GpsStatus.SEARCHING -> SportAmber to "Searching Satellites"
-        GpsStatus.GPS_DISABLED -> RacingRed to "GPS Disabled"
-        GpsStatus.NO_PERMISSION -> RacingRed to "No Location Access"
+        GpsStatus.ACCURATE -> SuccessGreen to "GPS ±${accuracyMeters.toInt()}m"
+        GpsStatus.POOR_ACCURACY -> SportAmber to "Weak ±${accuracyMeters.toInt()}m"
+        GpsStatus.SEARCHING -> SportAmber to "Searching"
+        GpsStatus.GPS_DISABLED -> RacingRed to "GPS Off"
+        GpsStatus.NO_PERMISSION -> RacingRed to "No GPS"
     }
 
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(MidnightCard)
-            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(8.dp)
+                .size(7.dp)
                 .clip(CircleShape)
                 .background(dotColor)
         )
@@ -60,8 +60,8 @@ fun GpsStatusBadge(
         Text(
             text = text,
             color = TextPrimary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
