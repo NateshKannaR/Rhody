@@ -57,6 +57,7 @@ fun LiveTripScreen(
     val context = LocalContext.current
     val metrics by TripRecordingController.metrics.collectAsState()
     val livePoints by TripRecordingController.livePoints.collectAsState()
+    val liveGForce by TripRecordingController.liveGForce.collectAsState()
 
     Box(
         modifier = modifier
@@ -126,6 +127,7 @@ fun LiveTripScreen(
                     HudMetric(label = "TIME", value = TripCalculator.formatDuration(metrics.elapsedTimeMs))
                     HudMetric(label = "MAX", value = "${metrics.maxSpeedKmh.roundToInt()} km/h")
                     HudMetric(label = "AVG", value = "${metrics.avgMovingSpeedKmh.roundToInt()} km/h")
+                    HudMetric(label = "G-FORCE", value = String.format(Locale.US, "%.2fG", liveGForce.maxG))
                 }
             }
         }

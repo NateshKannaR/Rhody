@@ -27,6 +27,13 @@ object TripRecordingController {
     private val _livePoints = MutableStateFlow<List<TrackPointEntity>>(emptyList())
     val livePoints: StateFlow<List<TrackPointEntity>> = _livePoints.asStateFlow()
 
+    private val _liveGForce = MutableStateFlow(com.roadpulse.app.domain.model.GForceData())
+    val liveGForce: StateFlow<com.roadpulse.app.domain.model.GForceData> = _liveGForce.asStateFlow()
+
+    fun updateGForce(gForce: com.roadpulse.app.domain.model.GForceData) {
+        _liveGForce.value = gForce
+    }
+
     fun updateMetrics(newMetrics: TripMetrics) {
         _metrics.value = newMetrics
     }

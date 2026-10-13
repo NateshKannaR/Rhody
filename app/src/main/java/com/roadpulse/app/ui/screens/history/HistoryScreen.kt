@@ -19,12 +19,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -74,6 +76,8 @@ fun HistoryScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var tripToDelete by remember { mutableStateOf<TripEntity?>(null) }
+    var isSyncingAll by remember { mutableStateOf(false) }
+    var syncSummaryMessage by remember { mutableStateOf<String?>(null) }
     val dateFormatter = remember { SimpleDateFormat("EEE, MMM d, yyyy • HH:mm", Locale.getDefault()) }
 
     Column(
@@ -82,20 +86,81 @@ fun HistoryScreen(
             .background(CarbonDark)
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Text(
-            text = "TRIP HISTORY",
-            color = NeonCyan,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Black,
-            letterSpacing = 2.sp
-        )
-        Text(
-            text = "RECORDED RIDES AND DRIVES",
-            color = TextSecondary,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "TRIP HISTORY",
+                    color = NeonCyan,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
+                Text(
+                    text = "RECORDED RIDES AND DRIVES",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            if (trips.isNotEmpty()) {
+                IconButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            isSyncingAll = true
+                            var syncedCount = 0
+                            for (t in trips) {
+                                val pts = repository.getPoints(t.id)
+                                val res = com.roadpulse.app.data.sync.CloudSyncManager.syncTripToMongo(t, pts)
+                                if (res.isSuccess) syncedCount++
+                            }
+                            isSyncingAll = false
+                            syncSummaryMessage = "Synced $syncedCount/${trips.size} trips to MongoDB Atlas"
+                        }
+                    },
+                    enabled = !isSyncingAll
+                ) {
+                    if (isSyncingAll) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            color = NeonCyan,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.CloudSync,
+                            contentDescription = "Sync all to MongoDB",
+                            tint = NeonCyan,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        if (syncSummaryMessage != null) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MidnightCard)
+                    .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                    .padding(10.dp)
+            ) {
+                Text(
+                    text = syncSummaryMessage!!,
+                    color = NeonCyan,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 

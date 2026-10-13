@@ -18,8 +18,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Share
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -43,6 +46,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.roadpulse.app.data.sync.CloudSyncManager
+import com.roadpulse.app.domain.calculator.SprintTimerCalculator
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -90,6 +95,8 @@ fun TripDetailScreen(
     var isRenaming by remember { mutableStateOf(false) }
     var newTitle by remember { mutableStateOf("") }
     var isDeleting by remember { mutableStateOf(false) }
+    var isSyncing by remember { mutableStateOf(false) }
+    var syncStatusMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(tripId) {
         points = repository.getPoints(tripId)
@@ -119,6 +126,9 @@ fun TripDetailScreen(
                 altitudeMeters = pt.altitudeMeters
             )
         }
+    }
+    val sprints = remember(points) {
+        SprintTimerCalculator.calculateBestSprints(points)
     }
 
     val scrollState = rememberScrollState()
@@ -303,6 +313,41 @@ fun TripDetailScreen(
             )
         }
 
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // Sprint Acceleration Section
+        Text(
+            text = "SPRINT ACCELERATION",
+            color = TextSecondary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                label = "0 - 60 KM/H",
+                value = sprints.time0to60Seconds?.let { String.format(Locale.US, "%.1f", it) } ?: "--",
+                unit = "SEC",
+                icon = Icons.Default.Flag,
+                accentColor = NeonCyan,
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                label = "0 - 100 KM/H",
+                value = sprints.time0to100Seconds?.let { String.format(Locale.US, "%.1f", it) } ?: "--",
+                unit = "SEC",
+                icon = Icons.Default.Flag,
+                accentColor = RacingRed,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
 
         // Export Actions Section
@@ -350,6 +395,81 @@ fun TripDetailScreen(
                 Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("CSV Data", fontWeight = FontWeight.Bold)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // Cloud Telemetry (MongoDB Atlas)
+        Text(
+            text = "CLOUD TELEMETRY (MONGODB ATLAS)",
+            color = TextSecondary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    isSyncing = true
+                    syncStatusMessage = "Syncing with MongoDB Atlas..."
+                    val result = CloudSyncManager.syncTripToMongo(currentTrip, points)
+                    isSyncing = false
+                    syncStatusMessage = result.getOrElse { it.localizedMessage ?: "Sync error" }
+                }
+            },
+            enabled = !isSyncing,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = NeonCyan,
+                contentColor = CarbonDark
+            )
+        ) {
+            if (isSyncing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = CarbonDark,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Syncing to Cloud...", fontWeight = FontWeight.Bold)
+            } else {
+                Icon(
+                    imageVector = Icons.Default.CloudUpload,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "SYNC TO MONGODB ATLAS",
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+            }
+        }
+
+        if (syncStatusMessage != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MidnightCard)
+                    .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                    .padding(12.dp)
+            ) {
+                Text(
+                    text = syncStatusMessage!!,
+                    color = if (syncStatusMessage!!.contains("Synced", ignoreCase = true)) NeonCyan else SportAmber,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
 

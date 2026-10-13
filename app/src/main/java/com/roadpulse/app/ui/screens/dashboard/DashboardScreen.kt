@@ -73,6 +73,11 @@ fun DashboardScreen(
 ) {
     val context = LocalContext.current
     val metrics by TripRecordingController.metrics.collectAsState()
+    val liveGForce by TripRecordingController.liveGForce.collectAsState()
+    val livePoints by TripRecordingController.livePoints.collectAsState()
+    val liveSprints = remember(livePoints) {
+        com.roadpulse.app.domain.calculator.SprintTimerCalculator.calculateBestSprints(livePoints)
+    }
 
     var hasPermissions by remember {
         mutableStateOf(checkPermissions(context))
@@ -345,7 +350,40 @@ fun DashboardScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // G-Force Telemetry Crosshairs
+        com.roadpulse.app.ui.components.GForceMeter(
+            gForce = liveGForce,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Live Sprint Acceleration Cards
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                label = "0-60 KM/H Sprint",
+                value = liveSprints.time0to60Seconds?.let { String.format(Locale.US, "%.1f", it) } ?: "--",
+                unit = "SEC",
+                icon = Icons.Default.Flag,
+                accentColor = NeonCyan,
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                label = "0-100 KM/H Sprint",
+                value = liveSprints.time0to100Seconds?.let { String.format(Locale.US, "%.1f", it) } ?: "--",
+                unit = "SEC",
+                icon = Icons.Default.Flag,
+                accentColor = RacingRed,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 

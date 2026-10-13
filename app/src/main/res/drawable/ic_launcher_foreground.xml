@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Glowing Speedometer Outer Gauge Arc -->
+    <path
+        android:pathData="M33,70 A28,28 0 1,1 75,70"
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+    <!-- High Speed Red Zone -->
+    <path
+        android:pathData="M69,38 A28,28 0 0,1 75,70"
+        android:strokeColor="#FF3366"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+    <!-- Center Road Pulse Wave -->
+    <path
+        android:pathData="M24,78 L42,54 L49,63 L61,43 L69,54 L84,78"
+        android:strokeColor="#00F5D4"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- Speed Needle Marker -->
+    <path
+        android:pathData="M54,54 L68,36"
+        android:strokeColor="#FFB703"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+    <!-- Center Hub Dot -->
+    <path
+        android:pathData="M54,50 A4,4 0 1,1 53.99,50 Z"
+        android:fillColor="#00F5D4" />
+</vector>

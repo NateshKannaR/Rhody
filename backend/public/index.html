@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoadPulse Web — Driving & Riding Telemetry Cloud</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0D0F12;
+      color: #F1F5F9;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .glass-card {
+      background: #16191F;
+      border: 1px solid #232832;
+      border-radius: 1rem;
+    }
+    .neon-cyan { color: #00F5D4; }
+    .neon-blue { color: #00E5FF; }
+    .racing-red { color: #FF3366; }
+    .sport-amber { color: #FFB703; }
+    #map { height: 420px; border-radius: 0.75rem; z-index: 10; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-[#232832] bg-[#12151B]/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00F5D4] via-[#00E5FF] to-[#FF3366] flex items-center justify-center p-0.5 shadow-lg shadow-[#00F5D4]/20">
+          <div class="w-full h-full bg-[#0D0F12] rounded-[10px] flex items-center justify-center">
+            <svg class="w-5 h-5 text-[#00F5D4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+        </div>
+        <div>
+          <span class="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-[#00F5D4] to-[#00E5FF]">ROADPULSE</span>
+          <span class="text-xs block text-slate-400 font-semibold tracking-widest -mt-1">TELEMETRY CLOUD</span>
+        </div>
+      </div>
+
+      <!-- MongoDB Atlas Connection Status -->
+      <div class="flex items-center space-x-4">
+        <div id="mongoStatusPill" class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-[#16191F] border border-[#232832] text-xs">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-slate-300 font-medium">MongoDB: <strong class="text-emerald-400 font-mono">Connected</strong></span>
+        </div>
+        <button onclick="refreshData()" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#1E232B] hover:bg-[#282F3B] text-slate-200 border border-[#2B3240] transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          <span>Refresh</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- KPI Summary Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="glass-card p-5">
+        <p class="text-xs uppercase font-bold tracking-wider text-slate-400">Total Distance</p>
+        <p id="totalDistance" class="text-3xl font-black mt-1 text-[#00F5D4] mono">0.00 <span class="text-sm font-semibold text-slate-500">KM</span></p>
+        <p class="text-xs text-slate-500 mt-2">Recorded across all rides</p>
+      </div>
+      <div class="glass-card p-5">
+        <p class="text-xs uppercase font-bold tracking-wider text-slate-400">Top Speed Peak</p>
+        <p id="topSpeed" class="text-3xl font-black mt-1 text-[#FF3366] mono">0 <span class="text-sm font-semibold text-slate-500">KM/H</span></p>
+        <p class="text-xs text-slate-500 mt-2">Highest GPS logged pull</p>
+      </div>
+      <div class="glass-card p-5">
+        <p class="text-xs uppercase font-bold tracking-wider text-slate-400">Rides Recorded</p>
+        <p id="totalRides" class="text-3xl font-black mt-1 text-[#00E5FF] mono">0</p>
+        <p class="text-xs text-slate-500 mt-2">Stored in MongoDB Atlas</p>
+      </div>
+      <div class="glass-card p-5">
+        <p class="text-xs uppercase font-bold tracking-wider text-slate-400">Total Moving Time</p>
+        <p id="totalTime" class="text-3xl font-black mt-1 text-[#FFB703] mono">00:00:00</p>
+        <p class="text-xs text-slate-500 mt-2">Total time in motion</p>
+      </div>
+    </div>
+
+    <!-- Active Trip Studio / Visualizer -->
+    <div class="glass-card p-6 space-y-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 id="activeTripTitle" class="text-2xl font-bold text-white flex items-center space-x-2">
+            <span>Select a Trip to Inspect</span>
+          </h2>
+          <p id="activeTripDate" class="text-sm text-slate-400 mt-0.5">Live telemetry, route polyline, and speed profiles</p>
+        </div>
+
+        <div class="flex items-center space-x-3">
+          <select id="tripSelect" onchange="onTripSelect(this.value)" class="bg-[#12151B] border border-[#2B3240] text-sm text-slate-200 rounded-lg px-3 py-2 font-medium focus:ring-2 focus:ring-[#00F5D4] outline-none">
+            <option value="">Choose trip...</option>
+          </select>
+          <button id="btnExportGpx" onclick="downloadActiveGpx()" class="px-3 py-2 text-xs font-bold rounded-lg bg-[#1E232B] hover:bg-[#282F3B] text-[#00F5D4] border border-[#2B3240] transition">
+            Export GPX
+          </button>
+          <button id="btnExportCsv" onclick="downloadActiveCsv()" class="px-3 py-2 text-xs font-bold rounded-lg bg-[#1E232B] hover:bg-[#282F3B] text-[#00E5FF] border border-[#2B3240] transition">
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Map & Telemetry HUD Layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Interactive Map Container (2 cols) -->
+        <div class="lg:col-span-2 relative">
+          <div id="map"></div>
+          <div id="mapOverlayHud" class="absolute top-4 left-4 z-[400] bg-[#0D0F12]/85 backdrop-blur border border-[#232832] rounded-xl px-4 py-3 hidden">
+            <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Scrubber Telemetry</div>
+            <div class="flex items-baseline space-x-2 mt-0.5">
+              <span id="hudSpeed" class="text-2xl font-black text-[#00F5D4] mono">0</span>
+              <span class="text-xs font-bold text-slate-400">KM/H</span>
+            </div>
+            <div class="text-xs text-slate-300 font-mono mt-0.5" id="hudDistAlt">0.00 km • Alt: --</div>
+          </div>
+        </div>
+
+        <!-- Telemetry Breakdown Cards (1 col) -->
+        <div class="space-y-4">
+          <div class="bg-[#12151B] border border-[#232832] rounded-xl p-4">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Sprint Performance</div>
+            <div class="grid grid-cols-2 gap-3 mt-3">
+              <div class="bg-[#16191F] border border-[#232832] rounded-lg p-3">
+                <span class="text-[11px] font-bold text-slate-400 uppercase">0 - 60 KM/H</span>
+                <p id="sprint060" class="text-xl font-black text-[#00F5D4] mono mt-1">-- <span class="text-xs font-normal text-slate-400">sec</span></p>
+              </div>
+              <div class="bg-[#16191F] border border-[#232832] rounded-lg p-3">
+                <span class="text-[11px] font-bold text-slate-400 uppercase">0 - 100 KM/H</span>
+                <p id="sprint0100" class="text-xl font-black text-[#FF3366] mono mt-1">-- <span class="text-xs font-normal text-slate-400">sec</span></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-[#12151B] border border-[#232832] rounded-xl p-4 space-y-3 text-sm">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Ride Statistics</div>
+            <div class="flex justify-between py-1 border-b border-[#232832]">
+              <span class="text-slate-400">Distance</span>
+              <span id="statDistance" class="font-bold text-white mono">--</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-[#232832]">
+              <span class="text-slate-400">Max Speed</span>
+              <span id="statMaxSpeed" class="font-bold text-[#FF3366] mono">--</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-[#232832]">
+              <span class="text-slate-400">Moving Average</span>
+              <span id="statAvgMoving" class="font-bold text-[#00E5FF] mono">--</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-[#232832]">
+              <span class="text-slate-400">Overall Average</span>
+              <span id="statAvgOverall" class="font-bold text-[#FFB703] mono">--</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-[#232832]">
+              <span class="text-slate-400">Moving Duration</span>
+              <span id="statMovingDuration" class="font-bold text-white mono">--</span>
+            </div>
+            <div class="flex justify-between py-1">
+              <span class="text-slate-400">Points Logged</span>
+              <span id="statPoints" class="font-bold text-slate-300 mono">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Speed vs Distance Graph -->
+      <div class="bg-[#12151B] border border-[#232832] rounded-xl p-4">
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Speed Profile (KM/H vs Distance)</span>
+          <span class="text-xs text-slate-500">Hover or drag across curve to scrub map</span>
+        </div>
+        <div class="h-64 relative">
+          <canvas id="speedChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trips Explorer Table -->
+    <div class="glass-card p-6">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h3 class="text-xl font-bold text-white">Cloud Trips Explorer</h3>
+          <p class="text-xs text-slate-400">Trips synchronized with MongoDB Atlas</p>
+        </div>
+        <button onclick="simulateAndUploadTrip()" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-[#00F5D4] text-[#0D0F12] hover:bg-[#00E5FF] transition flex items-center space-x-1.5 shadow-lg shadow-[#00F5D4]/20">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
+          <span>Simulate & Sync Ride</span>
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300">
+          <thead class="text-xs uppercase bg-[#12151B] text-slate-400 border-b border-[#232832]">
+            <tr>
+              <th class="px-4 py-3">Trip Title</th>
+              <th class="px-4 py-3">Start Date</th>
+              <th class="px-4 py-3">Distance</th>
+              <th class="px-4 py-3">Max Speed</th>
+              <th class="px-4 py-3">Moving Avg</th>
+              <th class="px-4 py-3">Duration</th>
+              <th class="px-4 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tripsTableBody" class="divide-y divide-[#232832]">
+            <tr>
+              <td colspan="7" class="px-4 py-8 text-center text-slate-500">Loading trips from MongoDB Atlas...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="border-t border-[#232832] py-6 text-center text-xs text-slate-500">
+    RoadPulse GPS Telemetry • Powered by MongoDB Atlas • Native Android & Web Companion
+  </footer>
+
+  <script>
+    let map;
+    let polylineLayer;
+    let scrubberMarker;
+    let speedChartInstance;
+    let allTripsData = [];
+    let currentTripData = null;
+
+    // Initialize Map with OpenFreeMap / OSM
+    function initMap() {
+      map = L.map('map', { zoomControl: false }).setView([37.7749, -122.4194], 13);
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      // Free, clean dark tile layer
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        maxZoom: 19
+      }).addTo(map);
+    }
+
+    async function refreshData() {
+      try {
+        const [statusRes, tripsRes] = await Promise.all([
+          fetch('/api/status'),
+          fetch('/api/trips')
+        ]);
+        const status = await statusRes.json();
+        const trips = await tripsRes.json();
+
+        allTripsData = trips;
+        renderKpis(trips);
+        renderTripsTable(trips);
+        populateTripDropdown(trips);
+
+        if (trips.length > 0 && (!currentTripData || !trips.find(t => t._id === currentTripData._id))) {
+          loadTripDetails(trips[0]._id);
+        }
+      } catch (err) {
+        console.error('Error refreshing data:', err);
+      }
+    }
+
+    function renderKpis(trips) {
+      let totalDistM = 0;
+      let topSpeedKmh = 0;
+      let totalMovingMs = 0;
+
+      trips.forEach(t => {
+        totalDistM += (t.totalDistanceMeters || 0);
+        const maxKmh = (t.maxSpeedMps || 0) * 3.6;
+        if (maxKmh > topSpeedKmh) topSpeedKmh = maxKmh;
+        totalMovingMs += (t.movingDurationMs || 0);
+      });
+
+      document.getElementById('totalDistance').innerHTML = `${(totalDistM / 1000).toFixed(2)} <span class="text-sm font-semibold text-slate-500">KM</span>`;
+      document.getElementById('topSpeed').innerHTML = `${Math.round(topSpeedKmh)} <span class="text-sm font-semibold text-slate-500">KM/H</span>`;
+      document.getElementById('totalRides').innerText = trips.length;
+      document.getElementById('totalTime').innerText = formatDuration(totalMovingMs);
+    }
+
+    function populateTripDropdown(trips) {
+      const select = document.getElementById('tripSelect');
+      select.innerHTML = '';
+      trips.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t._id;
+        opt.innerText = `${t.title} (${((t.totalDistanceMeters || 0) / 1000).toFixed(1)} km)`;
+        select.appendChild(opt);
+      });
+      if (currentTripData) select.value = currentTripData._id;
+    }
+
+    async function loadTripDetails(tripId) {
+      if (!tripId) return;
+      try {
+        const res = await fetch(`/api/trips/${tripId}`);
+        const data = await res.json();
+        currentTripData = data;
+        renderActiveTrip(data);
+      } catch (err) {
+        console.error('Failed to load trip:', err);
+      }
+    }
+
+    function onTripSelect(tripId) {
+      loadTripDetails(tripId);
+    }
+
+    function renderActiveTrip(trip) {
+      document.getElementById('activeTripTitle').innerText = trip.title;
+      document.getElementById('activeTripDate').innerText = new Date(trip.startTime).toLocaleString();
+
+      const distKm = ((trip.totalDistanceMeters || 0) / 1000).toFixed(2);
+      const maxKmh = Math.round((trip.maxSpeedMps || 0) * 3.6);
+      const avgMovingKmh = Math.round((trip.avgMovingSpeedMps || 0) * 3.6);
+      const avgOverallKmh = Math.round((trip.avgOverallSpeedMps || 0) * 3.6);
+
+      document.getElementById('statDistance').innerText = `${distKm} km`;
+      document.getElementById('statMaxSpeed').innerText = `${maxKmh} km/h`;
+      document.getElementById('statAvgMoving').innerText = `${avgMovingKmh} km/h`;
+      document.getElementById('statAvgOverall').innerText = `${avgOverallKmh} km/h`;
+      document.getElementById('statMovingDuration').innerText = formatDuration(trip.movingDurationMs || 0);
+      document.getElementById('statPoints').innerText = trip.points ? trip.points.length : 0;
+
+      // Sprint Calculations from Points
+      calculateSprints(trip.points || []);
+
+      // Draw Route on Map
+      drawMapRoute(trip.points || []);
+
+      // Draw Chart
+      drawSpeedChart(trip.points || []);
+    }
+
+    function calculateSprints(points) {
+      let t060 = null;
+      let t0100 = null;
+
+      // Scan for 0-60 km/h and 0-100 km/h acceleration events
+      for (let i = 0; i < points.length; i++) {
+        const spd = (points[i].speedMps || 0) * 3.6;
+        if (spd <= 3.0) { // stopped/standing start
+          const tStart = points[i].timestamp;
+          for (let j = i + 1; j < Math.min(i + 35, points.length); j++) {
+            const nextSpd = (points[j].speedMps || 0) * 3.6;
+            const dtSec = (points[j].timestamp - tStart) / 1000;
+            if (nextSpd >= 60 && (!t060 || dtSec < t060)) {
+              t060 = dtSec;
+            }
+            if (nextSpd >= 100 && (!t0100 || dtSec < t0100)) {
+              t0100 = dtSec;
+            }
+          }
+        }
+      }
+
+      document.getElementById('sprint060').innerHTML = t060 ? `${t060.toFixed(1)} <span class="text-xs font-normal text-slate-400">sec</span>` : `-- <span class="text-xs font-normal text-slate-400">sec</span>`;
+      document.getElementById('sprint0100').innerHTML = t0100 ? `${t0100.toFixed(1)} <span class="text-xs font-normal text-slate-400">sec</span>` : `-- <span class="text-xs font-normal text-slate-400">sec</span>`;
+    }
+
+    function drawMapRoute(points) {
+      if (!points || points.length === 0) return;
+
+      if (polylineLayer) map.removeLayer(polylineLayer);
+      if (scrubberMarker) map.removeLayer(scrubberMarker);
+
+      const latLngs = points.map(p => [p.latitude, p.longitude]);
+      polylineLayer = L.polyline(latLngs, {
+        color: '#00F5D4',
+        weight: 4,
+        opacity: 0.9,
+        lineJoin: 'round'
+      }).addTo(map);
+
+      map.fitBounds(polylineLayer.getBounds(), { padding: [40, 40] });
+
+      // Start Pin
+      const startPt = latLngs[0];
+      L.circleMarker(startPt, { radius: 6, color: '#00F5D4', fillColor: '#0D0F12', fillOpacity: 1, weight: 3 }).addTo(map);
+
+      // Scrubber Marker
+      scrubberMarker = L.circleMarker(startPt, { radius: 8, color: '#FF3366', fillColor: '#00E5FF', fillOpacity: 1, weight: 3 }).addTo(map);
+    }
+
+    function drawSpeedChart(points) {
+      const ctx = document.getElementById('speedChart').getContext('2d');
+      if (speedChartInstance) speedChartInstance.destroy();
+
+      const labels = points.map(p => ((p.cumulativeDistanceMeters || 0) / 1000).toFixed(2));
+      const speeds = points.map(p => Math.round((p.speedMps || 0) * 3.6));
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+      gradient.addColorStop(0, 'rgba(0, 245, 212, 0.35)');
+      gradient.addColorStop(1, 'rgba(0, 229, 255, 0.0)');
+
+      speedChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Speed (km/h)',
+            data: speeds,
+            borderColor: '#00F5D4',
+            borderWidth: 2.5,
+            fill: true,
+            backgroundColor: gradient,
+            tension: 0.25,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: '#FF3366'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#16191F',
+              titleColor: '#F1F5F9',
+              bodyColor: '#00F5D4',
+              borderColor: '#232832',
+              borderWidth: 1,
+              callbacks: {
+                label: (ctx) => `${ctx.parsed.y} km/h`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: '#1E232B' },
+              ticks: { color: '#64748B', maxTicksLimit: 8 }
+            },
+            y: {
+              grid: { color: '#1E232B' },
+              ticks: { color: '#64748B' }
+            }
+          },
+          onHover: (e, elements) => {
+            if (elements.length > 0) {
+              const idx = elements[0].index;
+              const pt = points[idx];
+              if (pt && scrubberMarker) {
+                scrubberMarker.setLatLng([pt.latitude, pt.longitude]);
+                const hud = document.getElementById('mapOverlayHud');
+                hud.classList.remove('hidden');
+                document.getElementById('hudSpeed').innerText = Math.round((pt.speedMps || 0) * 3.6);
+                const alt = pt.altitudeMeters ? `${Math.round(pt.altitudeMeters)}m` : '--';
+                document.getElementById('hudDistAlt').innerText = `${((pt.cumulativeDistanceMeters || 0)/1000).toFixed(2)} km • Alt: ${alt}`;
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTripsTable(trips) {
+      const tbody = document.getElementById('tripsTableBody');
+      if (trips.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">No trips stored in MongoDB Atlas yet. Click "Simulate & Sync Ride" or sync from the Android app!</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = trips.map(t => {
+        const distKm = ((t.totalDistanceMeters || 0) / 1000).toFixed(2);
+        const maxKmh = Math.round((t.maxSpeedMps || 0) * 3.6);
+        const avgKmh = Math.round((t.avgMovingSpeedMps || 0) * 3.6);
+        const duration = formatDuration(t.movingDurationMs || 0);
+
+        return `
+          <tr class="hover:bg-[#16191F]/60 transition">
+            <td class="px-4 py-3 font-semibold text-white">${t.title}</td>
+            <td class="px-4 py-3 text-slate-400 text-xs">${new Date(t.startTime).toLocaleDateString()} ${new Date(t.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+            <td class="px-4 py-3 mono text-[#00F5D4] font-bold">${distKm} km</td>
+            <td class="px-4 py-3 mono text-[#FF3366] font-bold">${maxKmh} km/h</td>
+            <td class="px-4 py-3 mono text-[#00E5FF] font-medium">${avgKmh} km/h</td>
+            <td class="px-4 py-3 mono text-slate-300">${duration}</td>
+            <td class="px-4 py-3 text-right space-x-2">
+              <button onclick="loadTripDetails('${t._id}')" class="px-2.5 py-1 text-xs rounded bg-[#1E232B] hover:bg-[#282F3B] text-[#00F5D4] border border-[#2B3240]">View</button>
+              <button onclick="window.location='/api/trips/${t._id}/export/gpx'" class="px-2.5 py-1 text-xs rounded bg-[#1E232B] hover:bg-[#282F3B] text-slate-300 border border-[#2B3240]">GPX</button>
+              <button onclick="deleteTrip('${t._id}')" class="px-2.5 py-1 text-xs rounded bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/50">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function deleteTrip(tripId) {
+      if (!confirm('Are you sure you want to delete this trip from MongoDB Atlas?')) return;
+      await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
+      refreshData();
+    }
+
+    function downloadActiveGpx() {
+      if (!currentTripData) return;
+      window.location = `/api/trips/${currentTripData._id}/export/gpx`;
+    }
+
+    function downloadActiveCsv() {
+      if (!currentTripData) return;
+      window.location = `/api/trips/${currentTripData._id}/export/csv`;
+    }
+
+    // Generate and push realistic canyon ride telemetry to MongoDB Atlas
+    async function simulateAndUploadTrip() {
+      const startTime = Date.now() - 3600000;
+      const points = [];
+      let lat = 37.7749;
+      let lon = -122.4194;
+      let dist = 0;
+      let maxSpd = 0;
+
+      for (let i = 0; i < 180; i++) {
+        lat += 0.0003 + Math.sin(i / 10) * 0.0001;
+        lon += 0.0004 + Math.cos(i / 8) * 0.0001;
+        // Sprint profile with peak speed of 115 km/h
+        const speedKmh = i < 30 ? (i * 3.5) : (50 + Math.sin(i / 5) * 45);
+        const speedMps = speedKmh / 3.6;
+        if (speedMps > maxSpd) maxSpd = speedMps;
+        dist += speedMps * 2;
+
+        points.push({
+          timestamp: startTime + i * 2000,
+          latitude: lat,
+          longitude: lon,
+          speedMps: speedMps,
+          accuracyMeters: 3.2,
+          altitudeMeters: 60 + Math.sin(i / 15) * 40,
+          cumulativeDistanceMeters: dist
+        });
+      }
+
+      const trip = {
+        title: "Canyon Run & Mountain Pass " + new Date().toLocaleDateString(),
+        notes: "Aggressive twisties and high speed acceleration pulls",
+        startTime: startTime,
+        endTime: startTime + 360000,
+        status: "FINISHED",
+        totalDistanceMeters: dist,
+        maxSpeedMps: maxSpd,
+        avgMovingSpeedMps: dist / 360,
+        avgOverallSpeedMps: dist / 360,
+        movingDurationMs: 360000,
+        totalDurationMs: 360000,
+        pauseDurationMs: 0
+      };
+
+      await fetch('/api/trips/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trip, points })
+      });
+
+      refreshData();
+    }
+
+    function formatDuration(ms) {
+      if (!ms || ms <= 0) return '00:00:00';
+      const s = Math.floor(ms / 1000);
+      const hrs = Math.floor(s / 3600);
+      const mins = Math.floor((s % 3600) / 60);
+      const secs = s % 60;
+      return `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      refreshData();
+    });
+  </script>
+</body>
+</html>

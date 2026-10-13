@@ -35,6 +35,11 @@ import com.roadpulse.app.domain.model.GpsStatus
 import com.roadpulse.app.domain.model.TripMetrics
 import com.roadpulse.app.domain.model.TripStatus
 import com.roadpulse.app.ui.MainActivity
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import com.roadpulse.app.domain.model.GForceData
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -45,6 +50,9 @@ class TripRecordingService : LifecycleService() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var repository: TripRepository
     private var wakeLock: PowerManager.WakeLock? = null
+    private var sensorManager: SensorManager? = null
+    private var accelerometer: Sensor? = null
+    private var peakG: Float = 0f
 
     private val qualityFilter = GpsQualityFilter(FilterConfig())
     private var previousAcceptedFix: GpsLocationFix? = null
@@ -61,6 +69,27 @@ class TripRecordingService : LifecycleService() {
     private var cumulativeDistanceMeters: Double = 0.0
     private var maxSpeedMps: Float = 0f
 
+    private val sensorListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent?) {
+            if (event == null) return
+            val xG = event.values[0] / 9.80665f
+            val yG = event.values[1] / 9.80665f
+            val totalG = kotlin.math.sqrt(xG * xG + yG * yG)
+            if (totalG > peakG) {
+                peakG = totalG
+            }
+            TripRecordingController.updateGForce(
+                GForceData(
+                    lateralG = xG,
+                    longitudinalG = yG,
+                    maxG = peakG
+                )
+            )
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    }
+
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             val location = result.lastLocation ?: return
@@ -72,6 +101,9 @@ class TripRecordingService : LifecycleService() {
         super.onCreate()
         repository = TripRepository(RoadPulseDatabase.getInstance(this))
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+        accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
+            ?: sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         acquireWakeLock()
     }
@@ -228,6 +260,10 @@ class TripRecordingService : LifecycleService() {
                 locationCallback,
                 Looper.getMainLooper()
             )
+
+            accelerometer?.let {
+                sensorManager?.registerListener(sensorListener, it, SensorManager.SENSOR_DELAY_UI)
+            }
         } catch (e: SecurityException) {
             TripRecordingController.updateGpsStatus(GpsStatus.NO_PERMISSION)
         }
@@ -235,6 +271,7 @@ class TripRecordingService : LifecycleService() {
 
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
+        sensorManager?.unregisterListener(sensorListener)
     }
 
     private fun handleNewLocation(location: Location) {
@@ -293,8 +330,21 @@ class TripRecordingService : LifecycleService() {
             }
         }
 
-        previousAcceptedFix = fix
         val currentSpeedKmh = TripCalculator.mpsToKmh(currentSpeedMps)
+
+        if (accelerometer == null && previousAcceptedFix != null) {
+            val dtSec = ((fix.timestamp - previousAcceptedFix!!.timestamp) / 1000f).coerceAtLeast(0.1f)
+            val gpsLongG = ((currentSpeedMps - previousAcceptedFix!!.speedMps) / dtSec) / 9.80665f
+            val mag = kotlin.math.abs(gpsLongG)
+            if (mag > peakG) peakG = mag
+            TripRecordingController.updateGForce(
+                GForceData(
+                    lateralG = 0f,
+                    longitudinalG = gpsLongG,
+                    maxG = peakG
+                )
+            )
+        }
 
         // Point persistence
         if (tripStatus == TripStatus.RECORDING && activeTripId > 0L) {

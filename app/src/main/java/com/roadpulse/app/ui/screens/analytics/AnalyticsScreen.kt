@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Speed
@@ -33,6 +34,7 @@ import com.roadpulse.app.RoadPulseApp
 import com.roadpulse.app.data.database.TrackPointEntity
 import com.roadpulse.app.data.database.TripEntity
 import com.roadpulse.app.domain.calculator.ChartPoint
+import com.roadpulse.app.domain.calculator.SprintTimerCalculator
 import com.roadpulse.app.domain.calculator.TripCalculator
 import com.roadpulse.app.domain.model.TripStatus
 import com.roadpulse.app.service.TripRecordingController
@@ -81,6 +83,9 @@ fun AnalyticsScreen(
                 altitudeMeters = pt.altitudeMeters
             )
         }
+    }
+    val sprints = remember(displayPoints) {
+        SprintTimerCalculator.calculateBestSprints(displayPoints)
     }
 
     val scrollState = rememberScrollState()
@@ -216,6 +221,40 @@ fun AnalyticsScreen(
                 unit = "PTS",
                 icon = Icons.Default.Route,
                 accentColor = TextSecondary,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        Text(
+            text = "SPRINT PERFORMANCE (0-60 & 0-100)",
+            color = TextSecondary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                label = "0 - 60 KM/H",
+                value = sprints.time0to60Seconds?.let { String.format(Locale.US, "%.1f", it) } ?: "--",
+                unit = "SEC",
+                icon = Icons.Default.Flag,
+                accentColor = NeonCyan,
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                label = "0 - 100 KM/H",
+                value = sprints.time0to100Seconds?.let { String.format(Locale.US, "%.1f", it) } ?: "--",
+                unit = "SEC",
+                icon = Icons.Default.Flag,
+                accentColor = RacingRed,
                 modifier = Modifier.weight(1f)
             )
         }
