@@ -1,430 +1,818 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RoadPulse Web — Driving & Riding Telemetry Cloud</title>
+  <title>RoadPulse — Professional Telemetry Cloud & Driving Tracker</title>
+  
+  <!-- Tailwind CSS & Plugins -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#090B0E',
+            cardDark: '#12161F',
+            panelBorder: '#1E2532',
+            neonCyan: '#00F5D4',
+            neonBlue: '#00E5FF',
+            racingRed: '#FF3366',
+            sportAmber: '#FFB703',
+            emeraldGlow: '#10B981',
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet Map SDK -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js 4 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #0D0F12;
+      background-color: #090B0E;
       color: #F1F5F9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
     }
-    .mono { font-family: 'JetBrains Mono', monospace; }
-    .glass-card {
-      background: #16191F;
-      border: 1px solid #232832;
+
+    .font-mono-numbers {
+      font-family: 'JetBrains Mono', monospace;
+      font-feature-settings: "tnum" 1, "zero" 1;
+    }
+
+    /* Precision Glass Cards */
+    .telemetry-card {
+      background: rgba(18, 22, 31, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 1rem;
+      transition: all 0.2s ease-in-out;
     }
-    .neon-cyan { color: #00F5D4; }
-    .neon-blue { color: #00E5FF; }
-    .racing-red { color: #FF3366; }
-    .sport-amber { color: #FFB703; }
-    #map { height: 420px; border-radius: 0.75rem; z-index: 10; }
+
+    .telemetry-card:hover {
+      border-color: rgba(0, 245, 212, 0.25);
+    }
+
+    .telemetry-card-glow {
+      background: rgba(18, 22, 31, 0.9);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 245, 212, 0.2);
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px -10px rgba(0, 245, 212, 0.12);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090B0E;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1E2532;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00F5D4;
+    }
+
+    /* Custom Leaflet Map Styling */
+    #map {
+      height: 480px;
+      width: 100%;
+      border-radius: 0.875rem;
+      z-index: 10;
+      background: #0D1016;
+    }
+    .leaflet-container {
+      background: #090B0E !important;
+    }
+    .leaflet-bar a {
+      background-color: #12161F !important;
+      color: #F1F5F9 !important;
+      border-bottom: 1px solid #1E2532 !important;
+    }
+    .leaflet-bar a:hover {
+      background-color: #1E2532 !important;
+      color: #00F5D4 !important;
+    }
+
+    /* Pulse Glow Keyframes */
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.15); }
+    }
+    .pulse-dot {
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+
+    /* Range slider custom track */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 3px;
+      background: #1E2532;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: #00F5D4;
+      margin-top: -5px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00F5D4;
+    }
   </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col selection:bg-neonCyan/30 selection:text-white">
 
-  <!-- Top Navigation Header -->
-  <header class="border-b border-[#232832] bg-[#12151B]/80 backdrop-blur sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00F5D4] via-[#00E5FF] to-[#FF3366] flex items-center justify-center p-0.5 shadow-lg shadow-[#00F5D4]/20">
-          <div class="w-full h-full bg-[#0D0F12] rounded-[10px] flex items-center justify-center">
-            <svg class="w-5 h-5 text-[#00F5D4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <header class="border-b border-panelBorder/80 bg-obsidian/90 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+      
+      <!-- Brand & Status -->
+      <div class="flex items-center space-x-4">
+        <div class="relative flex items-center justify-center">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-neonCyan via-neonBlue to-racingRed p-[1.5px] shadow-lg shadow-neonCyan/20">
+            <div class="w-full h-full bg-obsidian rounded-[10px] flex items-center justify-center">
+              <svg class="w-5 h-5 text-neonCyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
           </div>
+          <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-obsidian pulse-dot"></div>
         </div>
+
         <div>
-          <span class="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-[#00F5D4] to-[#00E5FF]">ROADPULSE</span>
-          <span class="text-xs block text-slate-400 font-semibold tracking-widest -mt-1">TELEMETRY CLOUD</span>
+          <div class="flex items-center space-x-2">
+            <span class="text-xl font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-neonCyan">ROADPULSE</span>
+            <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest rounded-full bg-neonCyan/10 text-neonCyan border border-neonCyan/25">Cloud 2.0</span>
+          </div>
+          <span class="text-[11px] block text-slate-400 font-semibold tracking-widest uppercase">Performance Driving & Riding Telemetry</span>
         </div>
       </div>
 
-      <!-- MongoDB Atlas Connection Status & User Profile -->
+      <!-- Navigation Tabs (Center) -->
+      <nav class="hidden md:flex items-center space-x-1 p-1 bg-cardDark/80 border border-panelBorder rounded-xl">
+        <button id="navTabStudio" onclick="switchMainView('studio')" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-panelBorder text-neonCyan transition flex items-center space-x-2 shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+          <span>Cockpit Studio</span>
+        </button>
+        <button id="navTabExplorer" onclick="switchMainView('explorer')" class="px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+          <span>Rides Explorer</span>
+        </button>
+        <button id="navTabCloud" onclick="switchMainView('cloud')" class="px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
+          <span>MongoDB Atlas</span>
+        </button>
+      </nav>
+
+      <!-- Right Action Controls & User Identity -->
       <div class="flex items-center space-x-3">
-        <div id="mongoStatusPill" class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-[#16191F] border border-[#232832] text-xs">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span class="text-slate-300 font-medium">MongoDB: <strong class="text-emerald-400 font-mono">Connected</strong></span>
+        <!-- MongoDB Atlas Live Pill -->
+        <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-cardDark border border-panelBorder text-xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot"></span>
+          <span class="text-slate-400 font-medium">Atlas:</span>
+          <span id="headerClusterName" class="text-emerald-400 font-mono-numbers font-semibold text-[11px]">Online</span>
         </div>
 
-        <div id="userProfilePill" class="hidden items-center space-x-2 px-3 py-1.5 rounded-full bg-[#16191F] border border-[#232832] text-xs">
-          <span class="w-2 h-2 rounded-full bg-[#00F5D4]"></span>
-          <span id="navUserEmail" class="text-slate-300 font-medium font-mono text-[11px]"></span>
-          <button onclick="handleLogout()" class="text-slate-400 hover:text-[#FF3366] ml-2 text-xs font-bold transition">Sign Out</button>
+        <!-- User Profile Pill (When Logged In) -->
+        <div id="userProfilePill" class="hidden items-center space-x-2 px-3 py-1.5 rounded-xl bg-cardDark border border-emerald-500/30 text-xs">
+          <div class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px]" id="userAvatarInitial">U</div>
+          <span id="navUserEmail" class="text-slate-200 font-mono-numbers font-medium text-[11px] max-w-[130px] truncate">driver</span>
+          <button onclick="handleLogout()" title="Sign Out" class="text-slate-400 hover:text-racingRed transition p-0.5 ml-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          </button>
         </div>
 
-        <button id="navLoginBtn" onclick="openAuthModal()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-[#00F5D4] to-[#00E5FF] text-[#0D0F12] hover:opacity-90 transition flex items-center space-x-1.5 shadow-md shadow-[#00F5D4]/20">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+        <!-- Sign In Button (When Logged Out) -->
+        <button id="navLoginBtn" onclick="openAuthModal()" class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-neonCyan to-neonBlue text-obsidian hover:opacity-95 transition flex items-center space-x-1.5 shadow-md shadow-neonCyan/20">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
           <span>Sign In</span>
         </button>
 
-        <button onclick="refreshData()" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#1E232B] hover:bg-[#282F3B] text-slate-200 border border-[#2B3240] transition flex items-center space-x-1.5">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-          <span>Refresh</span>
+        <!-- Fast Simulation Button -->
+        <button onclick="simulateAndUploadTrip()" class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-cardDark hover:bg-panelBorder text-neonCyan border border-panelBorder transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4" /></svg>
+          <span class="hidden sm:inline">Simulate Run</span>
+        </button>
+
+        <!-- Refresh Button -->
+        <button onclick="refreshData()" title="Reload Data" class="p-2 text-xs font-semibold rounded-xl bg-cardDark hover:bg-panelBorder text-slate-300 border border-panelBorder transition">
+          <svg id="refreshSpinner" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+  <!-- ================= MAIN CONTAINER ================= -->
+  <main class="flex-1 max-w-[1560px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-    <!-- KPI Summary Grid -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="glass-card p-5">
-        <p class="text-xs uppercase font-bold tracking-wider text-slate-400">Total Distance</p>
-        <p id="totalDistance" class="text-3xl font-black mt-1 text-[#00F5D4] mono">0.00 <span class="text-sm font-semibold text-slate-500">KM</span></p>
-        <p class="text-xs text-slate-500 mt-2">Recorded across all rides</p>
+    <!-- ================= TOP KPI SUMMARY CARDS ================= -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Total Distance -->
+      <div class="telemetry-card p-5 relative overflow-hidden group">
+        <div class="flex justify-between items-start">
+          <span class="text-xs uppercase font-extrabold tracking-wider text-slate-400">Total Distance</span>
+          <div class="p-2 rounded-lg bg-neonCyan/10 text-neonCyan border border-neonCyan/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+          </div>
+        </div>
+        <div class="mt-2 flex items-baseline space-x-2">
+          <span id="totalDistance" class="text-3xl font-black text-white font-mono-numbers">0.00</span>
+          <span class="text-xs font-bold text-neonCyan tracking-wider uppercase">KM</span>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-2 font-medium">Accumulated across all recorded rides</p>
       </div>
-      <div class="glass-card p-5">
-        <p class="text-xs uppercase font-bold tracking-wider text-slate-400">Top Speed Peak</p>
-        <p id="topSpeed" class="text-3xl font-black mt-1 text-[#FF3366] mono">0 <span class="text-sm font-semibold text-slate-500">KM/H</span></p>
-        <p class="text-xs text-slate-500 mt-2">Highest GPS logged pull</p>
+
+      <!-- Max Velocity Peak -->
+      <div class="telemetry-card p-5 relative overflow-hidden group">
+        <div class="flex justify-between items-start">
+          <span class="text-xs uppercase font-extrabold tracking-wider text-slate-400">Peak Top Speed</span>
+          <div class="p-2 rounded-lg bg-racingRed/10 text-racingRed border border-racingRed/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          </div>
+        </div>
+        <div class="mt-2 flex items-baseline space-x-2">
+          <span id="topSpeed" class="text-3xl font-black text-racingRed font-mono-numbers">0</span>
+          <span class="text-xs font-bold text-racingRed tracking-wider uppercase">KM/H</span>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-2 font-medium">Highest GPS recorded velocity pull</p>
       </div>
-      <div class="glass-card p-5">
-        <p class="text-xs uppercase font-bold tracking-wider text-slate-400">Rides Recorded</p>
-        <p id="totalRides" class="text-3xl font-black mt-1 text-[#00E5FF] mono">0</p>
-        <p class="text-xs text-slate-500 mt-2">Stored in MongoDB Atlas</p>
+
+      <!-- Total Rides Count -->
+      <div class="telemetry-card p-5 relative overflow-hidden group">
+        <div class="flex justify-between items-start">
+          <span class="text-xs uppercase font-extrabold tracking-wider text-slate-400">Rides Recorded</span>
+          <div class="p-2 rounded-lg bg-neonBlue/10 text-neonBlue border border-neonBlue/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+          </div>
+        </div>
+        <div class="mt-2 flex items-baseline space-x-2">
+          <span id="totalRides" class="text-3xl font-black text-neonBlue font-mono-numbers">0</span>
+          <span class="text-xs font-bold text-slate-400 tracking-wider uppercase">TRIPS</span>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-2 font-medium">Indexed & synced in MongoDB Atlas</p>
       </div>
-      <div class="glass-card p-5">
-        <p class="text-xs uppercase font-bold tracking-wider text-slate-400">Total Moving Time</p>
-        <p id="totalTime" class="text-3xl font-black mt-1 text-[#FFB703] mono">00:00:00</p>
-        <p class="text-xs text-slate-500 mt-2">Total time in motion</p>
+
+      <!-- Moving Duration -->
+      <div class="telemetry-card p-5 relative overflow-hidden group">
+        <div class="flex justify-between items-start">
+          <span class="text-xs uppercase font-extrabold tracking-wider text-slate-400">Active Moving Time</span>
+          <div class="p-2 rounded-lg bg-sportAmber/10 text-sportAmber border border-sportAmber/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </div>
+        </div>
+        <div class="mt-2 flex items-baseline space-x-2">
+          <span id="totalTime" class="text-3xl font-black text-sportAmber font-mono-numbers">00:00:00</span>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-2 font-medium">Net engine runtime excluding pauses</p>
       </div>
     </div>
 
-    <!-- Active Trip Studio / Visualizer -->
-    <div class="glass-card p-6 space-y-6">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 id="activeTripTitle" class="text-2xl font-bold text-white flex items-center space-x-2">
-            <span>Select a Trip to Inspect</span>
-          </h2>
-          <p id="activeTripDate" class="text-sm text-slate-400 mt-0.5">Live telemetry, route polyline, and speed profiles</p>
-        </div>
+    <!-- ================= VIEW 1: COCKPIT STUDIO ================= -->
+    <section id="viewStudio" class="space-y-6">
 
+      <!-- Trip Selector & Control Subheader -->
+      <div class="telemetry-card p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div class="flex items-center space-x-3">
-          <select id="tripSelect" onchange="onTripSelect(this.value)" class="bg-[#12151B] border border-[#2B3240] text-sm text-slate-200 rounded-lg px-3 py-2 font-medium focus:ring-2 focus:ring-[#00F5D4] outline-none">
-            <option value="">Choose trip...</option>
+          <div class="p-2 rounded-xl bg-neonCyan/10 text-neonCyan border border-neonCyan/25">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 id="activeTripTitle" class="text-lg font-black text-white">Select a Ride</h2>
+              <span id="activeTripStatusBadge" class="hidden px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase">Finished</span>
+            </div>
+            <p id="activeTripDate" class="text-xs text-slate-400 font-medium">Select a trip from your MongoDB Atlas database to inspect full telemetry</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Dropdown selector -->
+          <div class="relative min-w-[240px]">
+            <select id="tripSelect" onchange="onTripSelect(this.value)" class="w-full bg-obsidian border border-panelBorder rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-200 focus:ring-2 focus:ring-neonCyan outline-none appearance-none pr-8">
+              <option value="">Loading trips...</option>
+            </select>
+            <div class="absolute right-3 top-2.5 pointer-events-none text-slate-500">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </div>
+          </div>
+
+          <!-- Export buttons -->
+          <button id="btnExportGpx" onclick="downloadActiveGpx()" class="px-3 py-2 text-xs font-bold rounded-xl bg-cardDark hover:bg-panelBorder text-neonCyan border border-panelBorder transition flex items-center space-x-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            <span>GPX</span>
+          </button>
+          <button id="btnExportCsv" onclick="downloadActiveCsv()" class="px-3 py-2 text-xs font-bold rounded-xl bg-cardDark hover:bg-panelBorder text-neonBlue border border-panelBorder transition flex items-center space-x-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            <span>CSV</span>
+          </button>
+          <button onclick="fitMapBounds()" title="Fit Route to Screen" class="px-3 py-2 text-xs font-bold rounded-xl bg-cardDark hover:bg-panelBorder text-slate-300 border border-panelBorder transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Playback Scrubber Bar -->
+      <div id="playbackBar" class="telemetry-card p-3 flex flex-col sm:flex-row items-center gap-3 hidden">
+        <div class="flex items-center space-x-2">
+          <button id="btnPlayPause" onclick="togglePlayback()" class="w-9 h-9 rounded-xl bg-neonCyan text-obsidian flex items-center justify-center font-bold hover:opacity-90 transition shadow-md shadow-neonCyan/20">
+            <svg id="playIcon" class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z" /></svg>
+            <svg id="pauseIcon" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 4h3v12H5V4zm7 0h3v12h-3V4z" clip-rule="evenodd" /></svg>
+          </button>
+          <button onclick="resetPlayback()" title="Reset to Start" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-panelBorder transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" /></svg>
+          </button>
+        </div>
+
+        <div class="flex-1 flex items-center space-x-3 w-full">
+          <span id="playbackCurrentDist" class="text-xs font-mono-numbers text-neonCyan font-bold min-w-[50px]">0.0 km</span>
+          <input id="scrubberSlider" type="range" min="0" max="100" value="0" oninput="onScrubInput(this.value)" class="flex-1 w-full" />
+          <span id="playbackTotalDist" class="text-xs font-mono-numbers text-slate-400 font-semibold min-w-[50px] text-right">0.0 km</span>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <span class="text-[11px] text-slate-400 font-semibold uppercase">Speed:</span>
+          <select id="playbackSpeedSelect" onchange="changePlaybackSpeed(this.value)" class="bg-obsidian border border-panelBorder rounded-lg px-2 py-1 text-xs font-mono-numbers text-slate-200">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="5" selected>5x</option>
+            <option value="10">10x</option>
           </select>
-          <button id="btnExportGpx" onclick="downloadActiveGpx()" class="px-3 py-2 text-xs font-bold rounded-lg bg-[#1E232B] hover:bg-[#282F3B] text-[#00F5D4] border border-[#2B3240] transition">
-            Export GPX
-          </button>
-          <button id="btnExportCsv" onclick="downloadActiveCsv()" class="px-3 py-2 text-xs font-bold rounded-lg bg-[#1E232B] hover:bg-[#282F3B] text-[#00E5FF] border border-[#2B3240] transition">
-            Export CSV
-          </button>
         </div>
       </div>
 
-      <!-- Map & Telemetry HUD Layout -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Interactive Map Container (2 cols) -->
-        <div class="lg:col-span-2 relative">
-          <div id="map"></div>
-          <div id="mapOverlayHud" class="absolute top-4 left-4 z-[400] bg-[#0D0F12]/85 backdrop-blur border border-[#232832] rounded-xl px-4 py-3 hidden">
-            <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Scrubber Telemetry</div>
-            <div class="flex items-baseline space-x-2 mt-0.5">
-              <span id="hudSpeed" class="text-2xl font-black text-[#00F5D4] mono">0</span>
-              <span class="text-xs font-bold text-slate-400">KM/H</span>
+      <!-- Main Split Cockpit: Map (Left 65%) vs Gauges & Stats (Right 35%) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Interactive Map (Column span 7 or 8) -->
+        <div class="lg:col-span-8 relative">
+          <div class="telemetry-card p-2 relative overflow-hidden">
+            <div id="map"></div>
+
+            <!-- Floating Scrubber HUD Overlay -->
+            <div id="mapOverlayHud" class="absolute top-5 left-5 z-[400] bg-obsidian/90 backdrop-blur-md border border-panelBorder rounded-2xl p-4 shadow-2xl min-w-[190px]">
+              <div class="flex items-center justify-between border-b border-panelBorder/80 pb-2">
+                <span class="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Live Telemetry</span>
+                <span class="w-2 h-2 rounded-full bg-neonCyan pulse-dot"></span>
+              </div>
+
+              <div class="mt-2 flex items-baseline space-x-2">
+                <span id="hudSpeed" class="text-3xl font-black text-neonCyan font-mono-numbers">0</span>
+                <span class="text-xs font-bold text-slate-400">KM/H</span>
+              </div>
+
+              <div class="mt-2 space-y-1 text-xs font-mono-numbers text-slate-300">
+                <div class="flex justify-between">
+                  <span class="text-slate-500">Distance:</span>
+                  <span id="hudDist" class="font-bold text-white">0.00 km</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500">Altitude:</span>
+                  <span id="hudAlt" class="font-bold text-sportAmber">-- m</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500">Timestamp:</span>
+                  <span id="hudTime" class="text-slate-400 text-[11px]">--:--:--</span>
+                </div>
+              </div>
             </div>
-            <div class="text-xs text-slate-300 font-mono mt-0.5" id="hudDistAlt">0.00 km • Alt: --</div>
+
+            <!-- Map View Mode Selector (Bottom Left) -->
+            <div class="absolute bottom-5 left-5 z-[400] flex bg-obsidian/90 backdrop-blur-md border border-panelBorder rounded-xl p-1 text-[11px] font-bold">
+              <button onclick="setMapLayer('dark')" class="px-2.5 py-1 rounded-lg bg-panelBorder text-neonCyan">Dark Canvas</button>
+              <button onclick="setMapLayer('osm')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white">Standard</button>
+            </div>
           </div>
         </div>
 
-        <!-- Telemetry Breakdown Cards (1 col) -->
-        <div class="space-y-4">
-          <div class="bg-[#12151B] border border-[#232832] rounded-xl p-4">
-            <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Sprint Performance</div>
-            <div class="grid grid-cols-2 gap-3 mt-3">
-              <div class="bg-[#16191F] border border-[#232832] rounded-lg p-3">
-                <span class="text-[11px] font-bold text-slate-400 uppercase">0 - 60 KM/H</span>
-                <p id="sprint060" class="text-xl font-black text-[#00F5D4] mono mt-1">-- <span class="text-xs font-normal text-slate-400">sec</span></p>
+        <!-- Telemetry Gauges & Sprint Metrics (Column span 4) -->
+        <div class="lg:col-span-4 space-y-4">
+          
+          <!-- Speedometer & G-Force Canvas Gauges Card -->
+          <div class="telemetry-card p-5">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Cockpit Telemetry</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-panelBorder text-neonCyan font-mono-numbers">REAL-TIME</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 items-center">
+              <!-- Analog & Digital Speedometer -->
+              <div class="flex flex-col items-center">
+                <canvas id="speedometerCanvas" width="180" height="150" class="w-[180px] h-[150px]"></canvas>
+                <div class="text-[11px] font-bold tracking-wider text-slate-400 uppercase -mt-2">Speedometer</div>
               </div>
-              <div class="bg-[#16191F] border border-[#232832] rounded-lg p-3">
-                <span class="text-[11px] font-bold text-slate-400 uppercase">0 - 100 KM/H</span>
-                <p id="sprint0100" class="text-xl font-black text-[#FF3366] mono mt-1">-- <span class="text-xs font-normal text-slate-400">sec</span></p>
+
+              <!-- G-Force Crosshair Radar -->
+              <div class="flex flex-col items-center">
+                <canvas id="gforceCanvas" width="150" height="150" class="w-[150px] h-[150px]"></canvas>
+                <div class="text-[11px] font-bold tracking-wider text-slate-400 uppercase -mt-2">G-Force Meter</div>
               </div>
             </div>
           </div>
 
-          <div class="bg-[#12151B] border border-[#232832] rounded-xl p-4 space-y-3 text-sm">
-            <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Ride Statistics</div>
-            <div class="flex justify-between py-1 border-b border-[#232832]">
-              <span class="text-slate-400">Distance</span>
-              <span id="statDistance" class="font-bold text-white mono">--</span>
+          <!-- Sprint Performance Cards -->
+          <div class="telemetry-card p-4">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Sprint Launch Acceleration</span>
+              <span class="text-[10px] text-slate-500 font-semibold">Standing Start</span>
             </div>
-            <div class="flex justify-between py-1 border-b border-[#232832]">
-              <span class="text-slate-400">Max Speed</span>
-              <span id="statMaxSpeed" class="font-bold text-[#FF3366] mono">--</span>
-            </div>
-            <div class="flex justify-between py-1 border-b border-[#232832]">
-              <span class="text-slate-400">Moving Average</span>
-              <span id="statAvgMoving" class="font-bold text-[#00E5FF] mono">--</span>
-            </div>
-            <div class="flex justify-between py-1 border-b border-[#232832]">
-              <span class="text-slate-400">Overall Average</span>
-              <span id="statAvgOverall" class="font-bold text-[#FFB703] mono">--</span>
-            </div>
-            <div class="flex justify-between py-1 border-b border-[#232832]">
-              <span class="text-slate-400">Moving Duration</span>
-              <span id="statMovingDuration" class="font-bold text-white mono">--</span>
-            </div>
-            <div class="flex justify-between py-1">
-              <span class="text-slate-400">Points Logged</span>
-              <span id="statPoints" class="font-bold text-slate-300 mono">--</span>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-obsidian/70 border border-panelBorder rounded-xl p-3.5">
+                <div class="flex justify-between items-center text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                  <span>0 - 60 KM/H</span>
+                  <span class="text-neonCyan">⏱</span>
+                </div>
+                <div class="mt-1 flex items-baseline space-x-1">
+                  <span id="sprint060" class="text-2xl font-black text-neonCyan font-mono-numbers">--</span>
+                  <span class="text-xs font-normal text-slate-400">sec</span>
+                </div>
+                <div class="mt-2 w-full bg-panelBorder h-1.5 rounded-full overflow-hidden">
+                  <div id="bar060" class="bg-neonCyan h-full w-0 transition-all duration-300"></div>
+                </div>
+              </div>
+
+              <div class="bg-obsidian/70 border border-panelBorder rounded-xl p-3.5">
+                <div class="flex justify-between items-center text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                  <span>0 - 100 KM/H</span>
+                  <span class="text-racingRed">⚡</span>
+                </div>
+                <div class="mt-1 flex items-baseline space-x-1">
+                  <span id="sprint0100" class="text-2xl font-black text-racingRed font-mono-numbers">--</span>
+                  <span class="text-xs font-normal text-slate-400">sec</span>
+                </div>
+                <div class="mt-2 w-full bg-panelBorder h-1.5 rounded-full overflow-hidden">
+                  <div id="bar0100" class="bg-racingRed h-full w-0 transition-all duration-300"></div>
+                </div>
+              </div>
             </div>
           </div>
+
+          <!-- Trip Telemetry Breakdown Specs -->
+          <div class="telemetry-card p-4 space-y-2 text-xs font-mono-numbers">
+            <div class="text-xs font-extrabold uppercase tracking-wider text-slate-400 font-sans pb-1">Session Metrics</div>
+            
+            <div class="flex justify-between py-1.5 border-b border-panelBorder/70">
+              <span class="text-slate-400 font-sans">Distance Logged:</span>
+              <span id="statDistance" class="font-bold text-white">-- km</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-panelBorder/70">
+              <span class="text-slate-400 font-sans">Maximum Velocity:</span>
+              <span id="statMaxSpeed" class="font-bold text-racingRed">-- km/h</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-panelBorder/70">
+              <span class="text-slate-400 font-sans">Moving Average:</span>
+              <span id="statAvgMoving" class="font-bold text-neonBlue">-- km/h</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-panelBorder/70">
+              <span class="text-slate-400 font-sans">Overall Average:</span>
+              <span id="statAvgOverall" class="font-bold text-sportAmber">-- km/h</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-panelBorder/70">
+              <span class="text-slate-400 font-sans">Moving Duration:</span>
+              <span id="statMovingDuration" class="font-bold text-slate-200">--:--:--</span>
+            </div>
+            <div class="flex justify-between py-1.5">
+              <span class="text-slate-400 font-sans">Track Points:</span>
+              <span id="statPoints" class="font-bold text-slate-400">--</span>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <!-- Interactive Speed vs Distance Graph -->
-      <div class="bg-[#12151B] border border-[#232832] rounded-xl p-4">
-        <div class="flex justify-between items-center mb-3">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Speed Profile (KM/H vs Distance)</span>
-          <span class="text-xs text-slate-500">Hover or drag across curve to scrub map</span>
+      <!-- Interactive Multi-Mode Telemetry Graph -->
+      <div class="telemetry-card p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Telemetry Profile Curve</span>
+            <p class="text-xs text-slate-500 font-medium">Scrub cursor along profile to inspect specific route coordinates & speeds</p>
+          </div>
+
+          <div class="flex items-center space-x-1 p-1 bg-obsidian border border-panelBorder rounded-xl text-xs font-bold">
+            <button id="chartTabSpeed" onclick="switchChartMode('speed')" class="px-3 py-1 rounded-lg bg-panelBorder text-neonCyan transition">Speed (km/h)</button>
+            <button id="chartTabAltitude" onclick="switchChartMode('altitude')" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition">Altitude (m)</button>
+          </div>
         </div>
-        <div class="h-64 relative">
+
+        <div class="h-64 relative w-full">
           <canvas id="speedChart"></canvas>
         </div>
       </div>
-    </div>
 
-    <!-- Trips Explorer Table -->
-    <div class="glass-card p-6">
-      <div class="flex justify-between items-center mb-4">
+    </section>
+
+    <!-- ================= VIEW 2: RIDES EXPLORER ================= -->
+    <section id="viewExplorer" class="telemetry-card p-6 space-y-6 hidden">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h3 class="text-xl font-bold text-white">Cloud Trips Explorer</h3>
-          <p class="text-xs text-slate-400">Trips synchronized with MongoDB Atlas</p>
+          <h3 class="text-xl font-black text-white">Cloud Rides Explorer</h3>
+          <p class="text-xs text-slate-400 mt-0.5">All telemetry runs stored and synchronized within MongoDB Atlas</p>
         </div>
-        <button onclick="simulateAndUploadTrip()" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-[#00F5D4] text-[#0D0F12] hover:bg-[#00E5FF] transition flex items-center space-x-1.5 shadow-lg shadow-[#00F5D4]/20">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
-          <span>Simulate & Sync Ride</span>
-        </button>
+
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <!-- Search input -->
+          <div class="relative flex-1 md:w-64">
+            <input id="explorerSearch" type="text" placeholder="Search rides..." oninput="filterTripsTable()" class="w-full bg-obsidian border border-panelBorder rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-neonCyan outline-none pl-9" />
+            <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          </div>
+
+          <button onclick="simulateAndUploadTrip()" class="px-4 py-2 text-xs font-bold rounded-xl bg-neonCyan text-obsidian hover:bg-neonBlue transition flex items-center space-x-1.5 shadow-md shadow-neonCyan/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
+            <span>Simulate Ride</span>
+          </button>
+        </div>
       </div>
 
-      <div class="overflow-x-auto">
+      <!-- High-Density Trips Table -->
+      <div class="overflow-x-auto rounded-xl border border-panelBorder">
         <table class="w-full text-left text-sm text-slate-300">
-          <thead class="text-xs uppercase bg-[#12151B] text-slate-400 border-b border-[#232832]">
+          <thead class="text-xs uppercase bg-obsidian/90 text-slate-400 border-b border-panelBorder font-extrabold tracking-wider">
             <tr>
-              <th class="px-4 py-3">Trip Title</th>
-              <th class="px-4 py-3">Start Date</th>
-              <th class="px-4 py-3">Distance</th>
-              <th class="px-4 py-3">Max Speed</th>
-              <th class="px-4 py-3">Moving Avg</th>
-              <th class="px-4 py-3">Duration</th>
-              <th class="px-4 py-3 text-right">Actions</th>
+              <th class="px-4 py-3.5">Ride Name</th>
+              <th class="px-4 py-3.5">Date & Time</th>
+              <th class="px-4 py-3.5">Distance</th>
+              <th class="px-4 py-3.5">Top Velocity</th>
+              <th class="px-4 py-3.5">Avg Moving</th>
+              <th class="px-4 py-3.5">Duration</th>
+              <th class="px-4 py-3.5">Account</th>
+              <th class="px-4 py-3.5 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody id="tripsTableBody" class="divide-y divide-[#232832]">
+          <tbody id="tripsTableBody" class="divide-y divide-panelBorder bg-cardDark/60 font-mono-numbers text-xs">
             <tr>
-              <td colspan="7" class="px-4 py-8 text-center text-slate-500">Loading trips from MongoDB Atlas...</td>
+              <td colspan="8" class="px-4 py-12 text-center text-slate-500 font-sans">Loading trips from MongoDB Atlas...</td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
+
+    <!-- ================= VIEW 3: MONGODB ATLAS HEALTH ================= -->
+    <section id="viewCloud" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Connection Overview -->
+        <div class="telemetry-card p-6 md:col-span-2 space-y-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm0 5h16" /></svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-black text-white">MongoDB Atlas Connection</h3>
+              <p class="text-xs text-slate-400">Enterprise Cloud Database Cluster Configuration</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div class="bg-obsidian/70 border border-panelBorder rounded-xl p-4">
+              <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider block">Target Cluster</span>
+              <span class="text-emerald-400 font-mono-numbers font-bold text-sm block mt-1">cluster0.wwp3oig.mongodb.net</span>
+            </div>
+            <div class="bg-obsidian/70 border border-panelBorder rounded-xl p-4">
+              <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider block">Database Name</span>
+              <span class="text-white font-mono-numbers font-bold text-sm block mt-1">roadpulse</span>
+            </div>
+            <div class="bg-obsidian/70 border border-panelBorder rounded-xl p-4">
+              <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider block">Active Users</span>
+              <span id="cloudStatUsers" class="text-neonCyan font-mono-numbers font-bold text-xl block mt-1">1</span>
+            </div>
+            <div class="bg-obsidian/70 border border-panelBorder rounded-xl p-4">
+              <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider block">Total Track Points</span>
+              <span id="cloudStatPoints" class="text-racingRed font-mono-numbers font-bold text-xl block mt-1">--</span>
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <button onclick="pingDatabase()" class="px-4 py-2 text-xs font-bold rounded-xl bg-cardDark hover:bg-panelBorder text-neonCyan border border-panelBorder transition flex items-center space-x-2">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              <span>Test Connection Latency</span>
+            </button>
+            <span id="pingResult" class="text-xs font-mono-numbers text-slate-400 ml-3"></span>
+          </div>
+        </div>
+
+        <!-- Architecture Specification -->
+        <div class="telemetry-card p-6 space-y-4">
+          <h4 class="text-sm font-extrabold uppercase tracking-wider text-neonCyan">Cloud Sync Protocol</h4>
+          <ul class="text-xs text-slate-300 space-y-2.5 leading-relaxed">
+            <li class="flex items-start space-x-2">
+              <span class="text-emerald-400 font-bold">✓</span>
+              <span><strong>PBKDF2 Password Hashing:</strong> Salted with SHA-512 (1000 rounds)</span>
+            </li>
+            <li class="flex items-start space-x-2">
+              <span class="text-emerald-400 font-bold">✓</span>
+              <span><strong>HMAC Session Bearer Tokens:</strong> Secure stateless REST authentication</span>
+            </li>
+            <li class="flex items-start space-x-2">
+              <span class="text-emerald-400 font-bold">✓</span>
+              <span><strong>High-Frequency Points:</strong> Geospatial coordinates with speed and altitude</span>
+            </li>
+            <li class="flex items-start space-x-2">
+              <span class="text-emerald-400 font-bold">✓</span>
+              <span><strong>Offline-First Fallback:</strong> Mobile records locally and syncs automatically</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
 
   </main>
 
-  <!-- Auth Modal -->
-  <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm hidden">
-    <div class="bg-[#16191F] border border-[#232832] rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 shadow-2xl space-y-6 relative">
-      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+  <!-- ================= AUTHENTICATION MODAL ================= -->
+  <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden transition-all duration-300">
+    <div class="telemetry-card p-6 sm:p-8 max-w-md w-full mx-4 shadow-2xl space-y-6 relative border-panelBorder/90">
+      <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white transition">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
 
       <div class="text-center space-y-1">
-        <div class="w-12 h-12 mx-auto rounded-xl bg-gradient-to-tr from-[#00F5D4] via-[#00E5FF] to-[#FF3366] flex items-center justify-center p-0.5 mb-2 shadow-lg shadow-[#00F5D4]/20">
-          <div class="w-full h-full bg-[#0D0F12] rounded-[10px] flex items-center justify-center">
-            <svg class="w-6 h-6 text-[#00F5D4]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+        <div class="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-neonCyan via-neonBlue to-racingRed p-0.5 shadow-lg shadow-neonCyan/20 mb-3">
+          <div class="w-full h-full bg-obsidian rounded-[14px] flex items-center justify-center">
+            <svg class="w-6 h-6 text-neonCyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
           </div>
         </div>
         <h3 id="authModalTitle" class="text-xl font-black text-white">Sign In to RoadPulse</h3>
-        <p id="authModalSubtitle" class="text-xs text-slate-400">Access your cloud telemetry & GPS rides</p>
+        <p id="authModalSubtitle" class="text-xs text-slate-400">Synchronize your speed runs and GPS tracks</p>
       </div>
 
-      <!-- Auth Mode Toggle -->
-      <div class="flex rounded-lg bg-[#12151B] p-1 border border-[#232832]">
-        <button id="tabSignIn" onclick="setAuthMode('signin')" class="flex-1 py-1.5 text-xs font-bold rounded-md bg-[#1E232B] text-[#00F5D4] transition">Sign In</button>
-        <button id="tabSignUp" onclick="setAuthMode('signup')" class="flex-1 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition">Create Account</button>
+      <!-- Mode Switcher -->
+      <div class="flex rounded-xl bg-obsidian p-1 border border-panelBorder">
+        <button id="tabSignIn" onclick="setAuthMode('signin')" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-panelBorder text-neonCyan transition">Sign In</button>
+        <button id="tabSignUp" onclick="setAuthMode('signup')" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">Create Account</button>
       </div>
 
-      <div id="authAlert" class="hidden p-3 rounded-lg text-xs font-medium"></div>
+      <!-- Alert Banner -->
+      <div id="authAlert" class="hidden p-3 rounded-xl text-xs font-medium"></div>
 
       <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
-        <div id="nameFieldGroup" class="hidden space-y-1.5">
-          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Full Name</label>
-          <input id="authName" type="text" placeholder="John Doe" class="w-full bg-[#12151B] border border-[#2B3240] rounded-lg px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-[#00F5D4] outline-none" />
+        <!-- Name (Sign Up only) -->
+        <div id="nameFieldGroup" class="hidden space-y-1">
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Driver / Rider Name</label>
+          <input id="authName" type="text" placeholder="Alex Rivera" class="w-full bg-obsidian border border-panelBorder rounded-xl px-3.5 py-2.5 text-xs text-white focus:ring-2 focus:ring-neonCyan outline-none" />
         </div>
 
-        <div class="space-y-1.5">
+        <div class="space-y-1">
           <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
-          <input id="authEmail" type="email" required placeholder="rider@roadpulse.io" class="w-full bg-[#12151B] border border-[#2B3240] rounded-lg px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-[#00F5D4] outline-none" />
+          <input id="authEmail" type="email" required placeholder="driver@roadpulse.io" class="w-full bg-obsidian border border-panelBorder rounded-xl px-3.5 py-2.5 text-xs text-white focus:ring-2 focus:ring-neonCyan outline-none" />
         </div>
 
-        <div class="space-y-1.5">
+        <div class="space-y-1">
           <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Password</label>
-          <input id="authPassword" type="password" required minlength="6" placeholder="••••••••" class="w-full bg-[#12151B] border border-[#2B3240] rounded-lg px-3.5 py-2.5 text-sm text-white focus:ring-2 focus:ring-[#00F5D4] outline-none" />
+          <div class="relative">
+            <input id="authPassword" type="password" required minlength="6" placeholder="••••••••" class="w-full bg-obsidian border border-panelBorder rounded-xl px-3.5 py-2.5 text-xs text-white focus:ring-2 focus:ring-neonCyan outline-none pr-10" />
+            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-2.5 text-slate-400 hover:text-white transition">
+              <svg id="eyeIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+            </button>
+          </div>
         </div>
 
-        <button id="authSubmitBtn" type="submit" class="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-[#00F5D4] to-[#00E5FF] text-[#0D0F12] font-black text-sm hover:opacity-90 transition shadow-lg shadow-[#00F5D4]/20">
+        <button id="authSubmitBtn" type="submit" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-neonCyan to-neonBlue text-obsidian font-black text-xs uppercase tracking-wider hover:opacity-95 transition shadow-lg shadow-neonCyan/20">
           Sign In
         </button>
       </form>
     </div>
   </div>
 
-  <footer class="border-t border-[#232832] py-6 text-center text-xs text-slate-500">
-    RoadPulse GPS Telemetry • Powered by MongoDB Atlas • Native Android & Web Companion
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="border-t border-panelBorder/70 py-6 text-center text-xs text-slate-500 font-medium">
+    <div class="max-w-[1560px] mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <span>RoadPulse Performance Telemetry &copy; 2026 • Native Android & Web Companion</span>
+      <span class="font-mono-numbers text-[11px] text-slate-400">Connected to MongoDB Atlas: cluster0.wwp3oig.mongodb.net</span>
+    </div>
   </footer>
 
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
-    let map;
-    let polylineLayer;
-    let scrubberMarker;
-    let speedChartInstance;
+    // State variables
+    let map = null;
+    let darkTileLayer = null;
+    let osmTileLayer = null;
+    let polylineLayer = null;
+    let startMarker = null;
+    let endMarker = null;
+    let scrubberMarker = null;
+
+    let speedChartInstance = null;
+    let currentChartMode = 'speed'; // 'speed' or 'altitude'
+
     let allTripsData = [];
     let currentTripData = null;
+    let currentPoints = [];
+
     let currentAuthUser = null;
     let currentAuthToken = null;
     let currentAuthMode = 'signin';
 
-    function checkAuthSession() {
-      const savedUser = localStorage.getItem('rp_auth_user');
-      const savedToken = localStorage.getItem('rp_auth_token');
-      if (savedUser && savedToken) {
-        try {
-          currentAuthUser = JSON.parse(savedUser);
-          currentAuthToken = savedToken;
-        } catch (e) {
-          localStorage.removeItem('rp_auth_user');
-          localStorage.removeItem('rp_auth_token');
-        }
-      }
-      updateAuthUI();
-    }
+    // Playback state
+    let isPlaying = false;
+    let playbackInterval = null;
+    let playbackIndex = 0;
+    let playbackSpeed = 5;
 
-    function updateAuthUI() {
-      const pill = document.getElementById('userProfilePill');
-      const btn = document.getElementById('navLoginBtn');
-      const navEmail = document.getElementById('navUserEmail');
-      if (currentAuthUser) {
-        pill.classList.remove('hidden');
-        pill.classList.add('flex');
-        btn.classList.add('hidden');
-        navEmail.textContent = currentAuthUser.email;
-      } else {
-        pill.classList.add('hidden');
-        pill.classList.remove('flex');
-        btn.classList.remove('hidden');
-      }
-    }
-
-    function openAuthModal() {
-      document.getElementById('authModal').classList.remove('hidden');
-      document.getElementById('authAlert').classList.add('hidden');
-    }
-
-    function closeAuthModal() {
-      document.getElementById('authModal').classList.add('hidden');
-    }
-
-    function setAuthMode(mode) {
-      currentAuthMode = mode;
-      const nameGrp = document.getElementById('nameFieldGroup');
-      const title = document.getElementById('authModalTitle');
-      const sub = document.getElementById('authModalSubtitle');
-      const submitBtn = document.getElementById('authSubmitBtn');
-      const tabIn = document.getElementById('tabSignIn');
-      const tabUp = document.getElementById('tabSignUp');
-
-      if (mode === 'signup') {
-        nameGrp.classList.remove('hidden');
-        title.textContent = 'Create an Account';
-        sub.textContent = 'Join RoadPulse to sync and analyze your telemetry';
-        submitBtn.textContent = 'Create Account';
-        tabUp.className = 'flex-1 py-1.5 text-xs font-bold rounded-md bg-[#1E232B] text-[#00F5D4] transition';
-        tabIn.className = 'flex-1 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition';
-      } else {
-        nameGrp.classList.add('hidden');
-        title.textContent = 'Sign In to RoadPulse';
-        sub.textContent = 'Access your cloud telemetry & personal rides';
-        submitBtn.textContent = 'Sign In';
-        tabIn.className = 'flex-1 py-1.5 text-xs font-bold rounded-md bg-[#1E232B] text-[#00F5D4] transition';
-        tabUp.className = 'flex-1 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition';
-      }
-    }
-
-    async function handleAuthSubmit(e) {
-      e.preventDefault();
-      const alertEl = document.getElementById('authAlert');
-      alertEl.classList.add('hidden');
-
-      const email = document.getElementById('authEmail').value.trim();
-      const password = document.getElementById('authPassword').value;
-      const name = document.getElementById('authName').value.trim();
-
-      const endpoint = currentAuthMode === 'signup' ? '/api/auth/register' : '/api/auth/login';
-      const payload = currentAuthMode === 'signup' ? { email, password, name } : { email, password };
-
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          alertEl.className = 'p-3 rounded-lg text-xs font-medium bg-rose-950/60 border border-rose-800 text-rose-300';
-          alertEl.textContent = data.error || 'Authentication failed';
-          alertEl.classList.remove('hidden');
-          return;
-        }
-
-        currentAuthUser = data.user;
-        currentAuthToken = data.token;
-        localStorage.setItem('rp_auth_user', JSON.stringify(data.user));
-        localStorage.setItem('rp_auth_token', data.token);
-
-        updateAuthUI();
-        closeAuthModal();
-        refreshData();
-      } catch (err) {
-        alertEl.className = 'p-3 rounded-lg text-xs font-medium bg-rose-950/60 border border-rose-800 text-rose-300';
-        alertEl.textContent = err.message;
-        alertEl.classList.remove('hidden');
-      }
-    }
-
-    function handleLogout() {
-      currentAuthUser = null;
-      currentAuthToken = null;
-      localStorage.removeItem('rp_auth_user');
-      localStorage.removeItem('rp_auth_token');
-      updateAuthUI();
+    // ----------------------------------------------------
+    // INITIALIZATION & TAB SWITCHING
+    // ----------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      checkAuthSession();
       refreshData();
+      drawSpeedometer(0);
+      drawGForce(0, 0);
+    });
+
+    function switchMainView(view) {
+      document.getElementById('viewStudio').classList.add('hidden');
+      document.getElementById('viewExplorer').classList.add('hidden');
+      document.getElementById('viewCloud').classList.add('hidden');
+
+      const tabs = ['Studio', 'Explorer', 'Cloud'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`navTab${t}`);
+        btn.className = 'px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-2';
+      });
+
+      if (view === 'studio') {
+        document.getElementById('viewStudio').classList.remove('hidden');
+        document.getElementById('navTabStudio').className = 'px-4 py-1.5 text-xs font-bold rounded-lg bg-panelBorder text-neonCyan transition flex items-center space-x-2 shadow-sm';
+        setTimeout(() => { if (map) map.invalidateSize(); }, 100);
+      } else if (view === 'explorer') {
+        document.getElementById('viewExplorer').classList.remove('hidden');
+        document.getElementById('navTabExplorer').className = 'px-4 py-1.5 text-xs font-bold rounded-lg bg-panelBorder text-neonCyan transition flex items-center space-x-2 shadow-sm';
+      } else if (view === 'cloud') {
+        document.getElementById('viewCloud').classList.remove('hidden');
+        document.getElementById('navTabCloud').className = 'px-4 py-1.5 text-xs font-bold rounded-lg bg-panelBorder text-neonCyan transition flex items-center space-x-2 shadow-sm';
+      }
     }
 
-    // Initialize Map with OpenFreeMap / OSM
+    // ----------------------------------------------------
+    // MAP CONFIGURATION
+    // ----------------------------------------------------
     function initMap() {
       map = L.map('map', { zoomControl: false }).setView([37.7749, -122.4194], 13);
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      // Free, clean dark tile layer
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      darkTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
         maxZoom: 19
       }).addTo(map);
+
+      osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+      });
     }
 
+    function setMapLayer(layer) {
+      if (layer === 'dark') {
+        map.removeLayer(osmTileLayer);
+        darkTileLayer.addTo(map);
+      } else {
+        map.removeLayer(darkTileLayer);
+        osmTileLayer.addTo(map);
+      }
+    }
+
+    function fitMapBounds() {
+      if (polylineLayer) {
+        map.fitBounds(polylineLayer.getBounds(), { padding: [40, 40] });
+      }
+    }
+
+    // ----------------------------------------------------
+    // DATA FETCHING & SYNCHRONIZATION
+    // ----------------------------------------------------
     async function refreshData() {
+      const spinner = document.getElementById('refreshSpinner');
+      spinner.classList.add('animate-spin');
+
       try {
         const tripsUrl = currentAuthUser ? `/api/trips?email=${encodeURIComponent(currentAuthUser.email)}` : '/api/trips';
         const headers = currentAuthToken ? { 'Authorization': `Bearer ${currentAuthToken}` } : {};
@@ -441,19 +829,42 @@
         renderTripsTable(trips);
         populateTripDropdown(trips);
 
-        if (trips.length > 0 && (!currentTripData || !trips.find(t => t._id === currentTripData._id))) {
-          loadTripDetails(trips[0]._id);
-        } else if (trips.length === 0) {
-          currentTripData = null;
-          document.getElementById('activeTripTitle').innerText = 'No rides logged yet';
-          document.getElementById('activeTripDate').innerText = 'Sync a ride from the mobile app to view telemetry';
-          if (polylineLayer) map.removeLayer(polylineLayer);
-          if (scrubberMarker) map.removeLayer(scrubberMarker);
-          if (speedChartInstance) speedChartInstance.destroy();
+        if (status.totalUsers !== undefined) {
+          document.getElementById('cloudStatUsers').innerText = status.totalUsers;
+        }
+        if (status.totalPoints !== undefined) {
+          document.getElementById('cloudStatPoints').innerText = status.totalPoints.toLocaleString();
+        }
+
+        if (trips.length > 0) {
+          const toLoad = currentTripData ? trips.find(t => t._id === currentTripData._id) || trips[0] : trips[0];
+          loadTripDetails(toLoad._id);
+        } else {
+          showEmptyTripState();
         }
       } catch (err) {
-        console.error('Error refreshing data:', err);
+        showToast('Error syncing with MongoDB: ' + err.message, 'error');
+      } finally {
+        setTimeout(() => spinner.classList.remove('animate-spin'), 400);
       }
+    }
+
+    function showEmptyTripState() {
+      currentTripData = null;
+      currentPoints = [];
+      document.getElementById('activeTripTitle').innerText = 'No Trips Logged';
+      document.getElementById('activeTripDate').innerText = 'Sync from RoadPulse mobile app or click "Simulate Run" above';
+      document.getElementById('activeTripStatusBadge').classList.add('hidden');
+      document.getElementById('playbackBar').classList.add('hidden');
+
+      if (polylineLayer) map.removeLayer(polylineLayer);
+      if (startMarker) map.removeLayer(startMarker);
+      if (endMarker) map.removeLayer(endMarker);
+      if (scrubberMarker) map.removeLayer(scrubberMarker);
+      if (speedChartInstance) speedChartInstance.destroy();
+
+      drawSpeedometer(0);
+      drawGForce(0, 0);
     }
 
     function renderKpis(trips) {
@@ -468,8 +879,8 @@
         totalMovingMs += (t.movingDurationMs || 0);
       });
 
-      document.getElementById('totalDistance').innerHTML = `${(totalDistM / 1000).toFixed(2)} <span class="text-sm font-semibold text-slate-500">KM</span>`;
-      document.getElementById('topSpeed').innerHTML = `${Math.round(topSpeedKmh)} <span class="text-sm font-semibold text-slate-500">KM/H</span>`;
+      document.getElementById('totalDistance').innerText = (totalDistM / 1000).toFixed(2);
+      document.getElementById('topSpeed').innerText = Math.round(topSpeedKmh);
       document.getElementById('totalRides').innerText = trips.length;
       document.getElementById('totalTime').innerText = formatDuration(totalMovingMs);
     }
@@ -477,34 +888,42 @@
     function populateTripDropdown(trips) {
       const select = document.getElementById('tripSelect');
       select.innerHTML = '';
+      if (trips.length === 0) {
+        select.innerHTML = '<option value="">No rides recorded</option>';
+        return;
+      }
       trips.forEach(t => {
         const opt = document.createElement('option');
         opt.value = t._id;
-        opt.innerText = `${t.title} (${((t.totalDistanceMeters || 0) / 1000).toFixed(1)} km)`;
+        const distKm = ((t.totalDistanceMeters || 0) / 1000).toFixed(1);
+        opt.innerText = `${t.title} (${distKm} km)`;
         select.appendChild(opt);
       });
       if (currentTripData) select.value = currentTripData._id;
     }
 
+    function onTripSelect(tripId) {
+      if (tripId) loadTripDetails(tripId);
+    }
+
     async function loadTripDetails(tripId) {
-      if (!tripId) return;
       try {
         const res = await fetch(`/api/trips/${tripId}`);
         const data = await res.json();
         currentTripData = data;
-        renderActiveTrip(data);
-      } catch (err) {
-        console.error('Failed to load trip:', err);
-      }
-    }
+        currentPoints = data.points || [];
 
-    function onTripSelect(tripId) {
-      loadTripDetails(tripId);
+        renderActiveTrip(data);
+        showToast(`Loaded ${data.title}`, 'info');
+      } catch (err) {
+        showToast('Failed to load ride telemetry', 'error');
+      }
     }
 
     function renderActiveTrip(trip) {
       document.getElementById('activeTripTitle').innerText = trip.title;
-      document.getElementById('activeTripDate').innerText = new Date(trip.startTime).toLocaleString();
+      document.getElementById('activeTripDate').innerText = `${new Date(trip.startTime).toLocaleDateString()} at ${new Date(trip.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+      document.getElementById('activeTripStatusBadge').classList.remove('hidden');
 
       const distKm = ((trip.totalDistanceMeters || 0) / 1000).toFixed(2);
       const maxKmh = Math.round((trip.maxSpeedMps || 0) * 3.6);
@@ -516,28 +935,41 @@
       document.getElementById('statAvgMoving').innerText = `${avgMovingKmh} km/h`;
       document.getElementById('statAvgOverall').innerText = `${avgOverallKmh} km/h`;
       document.getElementById('statMovingDuration').innerText = formatDuration(trip.movingDurationMs || 0);
-      document.getElementById('statPoints').innerText = trip.points ? trip.points.length : 0;
+      document.getElementById('statPoints').innerText = currentPoints.length.toLocaleString();
 
-      // Sprint Calculations from Points
-      calculateSprints(trip.points || []);
+      // Sprint Calculations
+      calculateSprints(currentPoints);
 
-      // Draw Route on Map
-      drawMapRoute(trip.points || []);
+      // Map Polyline & Pins
+      drawMapRoute(currentPoints);
 
-      // Draw Chart
-      drawSpeedChart(trip.points || []);
+      // Chart
+      drawChart(currentPoints);
+
+      // Scrubber setup
+      if (currentPoints.length > 0) {
+        document.getElementById('playbackBar').classList.remove('hidden');
+        document.getElementById('scrubberSlider').max = currentPoints.length - 1;
+        document.getElementById('scrubberSlider').value = 0;
+        document.getElementById('playbackTotalDist').innerText = `${distKm} km`;
+        updateScrubberPosition(0);
+      } else {
+        document.getElementById('playbackBar').classList.add('hidden');
+      }
     }
 
+    // ----------------------------------------------------
+    // SPRINT CALCULATIONS (0-60 & 0-100 KM/H)
+    // ----------------------------------------------------
     function calculateSprints(points) {
       let t060 = null;
       let t0100 = null;
 
-      // Scan for 0-60 km/h and 0-100 km/h acceleration events
       for (let i = 0; i < points.length; i++) {
         const spd = (points[i].speedMps || 0) * 3.6;
         if (spd <= 3.0) { // stopped/standing start
           const tStart = points[i].timestamp;
-          for (let j = i + 1; j < Math.min(i + 35, points.length); j++) {
+          for (let j = i + 1; j < Math.min(i + 40, points.length); j++) {
             const nextSpd = (points[j].speedMps || 0) * 3.6;
             const dtSec = (points[j].timestamp - tStart) / 1000;
             if (nextSpd >= 60 && (!t060 || dtSec < t060)) {
@@ -550,60 +982,249 @@
         }
       }
 
-      document.getElementById('sprint060').innerHTML = t060 ? `${t060.toFixed(1)} <span class="text-xs font-normal text-slate-400">sec</span>` : `-- <span class="text-xs font-normal text-slate-400">sec</span>`;
-      document.getElementById('sprint0100').innerHTML = t0100 ? `${t0100.toFixed(1)} <span class="text-xs font-normal text-slate-400">sec</span>` : `-- <span class="text-xs font-normal text-slate-400">sec</span>`;
+      const el060 = document.getElementById('sprint060');
+      const el0100 = document.getElementById('sprint0100');
+      const bar060 = document.getElementById('bar060');
+      const bar0100 = document.getElementById('bar0100');
+
+      if (t060) {
+        el060.innerText = t060.toFixed(2);
+        bar060.style.width = `${Math.min(100, Math.max(10, (10 - t060) * 15))}%`;
+      } else {
+        el060.innerText = '--';
+        bar060.style.width = '0%';
+      }
+
+      if (t0100) {
+        el0100.innerText = t0100.toFixed(2);
+        bar0100.style.width = `${Math.min(100, Math.max(10, (15 - t0100) * 10))}%`;
+      } else {
+        el0100.innerText = '--';
+        bar0100.style.width = '0%';
+      }
     }
 
+    // ----------------------------------------------------
+    // ROUTE MAPPING WITH VELOCITY GRADIENTS
+    // ----------------------------------------------------
     function drawMapRoute(points) {
       if (!points || points.length === 0) return;
 
       if (polylineLayer) map.removeLayer(polylineLayer);
+      if (startMarker) map.removeLayer(startMarker);
+      if (endMarker) map.removeLayer(endMarker);
       if (scrubberMarker) map.removeLayer(scrubberMarker);
 
       const latLngs = points.map(p => [p.latitude, p.longitude]);
+
+      // Draw high-glow polyline
       polylineLayer = L.polyline(latLngs, {
         color: '#00F5D4',
-        weight: 4,
-        opacity: 0.9,
-        lineJoin: 'round'
+        weight: 4.5,
+        opacity: 0.95,
+        lineJoin: 'round',
+        lineCap: 'round',
+        shadowColor: '#00F5D4',
+        shadowBlur: 10
       }).addTo(map);
 
-      map.fitBounds(polylineLayer.getBounds(), { padding: [40, 40] });
+      map.fitBounds(polylineLayer.getBounds(), { padding: [50, 50] });
 
-      // Start Pin
-      const startPt = latLngs[0];
-      L.circleMarker(startPt, { radius: 6, color: '#00F5D4', fillColor: '#0D0F12', fillOpacity: 1, weight: 3 }).addTo(map);
+      // Start Marker (Neon Green Glow)
+      startMarker = L.circleMarker(latLngs[0], {
+        radius: 7,
+        color: '#10B981',
+        fillColor: '#090B0E',
+        fillOpacity: 1,
+        weight: 3
+      }).addTo(map).bindPopup('<strong>Start Point</strong>');
 
-      // Scrubber Marker
-      scrubberMarker = L.circleMarker(startPt, { radius: 8, color: '#FF3366', fillColor: '#00E5FF', fillOpacity: 1, weight: 3 }).addTo(map);
+      // Finish Marker (Checkered / Racing Red)
+      endMarker = L.circleMarker(latLngs[latLngs.length - 1], {
+        radius: 7,
+        color: '#FF3366',
+        fillColor: '#090B0E',
+        fillOpacity: 1,
+        weight: 3
+      }).addTo(map).bindPopup('<strong>Finish Point</strong>');
+
+      // Live Scrubber Marker
+      scrubberMarker = L.circleMarker(latLngs[0], {
+        radius: 9,
+        color: '#00E5FF',
+        fillColor: '#FF3366',
+        fillOpacity: 1,
+        weight: 3.5
+      }).addTo(map);
     }
 
-    function drawSpeedChart(points) {
-      const ctx = document.getElementById('speedChart').getContext('2d');
+    // ----------------------------------------------------
+    // SPEEDOMETER & G-FORCE CANVAS RENDERING
+    // ----------------------------------------------------
+    function drawSpeedometer(speedKmh, maxKmh = 180) {
+      const canvas = document.getElementById('speedometerCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w / 2;
+      const cy = h - 20;
+      const r = 70;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Background Arc
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, Math.PI, 2 * Math.PI, false);
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = '#1E2532';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Active Velocity Arc
+      const ratio = Math.min(1, Math.max(0, speedKmh / maxKmh));
+      const endAngle = Math.PI + ratio * Math.PI;
+
+      if (ratio > 0.01) {
+        const grad = ctx.createLinearGradient(0, cy, w, cy);
+        grad.addColorStop(0, '#00F5D4');
+        grad.addColorStop(0.6, '#00E5FF');
+        grad.addColorStop(1, '#FF3366');
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, Math.PI, endAngle, false);
+        ctx.lineWidth = 10;
+        ctx.strokeStyle = grad;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+
+      // Digital Speed readout
+      ctx.font = 'bold 32px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(Math.round(speedKmh).toString(), cx, cy - 10);
+
+      // Subtitle
+      ctx.font = 'bold 10px "Plus Jakarta Sans", sans-serif';
+      ctx.fillStyle = '#00F5D4';
+      ctx.fillText('KM / H', cx, cy + 6);
+    }
+
+    function drawGForce(gLat, gLong) {
+      const canvas = document.getElementById('gforceCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const r = 55;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Rings (0.5G, 1.0G, 1.5G)
+      [0.33, 0.66, 1.0].forEach((ratio, idx) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * ratio, 0, 2 * Math.PI);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = idx === 2 ? '#2A3445' : '#1A212D';
+        ctx.stroke();
+      });
+
+      // Crosshairs
+      ctx.beginPath();
+      ctx.moveTo(cx - r, cy);
+      ctx.lineTo(cx + r, cy);
+      ctx.moveTo(cx, cy - r);
+      ctx.lineTo(cx, cy + r);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#1E2532';
+      ctx.stroke();
+
+      // G-Force Ball
+      const maxG = 1.5;
+      const ballX = cx + (gLat / maxG) * r;
+      const ballY = cy - (gLong / maxG) * r;
+
+      ctx.beginPath();
+      ctx.arc(ballX, ballY, 6, 0, 2 * Math.PI);
+      ctx.fillStyle = '#00F5D4';
+      ctx.shadowColor = '#00F5D4';
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Digital readout
+      ctx.font = 'bold 11px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#94A3B8';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${gLat.toFixed(2)}G | ${gLong.toFixed(2)}G`, cx, h - 4);
+    }
+
+    // ----------------------------------------------------
+    // INTERACTIVE PROFILE CHARTS
+    // ----------------------------------------------------
+    function switchChartMode(mode) {
+      currentChartMode = mode;
+      const tabSpd = document.getElementById('chartTabSpeed');
+      const tabAlt = document.getElementById('chartTabAltitude');
+
+      if (mode === 'speed') {
+        tabSpd.className = 'px-3 py-1 rounded-lg bg-panelBorder text-neonCyan transition';
+        tabAlt.className = 'px-3 py-1 rounded-lg text-slate-400 hover:text-white transition';
+      } else {
+        tabAlt.className = 'px-3 py-1 rounded-lg bg-panelBorder text-sportAmber transition';
+        tabSpd.className = 'px-3 py-1 rounded-lg text-slate-400 hover:text-white transition';
+      }
+
+      drawChart(currentPoints);
+    }
+
+    function drawChart(points) {
+      const canvas = document.getElementById('speedChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
       if (speedChartInstance) speedChartInstance.destroy();
+
+      if (!points || points.length === 0) return;
 
       const labels = points.map(p => ((p.cumulativeDistanceMeters || 0) / 1000).toFixed(2));
       const speeds = points.map(p => Math.round((p.speedMps || 0) * 3.6));
+      const altitudes = points.map(p => Math.round(p.altitudeMeters || 0));
 
-      const gradient = ctx.createLinearGradient(0, 0, 0, 240);
-      gradient.addColorStop(0, 'rgba(0, 245, 212, 0.35)');
-      gradient.addColorStop(1, 'rgba(0, 229, 255, 0.0)');
+      const isSpeed = currentChartMode === 'speed';
+      const chartData = isSpeed ? speeds : altitudes;
+      const strokeColor = isSpeed ? '#00F5D4' : '#FFB703';
+      const labelText = isSpeed ? 'Speed (km/h)' : 'Altitude (m)';
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+      if (isSpeed) {
+        gradient.addColorStop(0, 'rgba(0, 245, 212, 0.35)');
+        gradient.addColorStop(1, 'rgba(0, 229, 255, 0.0)');
+      } else {
+        gradient.addColorStop(0, 'rgba(255, 183, 3, 0.35)');
+        gradient.addColorStop(1, 'rgba(255, 183, 3, 0.0)');
+      }
 
       speedChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
           labels,
           datasets: [{
-            label: 'Speed (km/h)',
-            data: speeds,
-            borderColor: '#00F5D4',
+            label: labelText,
+            data: chartData,
+            borderColor: strokeColor,
             borderWidth: 2.5,
             fill: true,
             backgroundColor: gradient,
-            tension: 0.25,
+            tension: 0.3,
             pointRadius: 0,
             pointHoverRadius: 6,
-            pointHoverBackgroundColor: '#FF3366'
+            pointHoverBackgroundColor: '#FF3366',
+            pointHoverBorderColor: '#FFFFFF',
+            pointHoverBorderWidth: 2
           }]
         },
         options: {
@@ -613,48 +1234,136 @@
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: '#16191F',
+              backgroundColor: '#12161F',
               titleColor: '#F1F5F9',
-              bodyColor: '#00F5D4',
-              borderColor: '#232832',
+              bodyColor: strokeColor,
+              borderColor: '#1E2532',
               borderWidth: 1,
+              titleFont: { family: 'Plus Jakarta Sans', weight: 'bold' },
+              bodyFont: { family: 'JetBrains Mono', weight: 'bold' },
               callbacks: {
-                label: (ctx) => `${ctx.parsed.y} km/h`
+                title: (items) => `Distance: ${items[0].label} km`,
+                label: (ctx) => `${labelText}: ${ctx.parsed.y} ${isSpeed ? 'km/h' : 'm'}`
               }
             }
           },
           scales: {
             x: {
-              grid: { color: '#1E232B' },
-              ticks: { color: '#64748B', maxTicksLimit: 8 }
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: { color: '#64748B', font: { family: 'JetBrains Mono' }, maxTicksLimit: 8 }
             },
             y: {
-              grid: { color: '#1E232B' },
-              ticks: { color: '#64748B' }
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: { color: '#64748B', font: { family: 'JetBrains Mono' } }
             }
           },
           onHover: (e, elements) => {
             if (elements.length > 0) {
               const idx = elements[0].index;
-              const pt = points[idx];
-              if (pt && scrubberMarker) {
-                scrubberMarker.setLatLng([pt.latitude, pt.longitude]);
-                const hud = document.getElementById('mapOverlayHud');
-                hud.classList.remove('hidden');
-                document.getElementById('hudSpeed').innerText = Math.round((pt.speedMps || 0) * 3.6);
-                const alt = pt.altitudeMeters ? `${Math.round(pt.altitudeMeters)}m` : '--';
-                document.getElementById('hudDistAlt').innerText = `${((pt.cumulativeDistanceMeters || 0)/1000).toFixed(2)} km • Alt: ${alt}`;
-              }
+              updateScrubberPosition(idx);
             }
           }
         }
       });
     }
 
+    // ----------------------------------------------------
+    // SCRUBBER & PLAYBACK ENGINE
+    // ----------------------------------------------------
+    function onScrubInput(val) {
+      updateScrubberPosition(parseInt(val, 10));
+    }
+
+    function updateScrubberPosition(idx) {
+      if (!currentPoints || idx < 0 || idx >= currentPoints.length) return;
+      playbackIndex = idx;
+      document.getElementById('scrubberSlider').value = idx;
+
+      const pt = currentPoints[idx];
+      const speedKmh = (pt.speedMps || 0) * 3.6;
+      const distKm = ((pt.cumulativeDistanceMeters || 0) / 1000).toFixed(2);
+      const altM = pt.altitudeMeters ? Math.round(pt.altitudeMeters) : '--';
+      const timeStr = pt.timestamp ? new Date(pt.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}) : '--';
+
+      // Update Map Marker
+      if (scrubberMarker) {
+        scrubberMarker.setLatLng([pt.latitude, pt.longitude]);
+      }
+
+      // Update Map Overlay HUD
+      document.getElementById('hudSpeed').innerText = Math.round(speedKmh);
+      document.getElementById('hudDist').innerText = `${distKm} km`;
+      document.getElementById('hudAlt').innerText = `${altM} m`;
+      document.getElementById('hudTime').innerText = timeStr;
+      document.getElementById('playbackCurrentDist').innerText = `${distKm} km`;
+
+      // Calculate instantaneous Gs from adjacent points
+      let gLat = 0;
+      let gLong = 0;
+      if (idx > 0) {
+        const prev = currentPoints[idx - 1];
+        const dt = Math.max(0.2, (pt.timestamp - prev.timestamp) / 1000);
+        const dv = pt.speedMps - prev.speedMps;
+        gLong = (dv / dt) / 9.80665; // Longitudinal Gs
+        gLat = Math.sin(idx / 5) * 0.4; // Simulated cornering Gs
+      }
+
+      // Render Canvas Gauges
+      drawSpeedometer(speedKmh);
+      drawGForce(gLat, gLong);
+    }
+
+    function togglePlayback() {
+      if (isPlaying) {
+        pausePlayback();
+      } else {
+        startPlayback();
+      }
+    }
+
+    function startPlayback() {
+      if (currentPoints.length === 0) return;
+      isPlaying = true;
+      document.getElementById('playIcon').classList.add('hidden');
+      document.getElementById('pauseIcon').classList.remove('hidden');
+
+      const intervalMs = Math.max(30, Math.floor(200 / playbackSpeed));
+      playbackInterval = setInterval(() => {
+        if (playbackIndex < currentPoints.length - 1) {
+          updateScrubberPosition(playbackIndex + 1);
+        } else {
+          pausePlayback();
+        }
+      }, intervalMs);
+    }
+
+    function pausePlayback() {
+      isPlaying = false;
+      document.getElementById('playIcon').classList.remove('hidden');
+      document.getElementById('pauseIcon').classList.add('hidden');
+      if (playbackInterval) clearInterval(playbackInterval);
+    }
+
+    function resetPlayback() {
+      pausePlayback();
+      updateScrubberPosition(0);
+    }
+
+    function changePlaybackSpeed(speedVal) {
+      playbackSpeed = parseFloat(speedVal);
+      if (isPlaying) {
+        pausePlayback();
+        startPlayback();
+      }
+    }
+
+    // ----------------------------------------------------
+    // RIDES EXPLORER TABLE & FILTERING
+    // ----------------------------------------------------
     function renderTripsTable(trips) {
       const tbody = document.getElementById('tripsTableBody');
-      if (trips.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">No trips stored in MongoDB Atlas yet. Click "Simulate & Sync Ride" or sync from the Android app!</td></tr>`;
+      if (!trips || trips.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-12 text-center text-slate-500 font-sans">No trips stored in MongoDB Atlas yet. Click "Simulate Run" to create your first telemetry log!</td></tr>`;
         return;
       }
 
@@ -663,29 +1372,48 @@
         const maxKmh = Math.round((t.maxSpeedMps || 0) * 3.6);
         const avgKmh = Math.round((t.avgMovingSpeedMps || 0) * 3.6);
         const duration = formatDuration(t.movingDurationMs || 0);
+        const userTag = t.userEmail ? `<span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-sans font-medium">${t.userEmail.split('@')[0]}</span>` : `<span class="text-slate-500 text-[10px] font-sans">Public</span>`;
 
         return `
-          <tr class="hover:bg-[#16191F]/60 transition">
-            <td class="px-4 py-3 font-semibold text-white">${t.title}</td>
-            <td class="px-4 py-3 text-slate-400 text-xs">${new Date(t.startTime).toLocaleDateString()} ${new Date(t.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-            <td class="px-4 py-3 mono text-[#00F5D4] font-bold">${distKm} km</td>
-            <td class="px-4 py-3 mono text-[#FF3366] font-bold">${maxKmh} km/h</td>
-            <td class="px-4 py-3 mono text-[#00E5FF] font-medium">${avgKmh} km/h</td>
-            <td class="px-4 py-3 mono text-slate-300">${duration}</td>
-            <td class="px-4 py-3 text-right space-x-2">
-              <button onclick="loadTripDetails('${t._id}')" class="px-2.5 py-1 text-xs rounded bg-[#1E232B] hover:bg-[#282F3B] text-[#00F5D4] border border-[#2B3240]">View</button>
-              <button onclick="window.location='/api/trips/${t._id}/export/gpx'" class="px-2.5 py-1 text-xs rounded bg-[#1E232B] hover:bg-[#282F3B] text-slate-300 border border-[#2B3240]">GPX</button>
-              <button onclick="deleteTrip('${t._id}')" class="px-2.5 py-1 text-xs rounded bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/50">Delete</button>
+          <tr class="hover:bg-panelBorder/30 transition border-b border-panelBorder/40">
+            <td class="px-4 py-3 font-semibold text-white font-sans">${t.title}</td>
+            <td class="px-4 py-3 text-slate-400 text-[11px]">${new Date(t.startTime).toLocaleDateString()} ${new Date(t.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+            <td class="px-4 py-3 text-neonCyan font-bold">${distKm} km</td>
+            <td class="px-4 py-3 text-racingRed font-bold">${maxKmh} km/h</td>
+            <td class="px-4 py-3 text-neonBlue font-medium">${avgKmh} km/h</td>
+            <td class="px-4 py-3 text-slate-300">${duration}</td>
+            <td class="px-4 py-3">${userTag}</td>
+            <td class="px-4 py-3 text-right space-x-1.5 font-sans">
+              <button onclick="inspectTripFromTable('${t._id}')" class="px-2.5 py-1 text-xs rounded-lg bg-cardDark hover:bg-panelBorder text-neonCyan border border-panelBorder font-semibold transition">Inspect</button>
+              <button onclick="window.location='/api/trips/${t._id}/export/gpx'" class="px-2 py-1 text-xs rounded-lg bg-cardDark hover:bg-panelBorder text-slate-300 border border-panelBorder transition">GPX</button>
+              <button onclick="window.location='/api/trips/${t._id}/export/csv'" class="px-2 py-1 text-xs rounded-lg bg-cardDark hover:bg-panelBorder text-slate-300 border border-panelBorder transition">CSV</button>
+              <button onclick="deleteTrip('${t._id}')" class="px-2 py-1 text-xs rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/40 transition">✕</button>
             </td>
           </tr>
         `;
       }).join('');
     }
 
+    function inspectTripFromTable(tripId) {
+      switchMainView('studio');
+      loadTripDetails(tripId);
+    }
+
+    function filterTripsTable() {
+      const q = document.getElementById('explorerSearch').value.toLowerCase();
+      const filtered = allTripsData.filter(t => (t.title || '').toLowerCase().includes(q) || (t.userEmail || '').toLowerCase().includes(q));
+      renderTripsTable(filtered);
+    }
+
     async function deleteTrip(tripId) {
       if (!confirm('Are you sure you want to delete this trip from MongoDB Atlas?')) return;
-      await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
-      refreshData();
+      try {
+        await fetch(`/api/trips/${tripId}`, { method: 'DELETE' });
+        showToast('Trip deleted from MongoDB Atlas', 'info');
+        refreshData();
+      } catch (err) {
+        showToast('Failed to delete trip: ' + err.message, 'error');
+      }
     }
 
     function downloadActiveGpx() {
@@ -698,8 +1426,11 @@
       window.location = `/api/trips/${currentTripData._id}/export/csv`;
     }
 
-    // Generate and push realistic canyon ride telemetry to MongoDB Atlas
+    // ----------------------------------------------------
+    // SIMULATED TRIP GENERATOR (REALISTIC CANYON RUN)
+    // ----------------------------------------------------
     async function simulateAndUploadTrip() {
+      showToast('Generating telemetry & uploading to MongoDB Atlas...', 'info');
       const startTime = Date.now() - 3600000;
       const points = [];
       let lat = 37.7749;
@@ -729,7 +1460,7 @@
 
       const trip = {
         title: "Canyon Run & Mountain Pass " + new Date().toLocaleDateString(),
-        notes: "Aggressive twisties and high speed acceleration pulls",
+        notes: "Twisties and high-speed acceleration pulls",
         startTime: startTime,
         endTime: startTime + 360000,
         status: "FINISHED",
@@ -742,22 +1473,197 @@
         pauseDurationMs: 0
       };
 
-      await fetch('/api/trips/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(currentAuthToken ? { 'Authorization': `Bearer ${currentAuthToken}` } : {})
-        },
-        body: JSON.stringify({
-          trip,
-          points,
-          userEmail: currentAuthUser ? currentAuthUser.email : null
-        })
-      });
+      try {
+        await fetch('/api/trips/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(currentAuthToken ? { 'Authorization': `Bearer ${currentAuthToken}` } : {})
+          },
+          body: JSON.stringify({
+            trip,
+            points,
+            userEmail: currentAuthUser ? currentAuthUser.email : null
+          })
+        });
 
+        showToast('Successfully synced 180 telemetry points to Atlas!', 'success');
+        refreshData();
+      } catch (err) {
+        showToast('Error uploading simulated trip: ' + err.message, 'error');
+      }
+    }
+
+    // ----------------------------------------------------
+    // AUTHENTICATION LOGIC
+    // ----------------------------------------------------
+    function checkAuthSession() {
+      const savedUser = localStorage.getItem('rp_auth_user');
+      const savedToken = localStorage.getItem('rp_auth_token');
+      if (savedUser && savedToken) {
+        try {
+          currentAuthUser = JSON.parse(savedUser);
+          currentAuthToken = savedToken;
+        } catch (e) {
+          localStorage.removeItem('rp_auth_user');
+          localStorage.removeItem('rp_auth_token');
+        }
+      }
+      updateAuthUI();
+    }
+
+    function updateAuthUI() {
+      const pill = document.getElementById('userProfilePill');
+      const btn = document.getElementById('navLoginBtn');
+      const navEmail = document.getElementById('navUserEmail');
+      const avatarInitial = document.getElementById('userAvatarInitial');
+
+      if (currentAuthUser) {
+        pill.classList.remove('hidden');
+        pill.classList.add('flex');
+        btn.classList.add('hidden');
+        navEmail.textContent = currentAuthUser.name || currentAuthUser.email;
+        avatarInitial.textContent = (currentAuthUser.name || currentAuthUser.email)[0].toUpperCase();
+      } else {
+        pill.classList.add('hidden');
+        pill.classList.remove('flex');
+        btn.classList.remove('hidden');
+      }
+    }
+
+    function openAuthModal() {
+      document.getElementById('authModal').classList.remove('hidden');
+      document.getElementById('authAlert').classList.add('hidden');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.add('hidden');
+    }
+
+    function setAuthMode(mode) {
+      currentAuthMode = mode;
+      const nameGrp = document.getElementById('nameFieldGroup');
+      const title = document.getElementById('authModalTitle');
+      const sub = document.getElementById('authModalSubtitle');
+      const submitBtn = document.getElementById('authSubmitBtn');
+      const tabIn = document.getElementById('tabSignIn');
+      const tabUp = document.getElementById('tabSignUp');
+
+      if (mode === 'signup') {
+        nameGrp.classList.remove('hidden');
+        title.textContent = 'Create RoadPulse Account';
+        sub.textContent = 'Sync and analyze your personal telemetry in Atlas';
+        submitBtn.textContent = 'Create Account';
+        tabUp.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg bg-panelBorder text-neonCyan transition';
+        tabIn.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+      } else {
+        nameGrp.classList.add('hidden');
+        title.textContent = 'Sign In to RoadPulse';
+        sub.textContent = 'Access your cloud telemetry & GPS runs';
+        submitBtn.textContent = 'Sign In';
+        tabIn.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg bg-panelBorder text-neonCyan transition';
+        tabUp.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+      }
+    }
+
+    function togglePasswordVisibility() {
+      const input = document.getElementById('authPassword');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const alertEl = document.getElementById('authAlert');
+      alertEl.classList.add('hidden');
+
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const name = document.getElementById('authName').value.trim();
+
+      const endpoint = currentAuthMode === 'signup' ? '/api/auth/register' : '/api/auth/login';
+      const payload = currentAuthMode === 'signup' ? { email, password, name } : { email, password };
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alertEl.className = 'p-3 rounded-xl text-xs font-medium bg-rose-950/60 border border-rose-800 text-rose-300';
+          alertEl.textContent = data.error || 'Authentication failed';
+          alertEl.classList.remove('hidden');
+          return;
+        }
+
+        currentAuthUser = data.user;
+        currentAuthToken = data.token;
+        localStorage.setItem('rp_auth_user', JSON.stringify(data.user));
+        localStorage.setItem('rp_auth_token', data.token);
+
+        updateAuthUI();
+        closeAuthModal();
+        showToast(`Welcome, ${data.user.name}!`, 'success');
+        refreshData();
+      } catch (err) {
+        alertEl.className = 'p-3 rounded-xl text-xs font-medium bg-rose-950/60 border border-rose-800 text-rose-300';
+        alertEl.textContent = err.message;
+        alertEl.classList.remove('hidden');
+      }
+    }
+
+    function handleLogout() {
+      currentAuthUser = null;
+      currentAuthToken = null;
+      localStorage.removeItem('rp_auth_user');
+      localStorage.removeItem('rp_auth_token');
+      updateAuthUI();
+      showToast('Logged out of RoadPulse', 'info');
       refreshData();
     }
 
+    // ----------------------------------------------------
+    // LATENCY PING TESTER
+    // ----------------------------------------------------
+    async function pingDatabase() {
+      const resEl = document.getElementById('pingResult');
+      resEl.innerText = 'Pinging MongoDB Atlas...';
+      const t0 = performance.now();
+      try {
+        const res = await fetch('/api/status');
+        const t1 = performance.now();
+        const latency = Math.round(t1 - t0);
+        resEl.innerHTML = `<span class="text-emerald-400 font-bold">${latency}ms latency</span> • Atlas Online`;
+      } catch (e) {
+        resEl.innerHTML = `<span class="text-racingRed font-bold">Failed</span>`;
+      }
+    }
+
+    // ----------------------------------------------------
+    // TOAST NOTIFICATIONS
+    // ----------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let borderCol = 'border-panelBorder';
+      let icon = 'ℹ️';
+      if (type === 'success') { borderCol = 'border-emerald-500/50'; icon = '✅'; }
+      if (type === 'error') { borderCol = 'border-racingRed/50'; icon = '⚠️'; }
+
+      toast.className = `telemetry-card p-3.5 flex items-center space-x-2.5 text-xs text-white border ${borderCol} shadow-2xl transition-all duration-300 transform translate-y-2 pointer-events-auto`;
+      toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => { toast.classList.remove('translate-y-2'); }, 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Duration Formatter Helper
     function formatDuration(ms) {
       if (!ms || ms <= 0) return '00:00:00';
       const s = Math.floor(ms / 1000);
@@ -766,12 +1672,6 @@
       const secs = s % 60;
       return `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
     }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      initMap();
-      checkAuthSession();
-      refreshData();
-    });
   </script>
 </body>
 </html>
