@@ -144,14 +144,14 @@ fun DashboardScreen(
 
                 Column {
                     Text(
-                        text = "ROADPULSE",
+                        text = "RHODY",
                         color = TextPrimary,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 1.5.sp
                     )
                     Text(
-                        text = "TELEMETRY CLOUD",
+                        text = "MOTORCYCLE TELEMETRY",
                         color = NeonCyan,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.ExtraBold,

@@ -523,9 +523,9 @@ class TripRecordingService : LifecycleService() {
         val timeStr = TripCalculator.formatDuration(metrics.elapsedTimeMs)
 
         val title = when (tripStatus) {
-            TripStatus.RECORDING -> "RoadPulse Tracking - $speedStr"
-            TripStatus.PAUSED -> "RoadPulse - Trip Paused"
-            else -> "RoadPulse Trip"
+            TripStatus.RECORDING -> "Rhody Tracking - $speedStr"
+            TripStatus.PAUSED -> "Rhody - Trip Paused"
+            else -> "Rhody Trip"
         }
 
         val content = "$distStr | $timeStr | Max: ${String.format("%.0f", metrics.maxSpeedKmh)} km/h"

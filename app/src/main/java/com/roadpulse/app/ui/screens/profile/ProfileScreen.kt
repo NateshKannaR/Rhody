@@ -308,7 +308,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = user.name.ifEmpty { "RoadPulse Pilot" },
+                    text = user.name.ifEmpty { "Rhody Pilot" },
                     color = TextPrimary,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
@@ -491,7 +491,7 @@ fun ProfileScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Sign Out of RoadPulse",
+                    text = "Sign Out of Rhody",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = RacingRed
@@ -805,7 +805,7 @@ fun ProfileScreen(
                         )
                     } else {
                         Text(
-                            text = if (isLoginMode) "Sign In to RoadPulse" else "Create RoadPulse Account",
+                            text = if (isLoginMode) "Sign In to Rhody" else "Create Rhody Account",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
                         )

@@ -554,7 +554,7 @@ app.get('/api/trips/:id/export/csv', async (req, res) => {
 
 function buildGpx(trip, points) {
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-  xml += `<gpx version="1.1" creator="RoadPulse Cloud" xmlns="http://www.topografix.com/GPX/1/1">\n`;
+  xml += `<gpx version="1.1" creator="Rhody Cloud" xmlns="http://www.topografix.com/GPX/1/1">\n`;
   xml += `  <metadata>\n    <name>${escapeXml(trip.title)}</name>\n    <time>${new Date(trip.startTime).toISOString()}</time>\n  </metadata>\n`;
   xml += `  <trk>\n    <name>${escapeXml(trip.title)}</name>\n    <trkseg>\n`;
   for (const pt of points) {
@@ -569,7 +569,7 @@ function buildGpx(trip, points) {
 }
 
 function buildCsv(trip, points) {
-  let csv = `# RoadPulse Cloud Export\n# Title: ${trip.title}\n# Start: ${new Date(trip.startTime).toISOString()}\n`;
+  let csv = `# Rhody Cloud Export\n# Title: ${trip.title}\n# Start: ${new Date(trip.startTime).toISOString()}\n`;
   csv += `point_index,timestamp,latitude,longitude,speed_kmh,cumulative_distance_km,altitude_m\n`;
   points.forEach((p, i) => {
     const speedKmh = ((p.speedMps || 0) * 3.6).toFixed(1);
@@ -598,7 +598,7 @@ app.use((req, res) => {
 
 if (!process.env.VERCEL) {
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[RoadPulse Web Server] Running on http://localhost:${PORT}`);
+    console.log(`[Rhody Web Server] Running on http://localhost:${PORT}`);
   });
 }
 module.exports = app;

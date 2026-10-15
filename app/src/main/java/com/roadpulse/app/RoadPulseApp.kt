@@ -22,7 +22,7 @@ class RoadPulseApp : Application() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "RoadPulse Active Trip Recording",
+                "Rhody Active Trip Recording",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Shows persistent tracking metrics and status during active trip recording."
