@@ -36,6 +36,7 @@ async function getDb() {
         await database.collection('trips').createIndex({ userEmail: 1, startTime: -1 });
         await database.collection('track_points').createIndex({ tripId: 1, timestamp: 1 });
         await database.collection('users').createIndex({ email: 1 }, { unique: true });
+        await database.collection('places').createIndex({ userEmail: 1, createdAt: -1 });
       } catch (err) {
         console.warn('[RoadPulse] Index creation notice:', err.message);
       }
@@ -224,8 +225,246 @@ app.get('/api/auth/me', async (req, res) => {
     res.json({
       id: user._id.toString(),
       email: user.email,
-      name: user.name || user.email.split('@')[0]
+      name: user.name || 'Natesh',
+      avatar: user.avatar || '',
+      bio: user.bio || '',
+      bikeModel: user.bikeModel || 'Yamaha MT-09 SP',
+      bikeSpecs: user.bikeSpecs || '890cc Triple Cylinder • 119 BHP',
+      bikePlate: user.bikePlate || 'TN-38-RH-0909',
+      tireSetup: user.tireSetup || 'Pirelli Diablo Rosso IV',
+      emergencyContactName: user.emergencyContactName || 'Family Guardian (Mom & Dad)',
+      emergencyContactPhone: user.emergencyContactPhone || '+91 98765 43210',
+      speedUnit: user.speedUnit || 'kmh'
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/user/profile
+app.get('/api/user/profile', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const decoded = verifyToken(token);
+
+  const defaultProfile = {
+    id: 'guest',
+    name: 'Natesh',
+    email: 'pilot@rhody.io',
+    avatar: '',
+    bio: 'Weekend canyon carver & telemetry enthusiast. Western Ghats apex seeker.',
+    bikeModel: 'Yamaha MT-09 SP',
+    bikeSpecs: '890cc Crossplane-3 • 119 BHP',
+    bikePlate: 'TN-38-RH-0909',
+    tireSetup: 'Pirelli Diablo Rosso IV (Cold PSI: F 32 / R 36)',
+    emergencyContactName: 'Family Guardian (Mom & Dad)',
+    emergencyContactPhone: '+91 98765 43210',
+    speedUnit: 'kmh'
+  };
+
+  if (!decoded || !db) {
+    return res.json({ success: true, profile: defaultProfile });
+  }
+
+  try {
+    const user = await db.collection('users').findOne({ email: decoded.email.toLowerCase() });
+    if (!user) return res.json({ success: true, profile: defaultProfile });
+    res.json({
+      success: true,
+      profile: {
+        id: user._id.toString(),
+        name: user.name || 'Natesh',
+        email: user.email,
+        avatar: user.avatar || '',
+        bio: user.bio || defaultProfile.bio,
+        bikeModel: user.bikeModel || defaultProfile.bikeModel,
+        bikeSpecs: user.bikeSpecs || defaultProfile.bikeSpecs,
+        bikePlate: user.bikePlate || defaultProfile.bikePlate,
+        tireSetup: user.tireSetup || defaultProfile.tireSetup,
+        emergencyContactName: user.emergencyContactName || defaultProfile.emergencyContactName,
+        emergencyContactPhone: user.emergencyContactPhone || defaultProfile.emergencyContactPhone,
+        speedUnit: user.speedUnit || 'kmh'
+      }
+    });
+  } catch (err) {
+    res.json({ success: true, profile: defaultProfile });
+  }
+});
+
+// POST /api/user/profile
+app.post('/api/user/profile', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const decoded = verifyToken(token);
+
+  const {
+    name, avatar, bio, bikeModel, bikeSpecs, bikePlate,
+    tireSetup, emergencyContactName, emergencyContactPhone, speedUnit
+  } = req.body;
+
+  const updateFields = { updatedAt: new Date() };
+  if (name !== undefined) updateFields.name = String(name).trim();
+  if (avatar !== undefined) updateFields.avatar = avatar; // base64 data URL
+  if (bio !== undefined) updateFields.bio = String(bio).trim();
+  if (bikeModel !== undefined) updateFields.bikeModel = String(bikeModel).trim();
+  if (bikeSpecs !== undefined) updateFields.bikeSpecs = String(bikeSpecs).trim();
+  if (bikePlate !== undefined) updateFields.bikePlate = String(bikePlate).trim();
+  if (tireSetup !== undefined) updateFields.tireSetup = String(tireSetup).trim();
+  if (emergencyContactName !== undefined) updateFields.emergencyContactName = String(emergencyContactName).trim();
+  if (emergencyContactPhone !== undefined) updateFields.emergencyContactPhone = String(emergencyContactPhone).trim();
+  if (speedUnit !== undefined) updateFields.speedUnit = speedUnit;
+
+  if (decoded && decoded.email && db) {
+    try {
+      await db.collection('users').updateOne(
+        { email: decoded.email.toLowerCase() },
+        { $set: updateFields }
+      );
+    } catch (err) {
+      console.warn('[Profile Save Warning]:', err.message);
+    }
+  }
+
+  res.json({
+    success: true,
+    message: 'Profile updated successfully',
+    profile: updateFields
+  });
+});
+
+// GET /api/user/places
+app.get('/api/user/places', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const decoded = verifyToken(token);
+
+  // Curated iconic default motorcycle spots
+  const defaultPlaces = [
+    {
+      id: 'default_1',
+      name: 'Munnar Gap Road Pass',
+      category: 'pass',
+      lat: 10.0889,
+      lng: 77.0595,
+      altitude: 1530,
+      notes: 'Misty hairpin curves & tea garden switchbacks. High elevation hillclimb.',
+      isDefault: true
+    },
+    {
+      id: 'default_2',
+      name: 'Valparai 40 Hairpins',
+      category: 'pass',
+      lat: 10.3256,
+      lng: 76.9558,
+      altitude: 1100,
+      notes: '40 continuous numbered hairpin curves through dense Western Ghats canopy.',
+      isDefault: true
+    },
+    {
+      id: 'default_3',
+      name: 'Kolli Hills 70 Hairpin Bends',
+      category: 'pass',
+      lat: 11.2486,
+      lng: 78.3385,
+      altitude: 1300,
+      notes: 'The legendary mountain of death — 70 tight apex corners in 18 km.',
+      isDefault: true
+    },
+    {
+      id: 'default_4',
+      name: 'Kari Motor Speedway Circuit',
+      category: 'track',
+      lat: 10.9022,
+      lng: 77.0278,
+      altitude: 410,
+      notes: 'FIA-certified 2.1 km road-racing circuit. High-speed apex & chicane testing.',
+      isDefault: true
+    },
+    {
+      id: 'default_5',
+      name: 'Basecamp Garage / Home',
+      category: 'garage',
+      lat: 11.0168,
+      lng: 76.9558,
+      altitude: 420,
+      notes: 'Primary motorcycle telemetry sync station & tool garage.',
+      isDefault: true
+    },
+    {
+      id: 'default_6',
+      name: 'Western Ghats Ridge Fuel & Cafe',
+      category: 'fuel',
+      lat: 10.1500,
+      lng: 77.0200,
+      altitude: 1480,
+      notes: 'High-octane XP95 / Speed fuel station and hot tea pitstop.',
+      isDefault: true
+    }
+  ];
+
+  if (!db) {
+    return res.json({ success: true, places: defaultPlaces });
+  }
+
+  try {
+    const filter = decoded && decoded.email
+      ? { $or: [{ userEmail: decoded.email.toLowerCase() }, { isDefault: true }] }
+      : { isDefault: true };
+
+    const dbPlaces = await db.collection('places').find(filter).sort({ createdAt: -1 }).toArray();
+    
+    // Merge database places with default places if DB has none yet
+    const places = (dbPlaces && dbPlaces.length > 0) ? dbPlaces : defaultPlaces;
+    res.json({ success: true, places });
+  } catch (err) {
+    res.json({ success: true, places: defaultPlaces });
+  }
+});
+
+// POST /api/user/places
+app.post('/api/user/places', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const decoded = verifyToken(token);
+
+  try {
+    const { name, category, lat, lng, altitude, notes } = req.body;
+    if (!name || lat === undefined || lng === undefined) {
+      return res.status(400).json({ error: 'Name, latitude, and longitude are required' });
+    }
+    const placeDoc = {
+      name: String(name).trim(),
+      category: category || 'waypoint', // 'garage', 'pass', 'fuel', 'cafe', 'track', 'waypoint'
+      lat: parseFloat(lat),
+      lng: parseFloat(lng),
+      altitude: altitude ? parseFloat(altitude) : null,
+      notes: notes ? String(notes).trim() : '',
+      userEmail: decoded ? decoded.email.toLowerCase() : 'guest',
+      createdAt: new Date()
+    };
+
+    if (db) {
+      const result = await db.collection('places').insertOne(placeDoc);
+      placeDoc._id = result.insertedId;
+    } else {
+      placeDoc._id = 'local_' + Date.now();
+    }
+
+    res.status(201).json({ success: true, place: placeDoc });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/user/places/:id
+app.delete('/api/user/places/:id', async (req, res) => {
+  if (!db) return res.json({ success: true, message: 'Removed locally' });
+  try {
+    const id = req.params.id;
+    if (id && ObjectId.isValid(id)) {
+      await db.collection('places').deleteOne({ _id: new ObjectId(id) });
+    }
+    res.json({ success: true, message: 'Place removed' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

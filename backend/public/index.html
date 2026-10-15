@@ -165,62 +165,54 @@
       </div>
 
       <!-- Navigation Tabs -->
-      <nav class="hidden md:flex items-center p-1 bg-rpCard border border-rpBorder rounded-lg space-x-1">
-        <button id="navTabStudio" onclick="switchMainView('studio')" class="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-rpBlue text-white shadow-sm transition">
-          Cockpit Studio
+      <nav class="hidden md:flex items-center p-1 bg-rpCard border border-rpBorder rounded-xl space-x-1 shadow-inner">
+        <button id="navTabStudio" onclick="switchMainView('studio')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rpBlue text-white shadow-sm transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          <span>Cockpit Studio</span>
         </button>
-        <button id="navTabParentLive" onclick="switchMainView('parentLive')" class="px-3.5 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition flex items-center space-x-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-rpEmerald status-pulse"></span>
-          <span>Parent Live Tracking</span>
+        <button id="navTabPlaces" onclick="switchMainView('places')" class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-rpAmber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          <span>Saved Places</span>
+          <span id="navPlacesCountBadge" class="px-1.5 py-0.2 text-[9px] font-bold rounded-full bg-rpAmber/20 text-rpAmber">6</span>
         </button>
-        <button id="navTabExplorer" onclick="switchMainView('explorer')" class="px-3.5 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition">
-          Trips Log
+        <button id="navTabExplorer" onclick="switchMainView('explorer')" class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-rpBlueLight" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+          <span>Trips Log</span>
         </button>
-        <button id="navTabCloud" onclick="switchMainView('cloud')" class="px-3.5 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition">
-          Cloud & Atlas
+        <button id="navTabParentLive" onclick="switchMainView('parentLive')" class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+          <span class="w-2 h-2 rounded-full bg-rpEmerald status-pulse"></span>
+          <span>Parent Live</span>
         </button>
-        <button id="navTabAppDownload" onclick="switchMainView('appDownload')" class="px-3.5 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+        <button id="navTabProfile" onclick="switchMainView('profile')" class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          <span>Rider Profile</span>
+        </button>
+        <button id="navTabAppDownload" onclick="switchMainView('appDownload')" class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-1.5">
           <svg class="w-3.5 h-3.5 text-rpEmerald" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
           <span>Mobile App</span>
         </button>
       </nav>
 
-      <!-- Right Actions: Atlas status, User Auth, Fast Simulator, Refresh -->
+      <!-- Right Actions: APK Download, Rider Quick Profile, Refresh -->
       <div class="flex items-center space-x-2.5">
         
-        <!-- Live MongoDB Atlas Status Pill -->
-        <div id="atlasStatusBadge" onclick="switchMainView('cloud')" title="Click to view MongoDB Atlas cloud telemetry" class="cursor-pointer flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-rpCard border border-rpBorder text-xs hover:border-rpBorderLight transition">
-          <span id="atlasStatusDot" class="w-2 h-2 rounded-full bg-rpEmerald status-pulse"></span>
-          <span class="text-slate-400 font-normal hidden sm:inline">Atlas:</span>
-          <span id="atlasStatusText" class="text-rpEmerald font-medium text-[11px]">Connecting...</span>
-        </div>
-
-        <!-- User Profile Pill (When authenticated) -->
-        <div id="userProfilePill" class="hidden items-center space-x-2 px-3 py-1.5 rounded-lg bg-rpCard border border-rpBorder text-xs">
-          <div class="w-5 h-5 rounded-full bg-rpBlue text-white flex items-center justify-center font-bold text-[10px]" id="userAvatarInitial">U</div>
-          <span id="navUserEmail" class="text-slate-200 font-tabular text-[11px] max-w-[120px] truncate">User</span>
-          <button onclick="handleLogout()" title="Sign Out" class="text-slate-400 hover:text-rpRose transition p-0.5 ml-1">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-          </button>
-        </div>
-
         <!-- Direct Download Mobile App APK Button -->
-        <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" download="Rhody-v1.0.0.apk" title="Direct Download Rhody Android APK (v1.0.0 - 57MB)" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-rpEmerald/20 hover:bg-rpEmerald/30 text-rpEmerald border border-rpEmerald/40 transition flex items-center space-x-1.5 shadow-sm group">
+        <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" download="Rhody-v1.0.0.apk" title="Direct Download Rhody Android APK (v1.0.0 - 57MB)" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-rpEmerald/15 hover:bg-rpEmerald/25 text-rpEmerald border border-rpEmerald/40 transition flex items-center space-x-1.5 shadow-sm group">
           <svg class="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
           <span>Download App</span>
           <span class="px-1.5 py-0.2 text-[9px] font-extrabold rounded bg-rpEmerald/30 text-white">APK</span>
         </a>
 
-        <!-- Sign In Button (When not authenticated) -->
-        <button id="navLoginBtn" onclick="openAuthModal()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-rpCard hover:bg-rpCardHover text-slate-200 border border-rpBorder transition flex items-center space-x-1.5">
-          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-          <span>Sign In</span>
-        </button>
-
-        <!-- Fast Simulation Button -->
-        <button onclick="simulateAndUploadTrip()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rpBlue hover:bg-rpBlueHover text-white shadow-sm transition flex items-center space-x-1.5">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4" /></svg>
-          <span class="hidden sm:inline">Simulate Drive</span>
+        <!-- Rider Profile Quick Pill (Always Visible & Interactive) -->
+        <button id="navProfileBtn" onclick="switchMainView('profile')" title="Open Rider Profile & Garage" class="flex items-center space-x-2 px-2.5 py-1.5 rounded-lg bg-rpCard hover:bg-rpCardHover border border-rpBorder hover:border-rpBlue/40 text-xs transition group">
+          <div class="relative w-6 h-6 rounded-full overflow-hidden bg-rpBlue/20 border border-rpBlue/40 flex items-center justify-center shrink-0">
+            <img id="navAvatarImg" src="" alt="Avatar" class="w-full h-full object-cover hidden" />
+            <span id="navAvatarInitial" class="font-bold text-[11px] text-rpBlueLight">N</span>
+          </div>
+          <div class="text-left hidden sm:block">
+            <span class="text-[10px] text-slate-400 block leading-tight">Welcome,</span>
+            <span id="navProfileName" class="text-xs font-bold text-white group-hover:text-rpBlueLight transition block leading-tight">Natesh</span>
+          </div>
         </button>
 
         <!-- Refresh Button -->
@@ -356,6 +348,12 @@
             <span>CSV</span>
           </button>
 
+          <!-- Demo Run Simulation -->
+          <button onclick="simulateAndUploadTrip()" title="Generate a demo test drive run" class="px-2.5 py-2 text-xs font-medium rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition flex items-center space-x-1.5">
+            <svg class="w-3.5 h-3.5 text-rpBlueLight" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span class="hidden sm:inline">Demo Run</span>
+          </button>
+
           <!-- Zoom to Fit Route -->
           <button onclick="fitMapBounds()" title="Fit Route in Viewport" class="p-2 text-xs font-medium rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
@@ -426,11 +424,31 @@
               </div>
             </div>
 
-            <!-- Map Layer Switcher (Bottom Left - Zero API Key Needed) -->
-            <div class="absolute bottom-4 left-4 z-[400] flex bg-rpDark/90 backdrop-blur-md border border-rpBorder rounded-lg p-0.5 text-[11px] font-medium space-x-0.5 shadow-md">
-              <button id="btnLayerDark" onclick="setMapLayer('dark')" class="px-2.5 py-1 rounded bg-rpBlue text-white transition">Dark</button>
-              <button id="btnLayerOsm" onclick="setMapLayer('osm')" class="px-2.5 py-1 rounded text-slate-400 hover:text-white transition">Street</button>
-              <button id="btnLayerSat" onclick="setMapLayer('sat')" class="px-2.5 py-1 rounded text-slate-400 hover:text-white transition">Satellite</button>
+            <!-- Live Road Weather & Grip Telemetry Badge (Top Right Overlay) -->
+            <div id="mapWeatherBadge" class="absolute top-4 right-4 z-[400] bg-rpDark/90 backdrop-blur-md border border-rpBorder rounded-xl px-3 py-2 shadow-lg hidden"></div>
+
+            <!-- Map Controls & Layer Switcher (Bottom Left) -->
+            <div class="absolute bottom-4 left-4 z-[400] flex flex-wrap items-center bg-rpDark/95 backdrop-blur-md border border-rpBorder rounded-xl p-1 text-[11px] font-medium gap-1.5 shadow-xl">
+              <!-- Tile Layers -->
+              <div class="flex space-x-0.5 bg-rpCard p-0.5 rounded-lg border border-rpBorder">
+                <button id="btnLayerDark" onclick="setMapLayer('dark')" class="px-2.5 py-1 rounded-md bg-rpBlue text-white transition">Dark</button>
+                <button id="btnLayerOsm" onclick="setMapLayer('osm')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition">Street</button>
+                <button id="btnLayerSat" onclick="setMapLayer('sat')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition">Satellite</button>
+              </div>
+
+              <div class="h-4 w-px bg-rpBorder"></div>
+
+              <!-- Saved Places Map Layer Toggle -->
+              <button id="btnToggleSavedPlaces" onclick="toggleSavedPlacesOnMap()" class="px-2.5 py-1 rounded-lg bg-rpAmber/15 hover:bg-rpAmber/25 text-rpAmber border border-rpAmber/30 transition flex items-center space-x-1.5">
+                <span>📍 Saved Places</span>
+                <span id="mapPlacesCountBadge" class="font-bold text-[10px] px-1 rounded bg-rpAmber/30">6</span>
+              </button>
+
+              <!-- Pin Spot Map Action -->
+              <button onclick="openAddPlaceModal()" title="Save a place or waypoint to map" class="px-2.5 py-1 rounded-lg bg-rpCard hover:bg-rpCardHover text-slate-200 border border-rpBorder transition flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5 text-rpEmerald" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4" /></svg>
+                <span>Pin Spot</span>
+              </button>
             </div>
           </div>
         </div>
@@ -580,6 +598,241 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    <!-- ================= VIEW: SAVED PLACES & WAYPOINTS ================= -->
+    <div id="viewPlaces" class="space-y-4 hidden">
+      <div class="telemetry-panel p-5">
+        
+        <!-- Header Strip -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-rpBorder gap-3">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-base font-bold text-white flex items-center space-x-2">
+                <svg class="w-5 h-5 text-rpAmber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span>Saved Places & Waypoint Directory</span>
+              </h2>
+              <span id="placesCountTag" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rpAmber/15 text-rpAmber border border-rpAmber/30">6 Saved</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Saved mountain passes, twisties, basecamp garage, fuel pitstops & circuits connected with live map routing</p>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <!-- Add New Place Button -->
+            <button onclick="openAddPlaceModal()" class="px-3.5 py-2 text-xs font-bold rounded-lg bg-rpAmber hover:bg-amber-400 text-slate-950 transition flex items-center space-x-1.5 shadow-sm">
+              <svg class="w-4 h-4 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4" /></svg>
+              <span>Add New Place</span>
+            </button>
+            <!-- View on Cockpit Map Button -->
+            <button onclick="switchMainView('studio')" class="px-3 py-2 text-xs font-medium rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition flex items-center space-x-1.5">
+              <svg class="w-3.5 h-3.5 text-rpBlueLight" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+              <span>View On Map</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Pills & Search -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button onclick="filterPlacesCategory('all')" id="filterCat_all" class="px-3 py-1 rounded-lg text-xs font-semibold bg-rpBlue text-white transition">All Places</button>
+            <button onclick="filterPlacesCategory('pass')" id="filterCat_pass" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-rpDark border border-rpBorder transition">⛰️ Passes</button>
+            <button onclick="filterPlacesCategory('garage')" id="filterCat_garage" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-rpDark border border-rpBorder transition">🏠 Garage</button>
+            <button onclick="filterPlacesCategory('fuel')" id="filterCat_fuel" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-rpDark border border-rpBorder transition">⛽ Pitstops</button>
+            <button onclick="filterPlacesCategory('track')" id="filterCat_track" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-rpDark border border-rpBorder transition">🏁 Tracks</button>
+          </div>
+
+          <div class="relative min-w-[220px]">
+            <input id="searchPlacesInput" type="text" oninput="renderPlacesGrid()" placeholder="Search saved places..." class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-rpBlue transition pr-8" />
+            <svg class="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          </div>
+        </div>
+
+        <!-- Places Grid Cards -->
+        <div id="placesGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-4"></div>
+      </div>
+    </div>
+
+    <!-- ================= VIEW: RIDER PROFILE & GARAGE ================= -->
+    <div id="viewProfile" class="space-y-5 hidden">
+      
+      <!-- Hero Profile Banner Card -->
+      <div class="telemetry-panel p-6 bg-gradient-to-r from-rpCard via-rpCard to-rpBlue/10 border border-rpBorder relative overflow-hidden">
+        <div class="flex flex-col md:flex-row items-center md:items-start gap-6 relative z-10">
+          
+          <!-- Avatar with Photo Upload -->
+          <div class="relative group shrink-0">
+            <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-rpBlue shadow-xl shadow-blue-950/40 bg-rpDark flex items-center justify-center relative">
+              <img id="profileHeroAvatarImg" src="" alt="Rider Photo" class="w-full h-full object-cover hidden" />
+              <div id="profileHeroAvatarInitial" class="w-full h-full bg-gradient-to-br from-rpBlue to-indigo-700 flex items-center justify-center text-3xl font-extrabold text-white">N</div>
+              
+              <!-- Hover / Tap Camera Overlay -->
+              <label for="profilePhotoFileInput" class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
+                <svg class="w-6 h-6 mb-1 text-rpBlueLight" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span class="text-[10px] font-bold">Change Photo</span>
+              </label>
+            </div>
+            
+            <!-- Quick Upload & Remove Buttons below Avatar -->
+            <div class="flex items-center justify-center space-x-1.5 mt-2">
+              <label for="profilePhotoFileInput" class="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-rpBlue hover:bg-rpBlueHover text-white cursor-pointer transition flex items-center space-x-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                <span>Upload</span>
+              </label>
+              <button id="btnRemovePhoto" onclick="removeRiderAvatar()" title="Remove photo" class="px-2 py-1 text-[11px] font-medium rounded-md bg-rpDark hover:bg-rpRose/20 text-slate-400 hover:text-rpRose border border-rpBorder transition hidden">
+                ✕
+              </button>
+            </div>
+            <input type="file" id="profilePhotoFileInput" accept="image/png, image/jpeg, image/webp" onchange="handleProfilePhotoUpload(event)" class="hidden" />
+          </div>
+
+          <!-- Rider Identity Info -->
+          <div class="flex-1 text-center md:text-left space-y-2">
+            <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+              <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Welcome, <span id="profileNameDisplay">Natesh</span></h1>
+              <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-rpBlue/20 text-rpBlueLight border border-rpBlue/30 flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5 text-rpBlueLight" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                <span>VERIFIED PILOT</span>
+              </span>
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rpEmerald/15 text-rpEmerald border border-rpEmerald/30">RHODY ACTIVE</span>
+            </div>
+
+            <p class="text-xs font-tabular text-slate-400">
+              Pilot Handle: <span id="profileHandleDisplay" class="text-rpBlueLight font-semibold">@natesh_pilot</span> &bull; 
+              Garage Base: <span class="text-slate-300">Western Ghats Sector</span>
+            </p>
+
+            <p id="profileBioDisplay" class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Weekend canyon carver & telemetry enthusiast. Western Ghats apex seeker pushing precision motorcycle telemetry.
+            </p>
+
+            <div class="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-2">
+              <button onclick="openEditProfileModal()" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-200 border border-rpBorder transition flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                <span>Edit Profile & Bike</span>
+              </button>
+              <button onclick="switchMainView('places')" class="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5 text-rpAmber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
+                <span>View My Saved Places</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two Column Layout: Garage on Left, Career Records on Right -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- Motorcycle Garage Card (Column 7) -->
+        <div class="lg:col-span-7 telemetry-panel p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-rpBorder pb-3">
+            <div class="flex items-center space-x-2.5">
+              <div class="p-2 rounded-lg bg-rpBlue/10 text-rpBlueLight border border-rpBlue/20">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-white">Active Machine & Garage</h3>
+                <p class="text-[11px] text-slate-400">Primary motorcycle telemetry configuration</p>
+              </div>
+            </div>
+            <button onclick="openEditProfileModal()" class="text-xs font-medium text-rpBlueLight hover:underline">Edit Specs</button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3.5">
+            <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
+              <span class="text-[10px] uppercase font-bold text-slate-500 block">Machine Model</span>
+              <span id="profileBikeModelDisplay" class="text-sm font-bold text-white block mt-0.5 truncate">Yamaha MT-09 SP</span>
+              <span id="profileBikeSpecsDisplay" class="text-[11px] text-slate-400 block mt-0.5 truncate">890cc Triple • 119 BHP</span>
+            </div>
+            <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
+              <span class="text-[10px] uppercase font-bold text-slate-500 block">License Plate</span>
+              <span id="profileBikePlateDisplay" class="text-sm font-bold text-rpAmber font-tabular block mt-0.5">TN-38-RH-0909</span>
+              <span class="text-[11px] text-slate-400 block mt-0.5">Telemetry Registered</span>
+            </div>
+            <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
+              <span class="text-[10px] uppercase font-bold text-slate-500 block">Tire Compound</span>
+              <span id="profileTiresDisplay" class="text-xs font-bold text-white block mt-0.5 truncate">Pirelli Diablo Rosso IV</span>
+              <span class="text-[10px] text-slate-400 block mt-0.5">Cold PSI: Front 32 / Rear 36</span>
+            </div>
+            <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
+              <span class="text-[10px] uppercase font-bold text-slate-500 block">Machine Odometer</span>
+              <span id="profileOdometerDisplay" class="text-sm font-bold text-white font-tabular block mt-0.5">142.8 KM</span>
+              <span class="text-[11px] text-rpEmerald block mt-0.5">Telemetry Synced</span>
+            </div>
+          </div>
+
+          <!-- Guardian Family Safety Card -->
+          <div class="p-3.5 rounded-xl bg-rpDark/80 border border-rpBorder flex items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 rounded-lg bg-rpEmerald/15 text-rpEmerald border border-rpEmerald/30 flex items-center justify-center shrink-0">
+                <span class="w-2.5 h-2.5 rounded-full bg-rpEmerald status-pulse"></span>
+              </div>
+              <div>
+                <span class="text-xs font-bold text-white block">Guardian Parent Link</span>
+                <span id="profileGuardianContactDisplay" class="text-[11px] text-slate-400 block">Emergency Contact: Mom & Dad (+91 98765 43210)</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="copyGuardianLink()" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-rpCard hover:bg-rpCardHover text-slate-200 border border-rpBorder transition">
+                Copy Link
+              </button>
+              <button onclick="switchMainView('parentLive')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rpEmerald hover:bg-emerald-500 text-slate-950 transition">
+                Live Radar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Career Telemetry Records (Column 5) -->
+        <div class="lg:col-span-5 telemetry-panel p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-rpBorder pb-3">
+            <div>
+              <h3 class="text-sm font-bold text-white">Career Telemetry Records</h3>
+              <p class="text-[11px] text-slate-400">Peak metrics indexed across all rides</p>
+            </div>
+            <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-rpBlue/15 text-rpBlueLight border border-rpBlue/30 uppercase">All-Time</span>
+          </div>
+
+          <div class="space-y-3">
+            <div class="bg-rpDark p-3 rounded-lg border border-rpBorder flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Peak GPS Velocity</span>
+                <span id="profilePeakSpeed" class="text-xl font-extrabold text-white font-tabular">108.4 <span class="text-xs font-medium text-slate-400">KM/H</span></span>
+              </div>
+              <div class="p-2 rounded-lg bg-rpAmber/10 text-rpAmber border border-rpAmber/20">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              </div>
+            </div>
+
+            <div class="bg-rpDark p-3 rounded-lg border border-rpBorder flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Max Apex Lean Angle</span>
+                <span id="profileMaxLean" class="text-xl font-extrabold text-rpBlueLight font-tabular">48.2° <span class="text-xs font-medium text-slate-400">LEFT</span></span>
+              </div>
+              <div class="p-2 rounded-lg bg-rpBlue/10 text-rpBlueLight border border-rpBlue/20">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+            </div>
+
+            <div class="bg-rpDark p-3 rounded-lg border border-rpBorder flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Total Career Distance</span>
+                <span id="profileCareerDist" class="text-xl font-extrabold text-white font-tabular">142.8 <span class="text-xs font-medium text-slate-400">KM</span></span>
+              </div>
+              <div class="p-2 rounded-lg bg-rpEmerald/10 text-rpEmerald border border-rpEmerald/20">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+              </div>
+            </div>
+
+            <div class="bg-rpDark p-3 rounded-lg border border-rpBorder flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-bold uppercase text-slate-500 block">Total Recorded Trips</span>
+                <span id="profileCareerTrips" class="text-xl font-extrabold text-white font-tabular">2 <span class="text-xs font-medium text-slate-400">RUNS</span></span>
+              </div>
+              <div class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -892,14 +1145,175 @@
     </div>
   </div>
 
+  <!-- ================= EDIT PROFILE MODAL ================= -->
+  <div id="editProfileModal" class="fixed inset-0 z-50 bg-rpDark/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="telemetry-panel max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <button onclick="closeEditProfileModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+
+      <div class="flex items-center space-x-2.5 mb-1">
+        <div class="w-8 h-8 rounded-lg bg-rpBlue/20 text-rpBlueLight border border-rpBlue/30 flex items-center justify-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">Edit Pilot Profile & Machine</h3>
+          <p class="text-xs text-slate-400">Customize your Rhody telemetry cockpit identity</p>
+        </div>
+      </div>
+
+      <form onsubmit="handleSaveProfile(event)" class="space-y-3.5 mt-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pilot Name</label>
+            <input id="editProfileName" type="text" required placeholder="Natesh" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Call-Sign / Tag</label>
+            <input id="editProfileHandle" type="text" placeholder="@natesh_pilot" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rider Bio / Philosophy</label>
+          <textarea id="editProfileBio" rows="2" placeholder="Weekend canyon carver & telemetry enthusiast..." class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition resize-none"></textarea>
+        </div>
+
+        <div class="border-t border-rpBorder pt-3 space-y-3">
+          <span class="text-xs font-bold text-rpBlueLight uppercase tracking-wider block">Motorcycle Garage Configuration</span>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-[11px] font-medium text-slate-400">Machine Model</label>
+              <input id="editProfileBikeModel" type="text" placeholder="Yamaha MT-09 SP" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] font-medium text-slate-400">Engine / Power Specs</label>
+              <input id="editProfileBikeSpecs" type="text" placeholder="890cc Triple • 119 BHP" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-[11px] font-medium text-slate-400">License Plate / ID</label>
+              <input id="editProfileBikePlate" type="text" placeholder="TN-38-RH-0909" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition font-tabular" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] font-medium text-slate-400">Tire Compound & PSI</label>
+              <input id="editProfileTires" type="text" placeholder="Pirelli Diablo Rosso IV" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-rpBorder pt-3 space-y-2">
+          <span class="text-xs font-bold text-rpEmerald uppercase tracking-wider block">Guardian Parent Safety Link</span>
+          <div class="space-y-1">
+            <label class="text-[11px] font-medium text-slate-400">Emergency / Parent Contact Name & Phone</label>
+            <input id="editProfileGuardian" type="text" placeholder="Mom & Dad (+91 98765 43210)" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeEditProfileModal()" class="px-4 py-2 text-xs font-medium rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold rounded-lg bg-rpBlue hover:bg-rpBlueHover text-white transition shadow-sm">
+            Save Profile
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= ADD / PIN PLACE MODAL ================= -->
+  <div id="addPlaceModal" class="fixed inset-0 z-50 bg-rpDark/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="telemetry-panel max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <button onclick="closeAddPlaceModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+
+      <div class="flex items-center space-x-2.5 mb-1">
+        <div class="w-8 h-8 rounded-lg bg-rpAmber/20 text-rpAmber border border-rpAmber/30 flex items-center justify-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">Save Location / Pin Waypoint</h3>
+          <p class="text-xs text-slate-400">Pin a mountain pass, basecamp, pitstop, or racing circuit to your map</p>
+        </div>
+      </div>
+
+      <!-- Quick OpenStreetMap Geocode Search Box -->
+      <div class="mt-3 p-3 rounded-lg bg-rpDark border border-rpBorder space-y-2">
+        <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Search Place by Name (OpenStreetMap)</label>
+        <div class="flex items-center space-x-2">
+          <input id="placeSearchQuery" type="text" placeholder="e.g. Ooty, Munnar Gap, Kolli Hills..." onkeydown="if(event.key==='Enter'){event.preventDefault();searchGeocodePlace();}" class="flex-1 bg-rpCard border border-rpBorder rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rpBlue transition" />
+          <button type="button" onclick="searchGeocodePlace()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rpBlue text-white hover:bg-rpBlueHover transition shrink-0">
+            Search
+          </button>
+        </div>
+        <div id="geocodeSearchStatus" class="text-[11px] text-slate-400 hidden"></div>
+      </div>
+
+      <form onsubmit="handleSaveNewPlace(event)" class="space-y-3 mt-4">
+        <div class="space-y-1">
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Place Title</label>
+          <input id="newPlaceName" type="text" required placeholder="e.g. Munnar Gap Road Pass" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Category</label>
+            <select id="newPlaceCategory" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition">
+              <option value="pass">⛰️ Mountain Pass / Twisties</option>
+              <option value="garage">🏠 Basecamp / Garage</option>
+              <option value="fuel">⛽ Fuel Station & Pitstop</option>
+              <option value="track">🏁 Racing Track / Circuit</option>
+              <option value="cafe">☕ Rider Cafe / Meetpoint</option>
+              <option value="waypoint">📍 General Waypoint</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Altitude (Meters, optional)</label>
+            <input id="newPlaceAltitude" type="number" placeholder="e.g. 1530" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition font-tabular" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Latitude</label>
+            <input id="newPlaceLat" type="number" step="any" required placeholder="10.0889" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition font-tabular" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Longitude</label>
+            <input id="newPlaceLng" type="number" step="any" required placeholder="77.0595" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition font-tabular" />
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Notes & Road Conditions</label>
+          <textarea id="newPlaceNotes" rows="2" placeholder="Smooth tarmac, scenic hairpins, great visibility..." class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition resize-none"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeAddPlaceModal()" class="px-4 py-2 text-xs font-medium rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold rounded-lg bg-rpAmber hover:bg-amber-400 text-slate-950 transition shadow-sm">
+            Save to Map
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none max-w-sm"></div>
 
   <!-- ================= JAVASCRIPT APPLICATION CORE ================= -->
   <script>
     // Global Application State
+    // Global Application State
     var mapInstance = null;
-    var cartoDarkLayer = null;
     var esriDarkLayer = null;
     var standardOsmLayer = null;
     var satelliteLayer = null;
@@ -925,6 +1339,90 @@
     var replayInterval = null;
     var replayIndex = 0;
     var replaySpeedMultiplier = 5;
+
+    // Rider Profile & Motorcycle Garage State (Defaults to Natesh)
+    var riderProfile = {
+      name: 'Natesh',
+      email: 'pilot@rhody.io',
+      avatar: '',
+      bio: 'Weekend canyon carver & telemetry enthusiast. Western Ghats apex seeker pushing precision motorcycle telemetry.',
+      bikeModel: 'Yamaha MT-09 SP',
+      bikeSpecs: '890cc Triple • 119 BHP',
+      bikePlate: 'TN-38-RH-0909',
+      tireSetup: 'Pirelli Diablo Rosso IV (Cold PSI: F 32 / R 36)',
+      emergencyContactName: 'Family Guardian (Mom & Dad)',
+      emergencyContactPhone: '+91 98765 43210',
+      speedUnit: 'kmh'
+    };
+
+    // Saved Places & Waypoints Engine
+    var savedPlaces = [
+      {
+        id: 'place_munnar',
+        name: 'Munnar Gap Road Pass',
+        category: 'pass',
+        lat: 10.0889,
+        lng: 77.0595,
+        altitude: 1530,
+        notes: 'Misty hairpin curves & tea garden switchbacks. High elevation hillclimb.',
+        isDefault: true
+      },
+      {
+        id: 'place_valparai',
+        name: 'Valparai 40 Hairpins',
+        category: 'pass',
+        lat: 10.3256,
+        lng: 76.9558,
+        altitude: 1100,
+        notes: '40 continuous numbered hairpin curves through dense Western Ghats canopy.',
+        isDefault: true
+      },
+      {
+        id: 'place_kolli',
+        name: 'Kolli Hills 70 Hairpin Bends',
+        category: 'pass',
+        lat: 11.2486,
+        lng: 78.3385,
+        altitude: 1300,
+        notes: 'The legendary mountain of death — 70 tight apex corners in 18 km.',
+        isDefault: true
+      },
+      {
+        id: 'place_kari',
+        name: 'Kari Motor Speedway Circuit',
+        category: 'track',
+        lat: 10.9022,
+        lng: 77.0278,
+        altitude: 410,
+        notes: 'FIA-certified 2.1 km road-racing circuit. High-speed apex & chicane testing.',
+        isDefault: true
+      },
+      {
+        id: 'place_basecamp',
+        name: 'Basecamp Garage / Home',
+        category: 'garage',
+        lat: 11.0168,
+        lng: 76.9558,
+        altitude: 420,
+        notes: 'Primary motorcycle telemetry sync station & tool garage.',
+        isDefault: true
+      },
+      {
+        id: 'place_fuel',
+        name: 'Western Ghats Ridge Fuel & Cafe',
+        category: 'fuel',
+        lat: 10.1500,
+        lng: 77.0200,
+        altitude: 1480,
+        notes: 'High-octane XP95 / Speed fuel station and hot tea pitstop.',
+        isDefault: true
+      }
+    ];
+
+    var savedPlacesLayerGroup = null;
+    var showSavedPlacesOnMap = true;
+    var activeNavRouteLine = null;
+    var currentPlacesCategoryFilter = 'all';
 
     // ----------------------------------------------------
     // ROBUST LEAFLET LOADER (Zero API Key Needed)
@@ -961,6 +1459,9 @@
     // INITIALIZATION & TAB SWITCHING
     // ----------------------------------------------------
     document.addEventListener('DOMContentLoaded', function() {
+      loadRiderProfile();
+      loadSavedPlaces();
+
       ensureLeaflet(function() {
         try {
           initLeafletMap();
@@ -985,63 +1486,58 @@
     });
 
     function switchMainView(viewName) {
-      const studioView = document.getElementById('viewStudio');
-      const explorerView = document.getElementById('viewExplorer');
-      const cloudView = document.getElementById('viewCloud');
+      const views = {
+        studio: document.getElementById('viewStudio'),
+        places: document.getElementById('viewPlaces'),
+        explorer: document.getElementById('viewExplorer'),
+        parentLive: document.getElementById('viewParentLive'),
+        profile: document.getElementById('viewProfile'),
+        cloud: document.getElementById('viewCloud'),
+        appDownload: document.getElementById('viewAppDownload')
+      };
 
-      if (!studioView || !explorerView || !cloudView) return;
+      Object.values(views).forEach(el => {
+        if (el) el.classList.add('hidden');
+      });
 
-      studioView.classList.add('hidden');
-      explorerView.classList.add('hidden');
-      cloudView.classList.add('hidden');
-
-      const parentLiveView = document.getElementById('viewParentLive');
-      if (parentLiveView) parentLiveView.classList.add('hidden');
-
-      const appDownloadView = document.getElementById('viewAppDownload');
-      if (appDownloadView) appDownloadView.classList.add('hidden');
-
-      const tabs = ['Studio', 'ParentLive', 'Explorer', 'Cloud', 'AppDownload'];
+      const tabs = ['Studio', 'Places', 'Explorer', 'ParentLive', 'Profile', 'AppDownload'];
       tabs.forEach(t => {
         const btn = document.getElementById('navTab' + t);
         if (btn) {
-          btn.className = 'px-3.5 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition';
+          btn.className = 'px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-1.5';
         }
       });
 
+      if (views[viewName]) {
+        views[viewName].classList.remove('hidden');
+      }
+
+      const activeBtn = document.getElementById('navTab' + viewName.charAt(0).toUpperCase() + viewName.slice(1));
+      if (activeBtn) {
+        if (viewName === 'appDownload') {
+          activeBtn.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rpEmerald text-slate-950 shadow-sm transition flex items-center space-x-1.5';
+        } else {
+          activeBtn.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rpBlue text-white shadow-sm transition flex items-center space-x-1.5';
+        }
+      }
+
       if (viewName === 'studio') {
-        studioView.classList.remove('hidden');
-        const b = document.getElementById('navTabStudio');
-        if (b) b.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-md bg-rpBlue text-white shadow-sm transition';
         setTimeout(function() {
           if (mapInstance) mapInstance.invalidateSize();
         }, 120);
-      } else if (viewName === 'explorer') {
-        explorerView.classList.remove('hidden');
-        const b = document.getElementById('navTabExplorer');
-        if (b) b.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-md bg-rpBlue text-white shadow-sm transition';
+      } else if (viewName === 'places') {
+        renderPlacesGrid();
       } else if (viewName === 'parentLive') {
-        const parentEl = document.getElementById('viewParentLive');
-        if (parentEl) parentEl.classList.remove('hidden');
-        const b = document.getElementById('navTabParentLive');
-        if (b) b.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-md bg-rpBlue text-white shadow-sm transition';
         initParentMap();
-      } else if (viewName === 'cloud') {
-        cloudView.classList.remove('hidden');
-        const b = document.getElementById('navTabCloud');
-        if (b) b.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-md bg-rpBlue text-white shadow-sm transition';
-        pingDatabase();
+      } else if (viewName === 'profile') {
+        renderProfileView();
       } else if (viewName === 'appDownload') {
-        const appEl = document.getElementById('viewAppDownload');
-        if (appEl) appEl.classList.remove('hidden');
-        const b = document.getElementById('navTabAppDownload');
-        if (b) b.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-md bg-rpEmerald text-slate-950 shadow-sm transition';
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
 
     // ----------------------------------------------------
-    // MAP SETUP & LAYERS (Zero API Key Required)
+    // MAP SETUP & ZERO-WATERMARK LAYERS
     // ----------------------------------------------------
     function initLeafletMap() {
       const mapEl = document.getElementById('map');
@@ -1060,52 +1556,37 @@
 
       L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 
-      // 1. CartoDB Dark Matter (Zero API Key, dark UI theme)
-      cartoDarkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
+      // 1. Esri World Dark Gray Canvas (Zero API Key, 100% Watermark-Free Dark Theme)
+      esriDarkLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+        maxNativeZoom: 16,
         maxZoom: 19
       });
 
-      // 2. Esri World Dark Gray Canvas (Zero API Key fallback)
-      esriDarkLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri',
-        maxZoom: 16
-      });
-
-      // 3. OpenStreetMap Standard (Zero API Key, daytime streets)
+      // 2. OpenStreetMap Standard (Zero API Key, daytime streets)
       standardOsmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19
       });
 
-      // 4. Esri World Imagery Satellite (Zero API Key, high-res aerial)
+      // 3. Esri World Imagery Satellite (Zero API Key, high-res aerial)
       satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics',
         maxZoom: 18
       });
 
-      // Resilient fallback chain
-      cartoDarkLayer.on('tileerror', function() {
-        if (activeTileLayer === cartoDarkLayer) {
-          console.warn('[Rhody] CartoDB dark tiles unreachable, switching to Esri Dark Canvas');
-          mapInstance.removeLayer(cartoDarkLayer);
-          esriDarkLayer.addTo(mapInstance);
-          activeTileLayer = esriDarkLayer;
-        }
-      });
+      // Set default dark tile layer
+      esriDarkLayer.addTo(mapInstance);
+      activeTileLayer = esriDarkLayer;
 
-      esriDarkLayer.on('tileerror', function() {
-        if (activeTileLayer === esriDarkLayer) {
-          console.warn('[Rhody] Esri dark tiles unreachable, switching to standard OSM');
-          mapInstance.removeLayer(esriDarkLayer);
-          standardOsmLayer.addTo(mapInstance);
-          activeTileLayer = standardOsmLayer;
-        }
-      });
+      // Saved Places layer group on map
+      savedPlacesLayerGroup = L.layerGroup().addTo(mapInstance);
+      renderSavedPlacesOnMap();
 
-      cartoDarkLayer.addTo(mapInstance);
-      activeTileLayer = cartoDarkLayer;
+      // Right-click or long-press on map to pin spot
+      mapInstance.on('contextmenu', function(e) {
+        openAddPlaceModal(e.latlng.lat.toFixed(6), e.latlng.lng.toFixed(6));
+      });
 
       // Invalidate size across rendering cycles to avoid grey map tiles
       setTimeout(function() { if (mapInstance) mapInstance.invalidateSize(); }, 120);
@@ -1120,6 +1601,9 @@
       if (currentTelemetryPoints && currentTelemetryPoints.length > 0) {
         drawMapRoute(currentTelemetryPoints);
       }
+
+      // Initial live road weather
+      fetchRoadWeather(10.0889, 77.0595, 'Munnar Gap Road Pass');
     }
 
     function setMapLayer(layerType) {
@@ -1138,14 +1622,15 @@
       if (btnSat) btnSat.className = unselectedClass;
 
       if (layerType === 'dark') {
-        if (!cartoDarkLayer) {
-          cartoDarkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
-            subdomains: 'abcd',
+        if (!esriDarkLayer) {
+          esriDarkLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+            maxNativeZoom: 16,
             maxZoom: 19
           });
         }
-        cartoDarkLayer.addTo(mapInstance);
-        activeTileLayer = cartoDarkLayer;
+        esriDarkLayer.addTo(mapInstance);
+        activeTileLayer = esriDarkLayer;
         if (btnDark) btnDark.className = selectedClass;
       } else if (layerType === 'sat') {
         if (!satelliteLayer) {
@@ -1175,6 +1660,681 @@
         } catch (e) {
           console.warn('[Rhody] fitBounds notice:', e);
         }
+      }
+    }
+
+    // ====================================================
+    // SAVED PLACES & WAYPOINTS ENGINE
+    // ====================================================
+    function createPlaceIcon(category) {
+      let iconColor = '#F59E0B'; // amber default
+      let iconSvg = '<svg style="width:14px;height:14px;color:white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>';
+
+      if (category === 'garage') {
+        iconColor = '#06B6D4'; // cyan
+        iconSvg = '<svg style="width:14px;height:14px;color:white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>';
+      } else if (category === 'pass') {
+        iconColor = '#F59E0B'; // amber
+        iconSvg = '<svg style="width:14px;height:14px;color:white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>';
+      } else if (category === 'fuel') {
+        iconColor = '#10B981'; // emerald
+        iconSvg = '<svg style="width:14px;height:14px;color:white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>';
+      } else if (category === 'track') {
+        iconColor = '#EF4444'; // rose red
+        iconSvg = '<svg style="width:14px;height:14px;color:white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>';
+      } else if (category === 'cafe') {
+        iconColor = '#8B5CF6'; // purple
+        iconSvg = '<svg style="width:14px;height:14px;color:white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 1v3M10 1v3M14 1v3" /></svg>';
+      }
+
+      return L.divIcon({
+        className: 'custom-rhody-place-marker',
+        html: `
+          <div style="position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <div style="position: absolute; inset: 0; border-radius: 50%; background: ${iconColor}; opacity: 0.25; animation: subtlePulse 2s infinite ease-in-out;"></div>
+            <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: #0A0C10; border: 2px solid ${iconColor}; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6);">
+              ${iconSvg}
+            </div>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -16]
+      });
+    }
+
+    function renderSavedPlacesOnMap() {
+      if (!mapInstance || !savedPlacesLayerGroup) return;
+      savedPlacesLayerGroup.clearLayers();
+      if (!showSavedPlacesOnMap) return;
+
+      const catLabels = {
+        pass: '⛰️ Mountain Pass',
+        garage: '🏠 Basecamp Garage',
+        fuel: '⛽ Fuel Pitstop',
+        track: '🏁 Track / Circuit',
+        cafe: '☕ Rider Cafe',
+        waypoint: '📍 Saved Waypoint'
+      };
+
+      savedPlaces.forEach(place => {
+        const marker = L.marker([place.lat, place.lng], {
+          icon: createPlaceIcon(place.category)
+        });
+
+        const safeName = (place.name || '').replace(/'/g, "\\'");
+        const popupHtml = `
+          <div style="font-family: inherit; min-width: 200px; color: #E2E8F0; background: #12161F; padding: 12px; border-radius: 10px; border: 1px solid #1F2636;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+              <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #F59E0B;">${catLabels[place.category] || 'Saved Place'}</span>
+              ${place.altitude ? `<span style="font-size: 10px; font-family: monospace; color: #60A5FA;">${place.altitude}m alt</span>` : ''}
+            </div>
+            <h4 style="margin: 0 0 4px 0; font-size: 13px; font-weight: 700; color: #FFFFFF;">${place.name}</h4>
+            <p style="margin: 0 0 8px 0; font-size: 11px; color: #94A3B8; line-height: 1.3;">${place.notes || 'Saved motorcycle waypoint'}</p>
+            <div style="display: flex; gap: 6px;">
+              <button onclick="routeToPlace(${place.lat}, ${place.lng}, '${safeName}')" style="flex: 1; padding: 5px 10px; font-size: 11px; font-weight: 700; background: #2563EB; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                Route Here
+              </button>
+              <button onclick="mapInstance.flyTo([${place.lat}, ${place.lng}], 15); fetchRoadWeather(${place.lat}, ${place.lng}, '${safeName}');" style="padding: 5px 10px; font-size: 11px; font-weight: 600; background: #1F2636; color: #CBD5E1; border: 1px solid #2D374D; border-radius: 6px; cursor: pointer;">
+                Zoom
+              </button>
+            </div>
+          </div>
+        `;
+
+        marker.bindPopup(popupHtml);
+        savedPlacesLayerGroup.addLayer(marker);
+      });
+    }
+
+    function toggleSavedPlacesOnMap() {
+      showSavedPlacesOnMap = !showSavedPlacesOnMap;
+      const btn = document.getElementById('btnToggleSavedPlaces');
+      if (btn) {
+        if (showSavedPlacesOnMap) {
+          btn.className = 'px-2.5 py-1 rounded-lg bg-rpAmber/20 hover:bg-rpAmber/30 text-rpAmber border border-rpAmber/40 transition flex items-center space-x-1.5';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-lg bg-rpCard hover:bg-rpCardHover text-slate-400 border border-rpBorder transition flex items-center space-x-1.5';
+        }
+      }
+      renderSavedPlacesOnMap();
+      showToast(showSavedPlacesOnMap ? 'Saved places visible on map' : 'Saved places hidden on map', 'info');
+    }
+
+    async function routeToPlace(destLat, destLng, destName) {
+      if (!mapInstance) return;
+
+      let startLat = 10.0889;
+      let startLng = 77.0595;
+      if (currentTelemetryPoints && currentTelemetryPoints.length > 0) {
+        const pt = currentTelemetryPoints[replayIndex || 0] || currentTelemetryPoints[0];
+        if (pt.latitude && pt.longitude) {
+          startLat = pt.latitude;
+          startLng = pt.longitude;
+        }
+      }
+
+      showToast(`Calculating motorcycle route to ${destName}...`, 'info');
+
+      try {
+        const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${destLng},${destLat}?overview=full&geometries=geojson`);
+        const data = await res.json();
+
+        if (data.routes && data.routes.length > 0) {
+          const route = data.routes[0];
+          const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+
+          if (activeNavRouteLine) {
+            mapInstance.removeLayer(activeNavRouteLine);
+          }
+
+          activeNavRouteLine = L.polyline(coords, {
+            color: '#F59E0B',
+            weight: 5,
+            opacity: 0.9,
+            dashArray: '8, 8'
+          }).addTo(mapInstance);
+
+          mapInstance.fitBounds(activeNavRouteLine.getBounds(), { padding: [60, 60] });
+
+          const distKm = (route.distance / 1000).toFixed(1);
+          const mins = Math.round(route.duration / 60);
+          showToast(`Route to ${destName}: ${distKm} km (~${mins} mins ride)`, 'success');
+
+          fetchRoadWeather(destLat, destLng, destName);
+        } else {
+          showToast('Direct line: destination ready on map', 'info');
+          mapInstance.flyTo([destLat, destLng], 14);
+        }
+      } catch (err) {
+        console.warn('Routing notice:', err.message);
+        mapInstance.flyTo([destLat, destLng], 14);
+        showToast(`Navigated to ${destName}`, 'info');
+      }
+    }
+
+    function openAddPlaceModal(lat, lng) {
+      const modal = document.getElementById('addPlaceModal');
+      const statusEl = document.getElementById('geocodeSearchStatus');
+      if (modal) modal.classList.remove('hidden');
+      if (statusEl) statusEl.classList.add('hidden');
+
+      if (lat && lng) {
+        const latInput = document.getElementById('newPlaceLat');
+        const lngInput = document.getElementById('newPlaceLng');
+        if (latInput) latInput.value = lat;
+        if (lngInput) lngInput.value = lng;
+      }
+    }
+
+    function closeAddPlaceModal() {
+      const modal = document.getElementById('addPlaceModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function searchGeocodePlace() {
+      const query = (document.getElementById('placeSearchQuery').value || '').trim();
+      if (!query) return;
+
+      const statusEl = document.getElementById('geocodeSearchStatus');
+      if (statusEl) {
+        statusEl.textContent = 'Searching OpenStreetMap...';
+        statusEl.className = 'text-[11px] text-rpBlueLight mt-1 block';
+        statusEl.classList.remove('hidden');
+      }
+
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+          const item = data[0];
+          document.getElementById('newPlaceLat').value = parseFloat(item.lat).toFixed(6);
+          document.getElementById('newPlaceLng').value = parseFloat(item.lon).toFixed(6);
+          if (!document.getElementById('newPlaceName').value.trim()) {
+            document.getElementById('newPlaceName').value = item.display_name.split(',')[0];
+          }
+          if (statusEl) {
+            statusEl.textContent = `Found: ${item.display_name.split(',').slice(0, 2).join(',')}`;
+            statusEl.className = 'text-[11px] text-rpEmerald mt-1 block';
+          }
+        } else {
+          if (statusEl) {
+            statusEl.textContent = 'Location not found, please enter coordinates manually';
+            statusEl.className = 'text-[11px] text-rpRose mt-1 block';
+          }
+        }
+      } catch (e) {
+        if (statusEl) {
+          statusEl.textContent = 'Search failed';
+          statusEl.className = 'text-[11px] text-rpRose mt-1 block';
+        }
+      }
+    }
+
+    async function handleSaveNewPlace(e) {
+      e.preventDefault();
+      const name = (document.getElementById('newPlaceName').value || '').trim();
+      const category = document.getElementById('newPlaceCategory').value;
+      const lat = parseFloat(document.getElementById('newPlaceLat').value);
+      const lng = parseFloat(document.getElementById('newPlaceLng').value);
+      const altitude = document.getElementById('newPlaceAltitude').value ? parseFloat(document.getElementById('newPlaceAltitude').value) : null;
+      const notes = (document.getElementById('newPlaceNotes').value || '').trim();
+
+      if (!name || isNaN(lat) || isNaN(lng)) {
+        showToast('Please enter valid place name and coordinates', 'error');
+        return;
+      }
+
+      const newPlace = {
+        id: 'place_' + Date.now(),
+        name,
+        category,
+        lat,
+        lng,
+        altitude,
+        notes,
+        createdAt: new Date().toISOString()
+      };
+
+      savedPlaces.unshift(newPlace);
+      localStorage.setItem('rhody_saved_places', JSON.stringify(savedPlaces));
+      updatePlacesBadges();
+      renderSavedPlacesOnMap();
+      renderPlacesGrid();
+      closeAddPlaceModal();
+      showToast(`Saved ${name} to your map!`, 'success');
+
+      try {
+        const token = localStorage.getItem('rp_auth_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+        await fetch('/api/user/places', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(newPlace)
+        });
+      } catch (err) {
+        console.warn('Backend place sync warning:', err.message);
+      }
+    }
+
+    async function deleteSavedPlace(id) {
+      if (!confirm('Remove this saved place from your map?')) return;
+      savedPlaces = savedPlaces.filter(p => p.id !== id && p._id !== id);
+      localStorage.setItem('rhody_saved_places', JSON.stringify(savedPlaces));
+      updatePlacesBadges();
+      renderSavedPlacesOnMap();
+      renderPlacesGrid();
+      showToast('Place removed', 'info');
+
+      try {
+        const token = localStorage.getItem('rp_auth_token');
+        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        await fetch(`/api/user/places/${id}`, { method: 'DELETE', headers });
+      } catch (e) {}
+    }
+
+    function filterPlacesCategory(cat) {
+      currentPlacesCategoryFilter = cat;
+      const cats = ['all', 'pass', 'garage', 'fuel', 'track'];
+      cats.forEach(c => {
+        const btn = document.getElementById('filterCat_' + c);
+        if (btn) {
+          if (c === cat) {
+            btn.className = 'px-3 py-1 rounded-lg text-xs font-semibold bg-rpBlue text-white transition';
+          } else {
+            btn.className = 'px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-rpDark border border-rpBorder transition';
+          }
+        }
+      });
+      renderPlacesGrid();
+    }
+
+    function renderPlacesGrid() {
+      const container = document.getElementById('placesGridContainer');
+      if (!container) return;
+
+      const search = (document.getElementById('searchPlacesInput')?.value || '').toLowerCase().trim();
+      let list = savedPlaces;
+
+      if (currentPlacesCategoryFilter !== 'all') {
+        list = list.filter(p => p.category === currentPlacesCategoryFilter);
+      }
+
+      if (search) {
+        list = list.filter(p => (p.name || '').toLowerCase().includes(search) || (p.notes || '').toLowerCase().includes(search));
+      }
+
+      const catBadges = {
+        pass: { label: '⛰️ Mountain Pass', bg: 'bg-rpAmber/15 text-rpAmber border-rpAmber/30' },
+        garage: { label: '🏠 Basecamp Garage', bg: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' },
+        fuel: { label: '⛽ Fuel Pitstop', bg: 'bg-rpEmerald/15 text-rpEmerald border-rpEmerald/30' },
+        track: { label: '🏁 Circuit / Track', bg: 'bg-rpRose/15 text-rpRose border-rpRose/30' },
+        cafe: { label: '☕ Rider Cafe', bg: 'bg-purple-500/15 text-purple-400 border-purple-500/30' },
+        waypoint: { label: '📍 Waypoint', bg: 'bg-rpBlue/15 text-rpBlueLight border-rpBlue/30' }
+      };
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-500 text-xs">
+            No saved places found matching filter. Click "+ Add New Place" to pin a location!
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(place => {
+        const badge = catBadges[place.category] || catBadges.waypoint;
+        const placeId = place.id || place._id;
+        const safeName = (place.name || '').replace(/'/g, "\\'");
+        return `
+          <div class="bg-rpDark p-4 rounded-xl border border-rpBorder hover:border-rpBorderLight transition space-y-3 flex flex-col justify-between group shadow-sm">
+            <div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded-md border ${badge.bg}">
+                  ${badge.label}
+                </span>
+                ${place.altitude ? `<span class="text-[11px] font-tabular text-slate-400 font-semibold">${place.altitude} m alt</span>` : ''}
+              </div>
+
+              <h3 class="text-sm font-bold text-white mt-2 group-hover:text-rpBlueLight transition">${place.name}</h3>
+              <p class="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">${place.notes || 'Saved motorcycle route location'}</p>
+            </div>
+
+            <div class="space-y-2 pt-2 border-t border-rpBorder">
+              <div class="flex items-center justify-between text-[11px] font-tabular text-slate-500">
+                <span>${place.lat.toFixed(4)}° N, ${place.lng.toFixed(4)}° E</span>
+              </div>
+
+              <div class="flex items-center space-x-1.5 pt-1">
+                <button onclick="switchMainView('studio'); if(mapInstance){ mapInstance.flyTo([${place.lat}, ${place.lng}], 15); fetchRoadWeather(${place.lat}, ${place.lng}, '${safeName}'); }" class="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-rpBlue hover:bg-rpBlueHover text-white transition flex items-center justify-center space-x-1 shadow-sm">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                  <span>View Map</span>
+                </button>
+                <button onclick="switchMainView('studio'); routeToPlace(${place.lat}, ${place.lng}, '${safeName}');" class="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-rpAmber/20 hover:bg-rpAmber/30 text-rpAmber border border-rpAmber/30 transition flex items-center justify-center space-x-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                  <span>Route</span>
+                </button>
+                <button onclick="deleteSavedPlace('${placeId}')" title="Delete place" class="p-1.5 text-slate-500 hover:text-rpRose rounded-lg hover:bg-rpCard transition">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updatePlacesBadges() {
+      const count = savedPlaces.length;
+      const countBadge = document.getElementById('navPlacesCountBadge');
+      const placesTag = document.getElementById('placesCountTag');
+      const mapBadge = document.getElementById('mapPlacesCountBadge');
+      if (countBadge) countBadge.textContent = count;
+      if (placesTag) placesTag.textContent = `${count} Saved`;
+      if (mapBadge) mapBadge.textContent = count;
+    }
+
+    async function loadSavedPlaces() {
+      const local = localStorage.getItem('rhody_saved_places');
+      if (local) {
+        try {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            savedPlaces = parsed;
+          }
+        } catch (e) {}
+      }
+
+      updatePlacesBadges();
+      renderSavedPlacesOnMap();
+
+      try {
+        const token = localStorage.getItem('rp_auth_token');
+        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        const res = await fetch('/api/user/places', { headers });
+        const data = await res.json();
+        if (data && data.success && data.places && data.places.length > 0) {
+          savedPlaces = data.places;
+          localStorage.setItem('rhody_saved_places', JSON.stringify(savedPlaces));
+          updatePlacesBadges();
+          renderSavedPlacesOnMap();
+          if (document.getElementById('viewPlaces') && !document.getElementById('viewPlaces').classList.contains('hidden')) {
+            renderPlacesGrid();
+          }
+        }
+      } catch (e) {}
+    }
+
+    // ====================================================
+    // ROAD WEATHER & GRIP TELEMETRY ENGINE
+    // ====================================================
+    async function fetchRoadWeather(lat, lng, label) {
+      const badge = document.getElementById('mapWeatherBadge');
+      if (!badge) return;
+
+      try {
+        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code`);
+        const data = await res.json();
+
+        if (data && data.current) {
+          const temp = Math.round(data.current.temperature_2m);
+          const wind = Math.round(data.current.wind_speed_10m);
+          const code = data.current.weather_code;
+
+          let gripText = '98% Optimal Dry Grip';
+          let gripColor = 'text-rpEmerald';
+          let weatherText = 'Clear Tarmac';
+
+          if (code >= 51 && code <= 67) {
+            gripText = '72% Wet Grip (Caution)';
+            gripColor = 'text-rpAmber';
+            weatherText = 'Light Rain';
+          } else if (code >= 80 || code >= 95) {
+            gripText = '50% Low Grip (Slip Hazard)';
+            gripColor = 'text-rpRose';
+            weatherText = 'Heavy Rain / Wet';
+          } else if (code >= 45 && code <= 48) {
+            gripText = '84% Moist Grip';
+            gripColor = 'text-rpAmber';
+            weatherText = 'Misty / Fog';
+          }
+
+          badge.innerHTML = `
+            <div class="flex items-center space-x-2 text-xs">
+              <span class="w-2 h-2 rounded-full bg-rpEmerald status-pulse"></span>
+              <span class="font-bold text-white font-tabular">${temp}°C</span>
+              <span class="text-slate-400 text-[11px]">&bull; ${weatherText} &bull; Wind: ${wind} km/h</span>
+              <span class="font-bold text-[11px] ${gripColor}">&bull; ${gripText}</span>
+            </div>
+          `;
+          badge.classList.remove('hidden');
+        }
+      } catch (err) {
+        console.warn('Weather fetch warning:', err.message);
+      }
+    }
+
+    // ====================================================
+    // RIDER PROFILE & MOTORCYCLE GARAGE ENGINE
+    // ====================================================
+    function loadRiderProfile() {
+      const saved = localStorage.getItem('rhody_rider_profile');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          riderProfile = Object.assign(riderProfile, parsed);
+        } catch (e) {}
+      }
+
+      const avatar = localStorage.getItem('rhody_rider_avatar');
+      if (avatar) riderProfile.avatar = avatar;
+
+      updateProfileAvatarsUI();
+      renderProfileView();
+
+      const token = localStorage.getItem('rp_auth_token');
+      if (token) {
+        fetch('/api/user/profile', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        }).then(r => r.json()).then(data => {
+          if (data && data.success && data.profile) {
+            riderProfile = Object.assign(riderProfile, data.profile);
+            localStorage.setItem('rhody_rider_profile', JSON.stringify(riderProfile));
+            updateProfileAvatarsUI();
+            renderProfileView();
+          }
+        }).catch(() => {});
+      }
+    }
+
+    function updateProfileAvatarsUI() {
+      const heroImg = document.getElementById('profileHeroAvatarImg');
+      const heroInitial = document.getElementById('profileHeroAvatarInitial');
+      const navImg = document.getElementById('navAvatarImg');
+      const navInitial = document.getElementById('navAvatarInitial');
+      const btnRemove = document.getElementById('btnRemovePhoto');
+
+      const avatar = riderProfile.avatar || localStorage.getItem('rhody_rider_avatar');
+      const name = riderProfile.name || 'Natesh';
+      const initial = name ? name[0].toUpperCase() : 'N';
+
+      if (avatar) {
+        if (heroImg) { heroImg.src = avatar; heroImg.classList.remove('hidden'); }
+        if (heroInitial) heroInitial.classList.add('hidden');
+        if (navImg) { navImg.src = avatar; navImg.classList.remove('hidden'); }
+        if (navInitial) navInitial.classList.add('hidden');
+        if (btnRemove) btnRemove.classList.remove('hidden');
+      } else {
+        if (heroImg) heroImg.classList.add('hidden');
+        if (heroInitial) { heroInitial.textContent = initial; heroInitial.classList.remove('hidden'); }
+        if (navImg) navImg.classList.add('hidden');
+        if (navInitial) { navInitial.textContent = initial; navInitial.classList.remove('hidden'); }
+        if (btnRemove) btnRemove.classList.add('hidden');
+      }
+
+      const profileNameEl = document.getElementById('profileNameDisplay');
+      const navNameEl = document.getElementById('navProfileName');
+      if (profileNameEl) profileNameEl.textContent = name;
+      if (navNameEl) navNameEl.textContent = name;
+    }
+
+    function renderProfileView() {
+      const p = riderProfile;
+      if (document.getElementById('profileNameDisplay')) document.getElementById('profileNameDisplay').textContent = p.name || 'Natesh';
+      if (document.getElementById('profileHandleDisplay')) document.getElementById('profileHandleDisplay').textContent = p.handle || '@natesh_pilot';
+      if (document.getElementById('profileBioDisplay')) document.getElementById('profileBioDisplay').textContent = p.bio || 'Weekend canyon carver & telemetry enthusiast.';
+      if (document.getElementById('profileBikeModelDisplay')) document.getElementById('profileBikeModelDisplay').textContent = p.bikeModel || 'Yamaha MT-09 SP';
+      if (document.getElementById('profileBikeSpecsDisplay')) document.getElementById('profileBikeSpecsDisplay').textContent = p.bikeSpecs || '890cc Triple • 119 BHP';
+      if (document.getElementById('profileBikePlateDisplay')) document.getElementById('profileBikePlateDisplay').textContent = p.bikePlate || 'TN-38-RH-0909';
+      if (document.getElementById('profileTiresDisplay')) document.getElementById('profileTiresDisplay').textContent = p.tireSetup || 'Pirelli Diablo Rosso IV';
+      if (document.getElementById('profileGuardianContactDisplay')) {
+        document.getElementById('profileGuardianContactDisplay').textContent = `Emergency Contact: ${p.emergencyContactName || 'Mom & Dad'} (${p.emergencyContactPhone || '+91 98765 43210'})`;
+      }
+
+      if (allTripsCache && allTripsCache.length > 0) {
+        let totalDist = 0;
+        let peakSpeed = 0;
+        let totalSecs = 0;
+
+        allTripsCache.forEach(t => {
+          totalDist += (t.totalDistanceMeters || 0) / 1000;
+          if ((t.maxSpeedKmh || 0) > peakSpeed) peakSpeed = t.maxSpeedKmh;
+          totalSecs += (t.durationSeconds || 0);
+        });
+
+        if (document.getElementById('profileCareerDist')) {
+          document.getElementById('profileCareerDist').innerHTML = `${totalDist.toFixed(1)} <span class="text-xs font-medium text-slate-400">KM</span>`;
+        }
+        if (document.getElementById('profilePeakSpeed') && peakSpeed > 0) {
+          document.getElementById('profilePeakSpeed').innerHTML = `${peakSpeed.toFixed(1)} <span class="text-xs font-medium text-slate-400">KM/H</span>`;
+        }
+        if (document.getElementById('profileCareerTrips')) {
+          document.getElementById('profileCareerTrips').innerHTML = `${allTripsCache.length} <span class="text-xs font-medium text-slate-400">RUNS</span>`;
+        }
+        if (document.getElementById('profileOdometerDisplay')) {
+          document.getElementById('profileOdometerDisplay').textContent = `${(142.8 + totalDist).toFixed(1)} KM`;
+        }
+      }
+    }
+
+    function handleProfilePhotoUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const maxDim = 360;
+          let w = img.width;
+          let h = img.height;
+          if (w > h) {
+            if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+          } else {
+            if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+          riderProfile.avatar = compressedDataUrl;
+          localStorage.setItem('rhody_rider_avatar', compressedDataUrl);
+          localStorage.setItem('rhody_rider_profile', JSON.stringify(riderProfile));
+
+          updateProfileAvatarsUI();
+          showToast('Profile photo updated successfully!', 'success');
+
+          syncProfileToBackend({ avatar: compressedDataUrl });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeRiderAvatar() {
+      riderProfile.avatar = '';
+      localStorage.removeItem('rhody_rider_avatar');
+      localStorage.setItem('rhody_rider_profile', JSON.stringify(riderProfile));
+      updateProfileAvatarsUI();
+      showToast('Profile photo removed', 'info');
+      syncProfileToBackend({ avatar: '' });
+    }
+
+    function openEditProfileModal() {
+      const modal = document.getElementById('editProfileModal');
+      if (modal) modal.classList.remove('hidden');
+
+      const p = riderProfile;
+      if (document.getElementById('editProfileName')) document.getElementById('editProfileName').value = p.name || 'Natesh';
+      if (document.getElementById('editProfileHandle')) document.getElementById('editProfileHandle').value = p.handle || '@natesh_pilot';
+      if (document.getElementById('editProfileBio')) document.getElementById('editProfileBio').value = p.bio || '';
+      if (document.getElementById('editProfileBikeModel')) document.getElementById('editProfileBikeModel').value = p.bikeModel || 'Yamaha MT-09 SP';
+      if (document.getElementById('editProfileBikeSpecs')) document.getElementById('editProfileBikeSpecs').value = p.bikeSpecs || '890cc Triple • 119 BHP';
+      if (document.getElementById('editProfileBikePlate')) document.getElementById('editProfileBikePlate').value = p.bikePlate || 'TN-38-RH-0909';
+      if (document.getElementById('editProfileTires')) document.getElementById('editProfileTires').value = p.tireSetup || 'Pirelli Diablo Rosso IV';
+      if (document.getElementById('editProfileGuardian')) {
+        document.getElementById('editProfileGuardian').value = `${p.emergencyContactName || 'Mom & Dad'} (${p.emergencyContactPhone || '+91 98765 43210'})`;
+      }
+    }
+
+    function closeEditProfileModal() {
+      const modal = document.getElementById('editProfileModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function handleSaveProfile(e) {
+      e.preventDefault();
+      riderProfile.name = (document.getElementById('editProfileName').value || 'Natesh').trim();
+      riderProfile.handle = (document.getElementById('editProfileHandle').value || '@natesh_pilot').trim();
+      riderProfile.bio = (document.getElementById('editProfileBio').value || '').trim();
+      riderProfile.bikeModel = (document.getElementById('editProfileBikeModel').value || 'Yamaha MT-09 SP').trim();
+      riderProfile.bikeSpecs = (document.getElementById('editProfileBikeSpecs').value || '890cc Triple • 119 BHP').trim();
+      riderProfile.bikePlate = (document.getElementById('editProfileBikePlate').value || 'TN-38-RH-0909').trim();
+      riderProfile.tireSetup = (document.getElementById('editProfileTires').value || 'Pirelli Diablo Rosso IV').trim();
+      
+      const guardianRaw = (document.getElementById('editProfileGuardian').value || '').trim();
+      if (guardianRaw) {
+        riderProfile.emergencyContactName = guardianRaw;
+      }
+
+      localStorage.setItem('rhody_rider_profile', JSON.stringify(riderProfile));
+      updateProfileAvatarsUI();
+      renderProfileView();
+      closeEditProfileModal();
+      showToast('Pilot profile & motorcycle configuration saved!', 'success');
+
+      syncProfileToBackend(riderProfile);
+    }
+
+    function syncProfileToBackend(fields) {
+      const token = localStorage.getItem('rp_auth_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      fetch('/api/user/profile', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(fields)
+      }).catch(err => {
+        console.warn('Backend profile sync notice:', err.message);
+      });
+    }
+
+    function copyGuardianLink() {
+      const tripId = (currentTrip && currentTrip._id) ? currentTrip._id : '';
+      const link = `${window.location.origin}/?live=parent${tripId ? '&trip=' + tripId : ''}`;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(link).then(() => {
+          showToast('Guardian live link copied to clipboard!', 'success');
+        }).catch(() => {
+          showToast(`Link: ${link}`, 'info');
+        });
+      } else {
+        showToast(`Link: ${link}`, 'info');
       }
     }
 
@@ -2199,18 +3359,10 @@
         parentMapInstance = L.map('parentMap', { zoomControl: false }).setView([10.0889, 77.0595], 14);
         L.control.zoom({ position: 'bottomright' }).addTo(parentMapInstance);
 
-        var parentDarkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-          subdomains: 'abcd',
+        var parentDarkLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+          maxNativeZoom: 16,
           maxZoom: 19
-        });
-
-        parentDarkLayer.on('tileerror', function() {
-          console.warn('[Rhody Parent Map] Carto dark tiles failed, switching to standard OSM');
-          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors',
-            maxZoom: 19
-          }).addTo(parentMapInstance);
         });
 
         parentDarkLayer.addTo(parentMapInstance);
