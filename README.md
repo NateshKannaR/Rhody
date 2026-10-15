@@ -1,22 +1,60 @@
-# RoadPulse - Native Android Driving & Riding GPS Tracker & Web Telemetry Cloud
+# Rhody — Precision Motorcycle Telemetry, IMU Lean Angle & Parent Live Safety
 
-RoadPulse is a high-performance native Android GPS tracker and companion Web Telemetry platform engineered specifically for motorcycles, cars, and performance driving. Inspired by Enroad and Dragy, RoadPulse provides real-time GPS telemetry, an interactive speedometer, persistent background recording via an Android 14-compliant location foreground service, offline Room database storage, interactive vector map route tracking via MapLibre Native, high-resolution speed-versus-distance analysis charts, G-force telemetry, 0-60 / 0-100 km/h acceleration sprint timers, and seamless cloud synchronization with MongoDB Atlas.
+[![Release](https://img.shields.io/github/v/release/NateshKannaR/Rhody?color=10B981&label=Release)](https://github.com/NateshKannaR/Rhody/releases/latest)
+[![Download APK](https://img.shields.io/badge/Download-Android%20APK%20(v1.0.0)-2563EB?logo=android&logoColor=white)](https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk)
+[![Cloud Web Cockpit](https://img.shields.io/badge/Web%20Cockpit-rhodybynk.vercel.app-10B981)](https://rhodybynk.vercel.app)
+[![Android](https://img.shields.io/badge/Platform-Android%208.0%2B%20(API%2026%2B)-3DDC84?logo=android&logoColor=white)](https://github.com/NateshKannaR/Rhody)
+
+**Rhody** is a native Android precision motorcycle telemetry computer and companion cloud telemetry platform. Engineered for sport riders, track-day racers, and touring enthusiasts, Rhody combines Android IMU sensor fusion (`TYPE_GYROSCOPE`, `TYPE_ACCELEROMETER`, `TYPE_GRAVITY`, `TYPE_ROTATION_VECTOR`) with high-frequency GPS tracking to measure real-time motorcycle **lean angle (degrees left/right)**, **lateral & longitudinal G-forces**, **sub-second sprint acceleration timers (0-60 & 0-100 km/h)**, and **Guardian Parent Live Tracking**.
+
+---
+
+## 📥 Download the App
+
+| Package | Version | Direct Download | Release Details |
+| :--- | :---: | :---: | :---: |
+| **Rhody Android Mobile App (.apk)** | `v1.0.0` | [⬇️ **Download Rhody-v1.0.0.apk**](https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk) | [GitHub Releases](https://github.com/NateshKannaR/Rhody/releases/latest) |
+| **Web Telemetry & Parent Cockpit** | Live Cloud | [🌐 **rhodybynk.vercel.app**](https://rhodybynk.vercel.app) | Real-time browser telemetry & Atlas sync |
+
+```bash
+# Quick Install via ADB
+adb install -r Rhody-v1.0.0.apk
+```
+
+---
+
+## 📱 Mobile App Screenshots
+
+| Dashboard Cockpit & Speedometer | Live Ride & Parent Guardian Tracking | Performance Telemetry & Lean Angle |
+| :---: | :---: | :---: |
+| <img src="screenshots/dashboard.jpg" width="270" alt="Rhody Dashboard & Speedometer" /> | <img src="screenshots/live_trip.jpg" width="270" alt="Rhody Live Ride & Parent Safety Beacon" /> | <img src="screenshots/analytics.jpg" width="270" alt="Rhody Lean Angle & Performance Analytics" /> |
+| Circular Speedometer, G-Force Radar & 0-60/0-100 Sprint Timers | Live Vector Map Route, Real-Time Velocity & Parent Safety Beacon | Lean Angle Cornering Gauge (42° L / 38° R) & Elevation Profile |
 
 ---
 
 ## 🚀 Key Features
 
-### 1. Modern, Neat & Clean Native Android UI
-- **Aviation-Grade Dark Theme**: Carbon Dark (`#0D0F12`), Midnight Card (`#16191F`), Neon Cyan (`#00F5D4`), Racing Red (`#FF3366`), and Sport Amber (`#FFB703`).
+### 1. Motorcycle Lean Angle & Cornering Telemetry
+- **Hardware IMU Sensor Fusion**: Utilizes Android `SensorManager` with `Sensor.TYPE_ROTATION_VECTOR`, `Sensor.TYPE_GYROSCOPE`, `Sensor.TYPE_GRAVITY`, and `Sensor.TYPE_ACCELEROMETER`.
+- **Dynamic Phone Mount Calibration**: Zero out baseline phone tilt with one tap in your motorcycle handlebar or tank mount.
+- **Cornering Peak Hold**: Automatically captures maximum lean angle for both left and right turns (`42° L / 38° R`) with colored stability thresholds.
+
+### 2. 🛡️ Guardian Parent Live Tracking
+- **Peace of Mind for Parents**: Parents can watch the rider's progress in real-time on any phone or PC browser via `rhodybynk.vercel.app`.
+- **Live Status Heartbeat**: Displays whether the motorcycle is **MOVING** or **STOPPED**, current speed (km/h), live GPS pin, and battery status.
+- **One-Click Share**: Riders can copy and share their live tracking link directly from the app.
+
+### 3. Modern, Neat & Clean Native Android UI
+- **Executive Slate & Cobalt Theme**: Glare-free dark UI designed for daylight readability on motorcycle mounts.
 - **Dynamic Speedometer Gauge**: High-contrast circular analog/digital speedometer gauge with real-time speed in km/h (`mps * 3.6`), dynamic color transitions, acceleration arcs, and session peak speed indicators.
 - **Modern Adaptive App Icon**: High-definition vector adaptive icon (`res/mipmap-anydpi-v26/ic_launcher.xml`) with dark titanium background, neon cyan pulse telemetry line, and electric velocity needle.
 
-### 2. Advanced Performance Telemetry
+### 4. Advanced Performance Telemetry
 - **G-Force Telemetry Meter**: Aviation crosshair radar widget displaying real-time lateral cornering Gs and longitudinal acceleration/braking Gs, backed by Android `SensorManager` (`Sensor.TYPE_LINEAR_ACCELERATION` / `Sensor.TYPE_ACCELEROMETER`) with GPS velocity derivative fallback.
 - **Sprint Acceleration Timers (0–60 km/h & 0–100 km/h)**: Sub-second accurate standing launch detection with linear speed-time interpolation and false-pull abort filtering.
 - **Elevation & Topography Tracking**: Altitudes recorded and plotted across every track point.
 
-### 3. Companion Web Platform & MongoDB Atlas Integration
+### 5. Companion Web Platform & MongoDB Atlas Integration
 - **Direct MongoDB Atlas Cloud Sync**: Integrated with MongoDB Atlas cluster:
   ```
   mongodb+srv://Natesh:Natesh@cluster0.wwp3oig.mongodb.net/roadpulse
@@ -31,7 +69,7 @@ RoadPulse is a high-performance native Android GPS tracker and companion Web Tel
   - Batch "Sync All to MongoDB" in `HistoryScreen`.
   - Fully offline-first: app continues recording and saving to Room database even when offline.
 
-### 4. Robust Core Tracking Engine
+### 6. Robust Core Tracking Engine
 - **Android 14+ Foreground Service**:
   - Declared with `android:foregroundServiceType="location"`.
   - Immediate promotion to foreground in `onStartCommand` to prevent Android ANRs.
@@ -58,7 +96,7 @@ RoadPulse is a high-performance native Android GPS tracker and companion Web Tel
 ## 🏗️ Architecture & Technology Stack
 
 ```
-RoadPulse
+Rhody
 ├── app/src/main/java/com/roadpulse/app/
 │   ├── data
 │   │   ├── database       # Room Entities (TripEntity, TrackPointEntity), DAOs, RoadPulseDatabase
@@ -67,16 +105,16 @@ RoadPulse
 │   ├── domain
 │   │   ├── calculator     # TripCalculator (Haversine math), SprintTimerCalculator (0-60, 0-100)
 │   │   ├── filter         # GpsQualityFilter & FilterConfig (jump & jitter filtering)
-│   │   └── model          # TripStatus, GpsStatus, GpsLocationFix, TripMetrics, GForceData
-│   ├── service            # TripRecordingService (Foreground Service, WakeLock, Sensors)
+│   │   └── model          # TripStatus, GpsStatus, GpsLocationFix, TripMetrics, GForceData, LeanAngleData
+│   ├── service            # TripRecordingService (Foreground Service, WakeLock, IMU Sensor Fusion)
 │   │                      # TripRecordingController (StateFlow event bus, singleton coordinator)
 │   ├── export             # GpxExporter, CsvExporter, ExportManager (FileProvider)
 │   └── ui
-│       ├── components     # SpeedometerGauge, StatCard, GpsStatusBadge, GForceMeter, InteractiveSpeedChart, RouteMapView
+│       ├── components     # SpeedometerGauge, StatCard, GpsStatusBadge, GForceMeter, LeanAngleGauge, InteractiveSpeedChart, RouteMapView
 │       ├── map            # MapConfig (OpenFreeMap style configuration)
 │       ├── navigation     # Screen definitions, BottomBar
-│       ├── screens        # Dashboard, LiveTrip, Analytics, History, TripDetail
-│       └── theme          # Dark Theme (Carbon, Midnight, Neon Cyan, Racing Red, Sport Amber)
+│       ├── screens        # Dashboard, LiveTrip, Analytics, History, TripDetail, Account
+│       └── theme          # Slate Dark Theme (Slate, Cobalt Blue, Emerald Green, Amber, Rose)
 └── backend/               # Companion Web Service & MongoDB Atlas Backend
     ├── server.js          # Express.js API connected to MongoDB Atlas
     └── public/
@@ -138,7 +176,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## 🔐 Email ID Authentication & MongoDB Atlas Cloud
 
-RoadPulse supports unified user accounts powered by MongoDB Atlas:
+Rhody supports unified user accounts powered by MongoDB Atlas:
 
 ### Features & Security
 - **Email ID Registration & Login**: Drivers and riders can sign up with their email and password.
@@ -168,7 +206,13 @@ RoadPulse supports unified user accounts powered by MongoDB Atlas:
 ## 🔒 Permissions & Security
 - `ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION`: Required for sub-second GPS telemetry.
 - `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_LOCATION`: Required by Android 14 for uninterrupted background tracking.
+- `HIGH_SAMPLING_RATE_SENSORS`: For high-frequency IMU gyroscope/accelerometer lean angle measurement.
 - `POST_NOTIFICATIONS`: Android 13+ active trip tracking controls notification.
 - `WAKE_LOCK`: Retains CPU execution state while phone is locked in a motorcycle mount or pocket.
 - `INTERNET` and `ACCESS_NETWORK_STATE`: For vector map tiles and syncing with MongoDB Atlas.
+
+---
+
+## 📄 License
+This project is licensed under the MIT License.
 

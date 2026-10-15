@@ -591,6 +591,15 @@ function escapeXml(str) {
   });
 }
 
+// App APK & Release Download Redirects
+app.get('/download', (req, res) => {
+  res.redirect('https://github.com/NateshKannaR/Rhody/releases/latest');
+});
+
+app.get('/apk', (req, res) => {
+  res.redirect('https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk');
+});
+
 // Fallback to SPA index.html
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
