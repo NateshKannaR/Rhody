@@ -12,3 +12,4 @@ app/build/
 node_modules/
 backend/node_modules/
 npm-debug.log*
+*.apk

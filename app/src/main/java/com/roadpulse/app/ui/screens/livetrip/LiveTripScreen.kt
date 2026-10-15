@@ -270,7 +270,7 @@ fun LiveTripScreen(
                         .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
                         .clickable {
                             val activeId = metrics.activeTripId ?: System.currentTimeMillis()
-                            val shareUrl = "https://rhodybynk.vercel.app/?live=$activeId"
+                            val shareUrl = "https://rhodyy.vercel.app/?live=$activeId"
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
                                 putExtra(Intent.EXTRA_TEXT, "Track my live motorcycle ride on Rhody: $shareUrl")

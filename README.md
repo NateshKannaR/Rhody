@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/NateshKannaR/Rhody?color=10B981&label=Release)](https://github.com/NateshKannaR/Rhody/releases/latest)
 [![Download APK](https://img.shields.io/badge/Download-Android%20APK%20(v1.0.0)-2563EB?logo=android&logoColor=white)](https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk)
-[![Cloud Web Cockpit](https://img.shields.io/badge/Web%20Cockpit-rhodybynk.vercel.app-10B981)](https://rhodybynk.vercel.app)
+[![Cloud Web Cockpit](https://img.shields.io/badge/Web%20Cockpit-rhodyy.vercel.app-10B981)](https://rhodyy.vercel.app)
 [![Android](https://img.shields.io/badge/Platform-Android%208.0%2B%20(API%2026%2B)-3DDC84?logo=android&logoColor=white)](https://github.com/NateshKannaR/Rhody)
 
 **Rhody** is a native Android precision motorcycle telemetry computer and companion cloud telemetry platform. Engineered for sport riders, track-day racers, and touring enthusiasts, Rhody combines Android IMU sensor fusion (`TYPE_GYROSCOPE`, `TYPE_ACCELEROMETER`, `TYPE_GRAVITY`, `TYPE_ROTATION_VECTOR`) with high-frequency GPS tracking to measure real-time motorcycle **lean angle (degrees left/right)**, **lateral & longitudinal G-forces**, **sub-second sprint acceleration timers (0-60 & 0-100 km/h)**, and **Guardian Parent Live Tracking**.
@@ -14,7 +14,7 @@
 | Package | Version | Direct Download | Release Details |
 | :--- | :---: | :---: | :---: |
 | **Rhody Android Mobile App (.apk)** | `v1.0.0` | [⬇️ **Download Rhody-v1.0.0.apk**](https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk) | [GitHub Releases](https://github.com/NateshKannaR/Rhody/releases/latest) |
-| **Web Telemetry & Parent Cockpit** | Live Cloud | [🌐 **rhodybynk.vercel.app**](https://rhodybynk.vercel.app) | Real-time browser telemetry & Atlas sync |
+| **Web Telemetry & Parent Cockpit** | Live Cloud | [🌐 **rhodyy.vercel.app**](https://rhodyy.vercel.app) | Real-time browser telemetry & Atlas sync |
 
 ```bash
 # Quick Install via ADB
@@ -40,7 +40,7 @@ adb install -r Rhody-v1.0.0.apk
 - **Cornering Peak Hold**: Automatically captures maximum lean angle for both left and right turns (`42° L / 38° R`) with colored stability thresholds.
 
 ### 2. 🛡️ Guardian Parent Live Tracking
-- **Peace of Mind for Parents**: Parents can watch the rider's progress in real-time on any phone or PC browser via `rhodybynk.vercel.app`.
+- **Peace of Mind for Parents**: Parents can watch the rider's progress in real-time on any phone or PC browser via `rhodyy.vercel.app`.
 - **Live Status Heartbeat**: Displays whether the motorcycle is **MOVING** or **STOPPED**, current speed (km/h), live GPS pin, and battery status.
 - **One-Click Share**: Riders can copy and share their live tracking link directly from the app.
 

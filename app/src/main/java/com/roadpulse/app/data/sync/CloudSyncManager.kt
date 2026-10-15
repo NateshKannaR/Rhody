@@ -17,7 +17,7 @@ object CloudSyncManager {
     private const val PREFS_NAME = "roadpulse_sync_prefs"
     private const val KEY_SERVER_URL = "server_base_url"
 
-    const val DEFAULT_SERVER_URL = "https://rhodybynk.vercel.app"
+    const val DEFAULT_SERVER_URL = "https://rhodyy.vercel.app"
 
     var serverBaseUrl: String = DEFAULT_SERVER_URL
         private set

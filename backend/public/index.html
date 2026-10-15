@@ -179,6 +179,10 @@
         <button id="navTabCloud" onclick="switchMainView('cloud')" class="px-3.5 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition">
           Cloud & Atlas
         </button>
+        <button id="navTabAppDownload" onclick="switchMainView('appDownload')" class="px-3.5 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-rpEmerald" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+          <span>Mobile App</span>
+        </button>
       </nav>
 
       <!-- Right Actions: Atlas status, User Auth, Fast Simulator, Refresh -->
@@ -200,11 +204,11 @@
           </button>
         </div>
 
-        <!-- Download Mobile App APK Button -->
-        <a href="https://github.com/NateshKannaR/Rhody/releases/latest" target="_blank" title="Download Rhody Mobile App (.APK) for Android" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rpEmerald/15 hover:bg-rpEmerald/25 text-rpEmerald border border-rpEmerald/30 transition flex items-center space-x-1.5 shadow-sm">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-          <span class="hidden sm:inline">Download</span>
-          <span>APK</span>
+        <!-- Direct Download Mobile App APK Button -->
+        <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" download="Rhody-v1.0.0.apk" title="Direct Download Rhody Android APK (v1.0.0 - 57MB)" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-rpEmerald/20 hover:bg-rpEmerald/30 text-rpEmerald border border-rpEmerald/40 transition flex items-center space-x-1.5 shadow-sm group">
+          <svg class="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          <span>Download App</span>
+          <span class="px-1.5 py-0.2 text-[9px] font-extrabold rounded bg-rpEmerald/30 text-white">APK</span>
         </a>
 
         <!-- Sign In Button (When not authenticated) -->
@@ -245,14 +249,14 @@
         </div>
       </div>
       <div class="flex items-center space-x-2 shrink-0">
-        <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rpEmerald hover:bg-emerald-600 text-slate-950 transition flex items-center space-x-1.5 shadow-sm">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+        <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" download="Rhody-v1.0.0.apk" class="px-3.5 py-2 text-xs font-bold rounded-lg bg-rpEmerald hover:bg-emerald-500 text-slate-950 transition flex items-center space-x-1.5 shadow-md shadow-emerald-950/30 group">
+          <svg class="w-4 h-4 text-slate-950 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
           <span>Download APK (57MB)</span>
         </a>
-        <a href="https://github.com/NateshKannaR/Rhody/releases/latest" target="_blank" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition flex items-center space-x-1.5">
-          <svg class="w-3.5 h-3.5 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-          <span>GitHub Releases</span>
-        </a>
+        <button onclick="switchMainView('appDownload')" class="px-3 py-2 text-xs font-semibold rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition flex items-center space-x-1.5">
+          <span>Screenshots & Guide</span>
+          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+        </button>
       </div>
     </div>
 
@@ -715,6 +719,121 @@
 
       </div>
     </div>
+
+    <!-- ================= VIEW 5: DOWNLOAD RHODY MOBILE APP ================= -->
+    <div id="viewAppDownload" class="space-y-6 hidden">
+      
+      <!-- Executive Header Banner -->
+      <div class="telemetry-panel p-6 bg-gradient-to-br from-rpCard via-rpCard to-rpEmerald/10 border border-rpBorder relative overflow-hidden">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+          <div class="space-y-2 max-w-2xl">
+            <div class="flex items-center space-x-2.5">
+              <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-rpEmerald/20 text-rpEmerald border border-rpEmerald/30 uppercase tracking-wide">Official Android Release v1.0.0</span>
+              <span class="text-xs text-slate-400 font-tabular">Build 2026.10 • Kotlin & Jetpack Compose</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Rhody Precision Motorcycle Telemetry</h1>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              Motorcycle IMU sensor fusion lean-angle measurement, high-frequency GPS tracking, standing-start 0–60 and 0–100 km/h acceleration sprint timers, and real-time Guardian Parent Live Tracking — designed for motorcycle mounts, touring, and track days.
+            </p>
+          </div>
+
+          <!-- Download Action Buttons -->
+          <div class="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0">
+            <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" download="Rhody-v1.0.0.apk" class="px-5 py-3 text-sm font-bold rounded-xl bg-rpEmerald hover:bg-emerald-500 text-slate-950 transition flex items-center justify-center space-x-2.5 shadow-lg shadow-emerald-950/40 transform active:scale-95 group">
+              <svg class="w-5 h-5 text-slate-950 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              <span>Download APK (57 MB)</span>
+            </a>
+            <a href="https://github.com/NateshKannaR/Rhody/releases/latest" target="_blank" class="px-4 py-2.5 text-xs font-semibold rounded-xl bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition flex items-center justify-center space-x-2">
+              <svg class="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+              <span>GitHub Release Notes</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile App Screenshots Gallery Showcase -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
+            <span>📱 Mobile App In-Action</span>
+            <span class="text-xs font-normal text-slate-500">— Native Jetpack Compose & IMU Sensors</span>
+          </h2>
+          <span class="text-xs text-rpEmerald font-semibold hidden sm:inline">Motorcycle Handlebar Cockpit</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <!-- Screenshot 1 -->
+          <div class="telemetry-panel p-3.5 space-y-3 flex flex-col items-center">
+            <div class="rounded-xl overflow-hidden border border-rpBorder bg-rpDark shadow-md w-full max-w-[280px]">
+              <img src="/screenshots/dashboard.jpg" alt="Rhody Speedometer & Dashboard" class="w-full h-auto object-cover rounded-lg" />
+            </div>
+            <div class="text-center w-full">
+              <span class="text-xs font-bold text-white block">Speedometer & Cockpit HUD</span>
+              <p class="text-[11px] text-slate-400 mt-1">Circular gauge (0-160 km/h), aviation G-force radar & standing sprint timers.</p>
+            </div>
+          </div>
+
+          <!-- Screenshot 2 -->
+          <div class="telemetry-panel p-3.5 space-y-3 flex flex-col items-center">
+            <div class="rounded-xl overflow-hidden border border-rpBorder bg-rpDark shadow-md w-full max-w-[280px]">
+              <img src="/screenshots/live_trip.jpg" alt="Rhody Live Ride & Parent Safety Beacon" class="w-full h-auto object-cover rounded-lg" />
+            </div>
+            <div class="text-center w-full">
+              <span class="text-xs font-bold text-white block">Live Route & Parent Tracking</span>
+              <p class="text-[11px] text-slate-400 mt-1">Real-time vector map, speed telemetry & 1-tap live safety link sharing with parents.</p>
+            </div>
+          </div>
+
+          <!-- Screenshot 3 -->
+          <div class="telemetry-panel p-3.5 space-y-3 flex flex-col items-center">
+            <div class="rounded-xl overflow-hidden border border-rpBorder bg-rpDark shadow-md w-full max-w-[280px]">
+              <img src="/screenshots/analytics.jpg" alt="Rhody Motorcycle Lean Angle & Performance" class="w-full h-auto object-cover rounded-lg" />
+            </div>
+            <div class="text-center w-full">
+              <span class="text-xs font-bold text-white block">Lean Angle & Split Telemetry</span>
+              <p class="text-[11px] text-slate-400 mt-1">IMU cornering gauge (42° L / 38° R), speed vs distance graphs & GPX export.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Installation Guide Strip -->
+      <div class="telemetry-panel p-5">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">How to Install on Your Android Phone</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div class="bg-rpDark p-3.5 rounded-lg border border-rpBorder space-y-1.5">
+            <div class="flex items-center space-x-2">
+              <span class="w-5 h-5 rounded-full bg-rpBlue text-white font-bold text-[11px] flex items-center justify-center">1</span>
+              <span class="font-bold text-white">Download the APK</span>
+            </div>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              Tap the green <strong>"Download APK"</strong> button above directly on your Android phone's browser or transfer the 57MB file from your PC.
+            </p>
+          </div>
+
+          <div class="bg-rpDark p-3.5 rounded-lg border border-rpBorder space-y-1.5">
+            <div class="flex items-center space-x-2">
+              <span class="w-5 h-5 rounded-full bg-rpBlue text-white font-bold text-[11px] flex items-center justify-center">2</span>
+              <span class="font-bold text-white">Allow & Install</span>
+            </div>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              Open the downloaded <code>Rhody-v1.0.0.apk</code> file. If prompted by Android, enable <em>"Install unknown apps"</em> for your browser and tap <strong>Install</strong>.
+            </p>
+          </div>
+
+          <div class="bg-rpDark p-3.5 rounded-lg border border-rpBorder space-y-1.5">
+            <div class="flex items-center space-x-2">
+              <span class="w-5 h-5 rounded-full bg-rpEmerald text-slate-950 font-bold text-[11px] flex items-center justify-center">3</span>
+              <span class="font-bold text-white">Mount & Ride</span>
+            </div>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              Launch Rhody, mount your phone securely to your handlebars, calibrate level, and start recording precision telemetry!
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </main>
 
   <!-- ================= AUTH MODAL ================= -->
@@ -839,7 +958,10 @@
       const parentLiveView = document.getElementById('viewParentLive');
       if (parentLiveView) parentLiveView.classList.add('hidden');
 
-      const tabs = ['Studio', 'ParentLive', 'Explorer', 'Cloud'];
+      const appDownloadView = document.getElementById('viewAppDownload');
+      if (appDownloadView) appDownloadView.classList.add('hidden');
+
+      const tabs = ['Studio', 'ParentLive', 'Explorer', 'Cloud', 'AppDownload'];
       tabs.forEach(t => {
         const btn = document.getElementById('navTab' + t);
         if (btn) {
@@ -869,6 +991,12 @@
         const b = document.getElementById('navTabCloud');
         if (b) b.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-md bg-rpBlue text-white shadow-sm transition';
         pingDatabase();
+      } else if (viewName === 'appDownload') {
+        const appEl = document.getElementById('viewAppDownload');
+        if (appEl) appEl.classList.remove('hidden');
+        const b = document.getElementById('navTabAppDownload');
+        if (b) b.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-md bg-rpEmerald text-slate-950 shadow-sm transition';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
 
