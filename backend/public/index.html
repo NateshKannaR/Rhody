@@ -34,12 +34,12 @@
     }
   </script>
 
-  <!-- Leaflet Map SDK -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Leaflet Map SDK (Zero API Key Needed - Cloudflare CDN + Local Fallback) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" onerror="this.onerror=null;this.href='/vendor/leaflet/leaflet.css';" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" onerror="this.onerror=null;this.src='/vendor/leaflet/leaflet.js';"></script>
 
-  <!-- Chart.js 4 -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Chart.js 4 (CDN + Local Fallback) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" onerror="this.onerror=null;this.src='/vendor/chartjs/chart.umd.min.js';"></script>
 
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -426,10 +426,11 @@
               </div>
             </div>
 
-            <!-- Map Layer Switcher (Bottom Left) -->
-            <div class="absolute bottom-4 left-4 z-[400] flex bg-rpDark/90 backdrop-blur-md border border-rpBorder rounded-lg p-0.5 text-[11px] font-medium space-x-0.5">
-              <button id="btnLayerDark" onclick="setMapLayer('dark')" class="px-2.5 py-1 rounded bg-rpBlue text-white transition">Dark Canvas</button>
-              <button id="btnLayerOsm" onclick="setMapLayer('osm')" class="px-2.5 py-1 rounded text-slate-400 hover:text-white transition">Standard</button>
+            <!-- Map Layer Switcher (Bottom Left - Zero API Key Needed) -->
+            <div class="absolute bottom-4 left-4 z-[400] flex bg-rpDark/90 backdrop-blur-md border border-rpBorder rounded-lg p-0.5 text-[11px] font-medium space-x-0.5 shadow-md">
+              <button id="btnLayerDark" onclick="setMapLayer('dark')" class="px-2.5 py-1 rounded bg-rpBlue text-white transition">Dark</button>
+              <button id="btnLayerOsm" onclick="setMapLayer('osm')" class="px-2.5 py-1 rounded text-slate-400 hover:text-white transition">Street</button>
+              <button id="btnLayerSat" onclick="setMapLayer('sat')" class="px-2.5 py-1 rounded text-slate-400 hover:text-white transition">Satellite</button>
             </div>
           </div>
         </div>
@@ -895,7 +896,9 @@
     // Global Application State
     var mapInstance = null;
     var cartoDarkLayer = null;
+    var esriDarkLayer = null;
     var standardOsmLayer = null;
+    var satelliteLayer = null;
     var activeTileLayer = null;
     var activePolyline = null;
     var startPointMarker = null;
@@ -920,24 +923,57 @@
     var replaySpeedMultiplier = 5;
 
     // ----------------------------------------------------
+    // ROBUST LEAFLET LOADER (Zero API Key Needed)
+    // ----------------------------------------------------
+    function ensureLeaflet(callback, attempt = 0) {
+      if (typeof L !== 'undefined' && typeof L.map === 'function') {
+        callback();
+        return;
+      }
+      if (attempt < 30) {
+        setTimeout(function() {
+          ensureLeaflet(callback, attempt + 1);
+        }, 80);
+      } else {
+        console.warn('[Rhody] Leaflet delayed, dynamically injecting CDN fallback');
+        var script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = function() {
+          if (typeof L !== 'undefined') callback();
+        };
+        script.onerror = function() {
+          var localScript = document.createElement('script');
+          localScript.src = '/vendor/leaflet/leaflet.js';
+          localScript.onload = function() {
+            if (typeof L !== 'undefined') callback();
+          };
+          document.head.appendChild(localScript);
+        };
+        document.head.appendChild(script);
+      }
+    }
+
+    // ----------------------------------------------------
     // INITIALIZATION & TAB SWITCHING
     // ----------------------------------------------------
     document.addEventListener('DOMContentLoaded', function() {
-      try {
-        initLeafletMap();
-      } catch (e) {
-        console.error('[RoadPulse] Map initialization error:', e);
-      }
+      ensureLeaflet(function() {
+        try {
+          initLeafletMap();
+        } catch (e) {
+          console.error('[Rhody] Map initialization error:', e);
+        }
+      });
       try {
         checkAuthSession();
       } catch (e) {
-        console.error('[RoadPulse] Auth session error:', e);
+        console.error('[Rhody] Auth session error:', e);
       }
       try {
         drawSpeedometer(0);
         drawGForce(0, 0);
       } catch (e) {
-        console.error('[RoadPulse] Initial gauge draw error:', e);
+        console.error('[Rhody] Initial gauge draw error:', e);
       }
       // Load real trips from MongoDB Atlas
       refreshData();
@@ -1001,38 +1037,85 @@
     }
 
     // ----------------------------------------------------
-    // MAP SETUP & LAYERS
+    // MAP SETUP & LAYERS (Zero API Key Required)
     // ----------------------------------------------------
     function initLeafletMap() {
       const mapEl = document.getElementById('map');
       if (!mapEl || typeof L === 'undefined') return;
 
-      mapInstance = L.map('map', { zoomControl: false }).setView([37.7749, -122.4194], 13);
+      if (mapInstance) {
+        setTimeout(function() { mapInstance.invalidateSize(); }, 120);
+        return;
+      }
+
+      // Default view: Scenic motorcycle road pass (Western Ghats / Munnar)
+      mapInstance = L.map('map', {
+        zoomControl: false,
+        attributionControl: true
+      }).setView([10.0889, 77.0595], 13);
+
       L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 
-      // CartoDB Dark Matter (High performance, crisp dark map)
-      cartoDarkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      // 1. CartoDB Dark Matter (Zero API Key, dark UI theme)
+      cartoDarkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
         subdomains: 'abcd',
         maxZoom: 19
       });
 
-      // Standard OpenStreetMap fallback
+      // 2. Esri World Dark Gray Canvas (Zero API Key fallback)
+      esriDarkLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 16
+      });
+
+      // 3. OpenStreetMap Standard (Zero API Key, daytime streets)
       standardOsmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19
       });
 
+      // 4. Esri World Imagery Satellite (Zero API Key, high-res aerial)
+      satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics',
+        maxZoom: 18
+      });
+
+      // Resilient fallback chain
+      cartoDarkLayer.on('tileerror', function() {
+        if (activeTileLayer === cartoDarkLayer) {
+          console.warn('[Rhody] CartoDB dark tiles unreachable, switching to Esri Dark Canvas');
+          mapInstance.removeLayer(cartoDarkLayer);
+          esriDarkLayer.addTo(mapInstance);
+          activeTileLayer = esriDarkLayer;
+        }
+      });
+
+      esriDarkLayer.on('tileerror', function() {
+        if (activeTileLayer === esriDarkLayer) {
+          console.warn('[Rhody] Esri dark tiles unreachable, switching to standard OSM');
+          mapInstance.removeLayer(esriDarkLayer);
+          standardOsmLayer.addTo(mapInstance);
+          activeTileLayer = standardOsmLayer;
+        }
+      });
+
       cartoDarkLayer.addTo(mapInstance);
       activeTileLayer = cartoDarkLayer;
 
-      // Auto fallback if CartoDB ever errors
-      cartoDarkLayer.on('tileerror', function() {
-        if (activeTileLayer === cartoDarkLayer) {
-          console.warn('[RoadPulse] CartoDB dark tiles unreachable, switching to standard OSM');
-          setMapLayer('osm');
-        }
+      // Invalidate size across rendering cycles to avoid grey map tiles
+      setTimeout(function() { if (mapInstance) mapInstance.invalidateSize(); }, 120);
+      setTimeout(function() { if (mapInstance) mapInstance.invalidateSize(); }, 500);
+      setTimeout(function() { if (mapInstance) mapInstance.invalidateSize(); }, 1200);
+
+      window.addEventListener('resize', function() {
+        if (mapInstance) mapInstance.invalidateSize();
       });
+
+      // If telemetry was already fetched, render route immediately
+      if (currentTelemetryPoints && currentTelemetryPoints.length > 0) {
+        drawMapRoute(currentTelemetryPoints);
+      }
     }
 
     function setMapLayer(layerType) {
@@ -1041,24 +1124,53 @@
 
       const btnDark = document.getElementById('btnLayerDark');
       const btnOsm = document.getElementById('btnLayerOsm');
+      const btnSat = document.getElementById('btnLayerSat');
 
-      if (btnDark) btnDark.className = 'px-2.5 py-1 rounded text-slate-400 hover:text-white transition';
-      if (btnOsm) btnOsm.className = 'px-2.5 py-1 rounded text-slate-400 hover:text-white transition';
+      const unselectedClass = 'px-2.5 py-1 rounded text-slate-400 hover:text-white transition';
+      const selectedClass = 'px-2.5 py-1 rounded bg-rpBlue text-white transition';
+
+      if (btnDark) btnDark.className = unselectedClass;
+      if (btnOsm) btnOsm.className = unselectedClass;
+      if (btnSat) btnSat.className = unselectedClass;
 
       if (layerType === 'dark') {
+        if (!cartoDarkLayer) {
+          cartoDarkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+            subdomains: 'abcd',
+            maxZoom: 19
+          });
+        }
         cartoDarkLayer.addTo(mapInstance);
         activeTileLayer = cartoDarkLayer;
-        if (btnDark) btnDark.className = 'px-2.5 py-1 rounded bg-rpBlue text-white transition';
+        if (btnDark) btnDark.className = selectedClass;
+      } else if (layerType === 'sat') {
+        if (!satelliteLayer) {
+          satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 18
+          });
+        }
+        satelliteLayer.addTo(mapInstance);
+        activeTileLayer = satelliteLayer;
+        if (btnSat) btnSat.className = selectedClass;
       } else {
+        if (!standardOsmLayer) {
+          standardOsmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+          });
+        }
         standardOsmLayer.addTo(mapInstance);
         activeTileLayer = standardOsmLayer;
-        if (btnOsm) btnOsm.className = 'px-2.5 py-1 rounded bg-rpBlue text-white transition';
+        if (btnOsm) btnOsm.className = selectedClass;
       }
     }
 
     function fitMapBounds() {
       if (mapInstance && activePolyline) {
-        mapInstance.fitBounds(activePolyline.getBounds(), { padding: [40, 40] });
+        try {
+          mapInstance.fitBounds(activePolyline.getBounds(), { padding: [40, 40], maxZoom: 16 });
+        } catch (e) {
+          console.warn('[Rhody] fitBounds notice:', e);
+        }
       }
     }
 
@@ -1258,15 +1370,15 @@
     function loadSampleTripPreview() {
       const now = Date.now();
       const samplePoints = [];
-      let lat = 37.7749;
-      let lon = -122.4194;
+      let lat = 10.0889;
+      let lon = 77.0595;
       let dist = 0;
       let maxSpd = 0;
 
       for (let i = 0; i < 120; i++) {
-        lat += 0.0003 + Math.sin(i / 10) * 0.0001;
-        lon += 0.0004 + Math.cos(i / 8) * 0.0001;
-        const spdKmh = i < 25 ? (i * 3.8) : (55 + Math.sin(i / 6) * 35);
+        lat += 0.00035 + Math.sin(i / 10) * 0.00015;
+        lon += 0.00045 + Math.cos(i / 8) * 0.00015;
+        const spdKmh = i < 25 ? (i * 3.8) : (58 + Math.sin(i / 6) * 32);
         const spdMps = spdKmh / 3.6;
         if (spdMps > maxSpd) maxSpd = spdMps;
         dist += spdMps * 2;
@@ -1277,14 +1389,14 @@
           longitude: lon,
           speedMps: spdMps,
           accuracyMeters: 3.5,
-          altitudeMeters: 45 + Math.sin(i / 12) * 30,
+          altitudeMeters: 1450 + Math.sin(i / 12) * 85,
           cumulativeDistanceMeters: dist
         });
       }
 
       const sampleTrip = {
         _id: 'sample_preview_1',
-        title: 'Skyline Ridge & Coastal Pass',
+        title: 'Western Ghats Scenic Pass & Twisties',
         startTime: now - 240000,
         endTime: now,
         status: 'FINISHED',
@@ -1359,12 +1471,20 @@
     function drawMapRoute(points) {
       if (!mapInstance || !points || points.length === 0) return;
 
-      if (activePolyline) mapInstance.removeLayer(activePolyline);
-      if (startPointMarker) mapInstance.removeLayer(startPointMarker);
-      if (finishPointMarker) mapInstance.removeLayer(finishPointMarker);
-      if (scrubberMapMarker) mapInstance.removeLayer(scrubberMapMarker);
+      if (activePolyline) { mapInstance.removeLayer(activePolyline); activePolyline = null; }
+      if (startPointMarker) { mapInstance.removeLayer(startPointMarker); startPointMarker = null; }
+      if (finishPointMarker) { mapInstance.removeLayer(finishPointMarker); finishPointMarker = null; }
+      if (scrubberMapMarker) { mapInstance.removeLayer(scrubberMapMarker); scrubberMapMarker = null; }
 
-      const coords = points.map(p => [p.latitude, p.longitude]);
+      const validPoints = points.filter(p =>
+        p && typeof p.latitude === 'number' && typeof p.longitude === 'number' &&
+        !isNaN(p.latitude) && !isNaN(p.longitude) &&
+        (p.latitude !== 0 || p.longitude !== 0)
+      );
+
+      if (validPoints.length === 0) return;
+
+      const coords = validPoints.map(p => [p.latitude, p.longitude]);
 
       // Precision electric blue polyline
       activePolyline = L.polyline(coords, {
@@ -1375,7 +1495,15 @@
         lineCap: 'round'
       }).addTo(mapInstance);
 
-      mapInstance.fitBounds(activePolyline.getBounds(), { padding: [45, 45] });
+      if (coords.length > 1) {
+        try {
+          mapInstance.fitBounds(activePolyline.getBounds(), { padding: [45, 45], maxZoom: 16 });
+        } catch (e) {
+          mapInstance.setView(coords[0], 14);
+        }
+      } else {
+        mapInstance.setView(coords[0], 14);
+      }
 
       // Start Marker (Emerald)
       startPointMarker = L.circleMarker(coords[0], {
@@ -1403,6 +1531,10 @@
         fillOpacity: 1,
         weight: 3
       }).addTo(mapInstance);
+
+      setTimeout(function() {
+        if (mapInstance) mapInstance.invalidateSize();
+      }, 50);
     }
 
     // ----------------------------------------------------
@@ -2055,20 +2187,41 @@
         return;
       }
       var mapEl = document.getElementById('parentMap');
-      if (!mapEl || typeof L === 'undefined') return;
+      if (!mapEl) return;
 
-      parentMapInstance = L.map('parentMap', { zoomControl: false }).setView([13.0827, 80.2707], 14);
-      L.control.zoom({ position: 'bottomright' }).addTo(parentMapInstance);
+      ensureLeaflet(function() {
+        if (typeof L === 'undefined' || parentMapInstance) return;
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19
-      }).addTo(parentMapInstance);
+        parentMapInstance = L.map('parentMap', { zoomControl: false }).setView([10.0889, 77.0595], 14);
+        L.control.zoom({ position: 'bottomright' }).addTo(parentMapInstance);
 
-      if (activeParentTripId) {
-        pollParentBeacon();
-      }
+        var parentDarkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+          subdomains: 'abcd',
+          maxZoom: 19
+        });
+
+        parentDarkLayer.on('tileerror', function() {
+          console.warn('[Rhody Parent Map] Carto dark tiles failed, switching to standard OSM');
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+          }).addTo(parentMapInstance);
+        });
+
+        parentDarkLayer.addTo(parentMapInstance);
+
+        setTimeout(function() { if (parentMapInstance) parentMapInstance.invalidateSize(); }, 150);
+        setTimeout(function() { if (parentMapInstance) parentMapInstance.invalidateSize(); }, 600);
+
+        if (lastKnownParentLatLng) {
+          parentMapInstance.setView(lastKnownParentLatLng, 16);
+        }
+
+        if (activeParentTripId) {
+          pollParentBeacon();
+        }
+      });
     }
 
     function startParentTracking(tripId) {
