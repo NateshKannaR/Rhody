@@ -499,6 +499,10 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`[RoadPulse Web Server] Running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[RoadPulse Web Server] Running on http://localhost:${PORT}`);
+  });
+}
+module.exports = app;
+
