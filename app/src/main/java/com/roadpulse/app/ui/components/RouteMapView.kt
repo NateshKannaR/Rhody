@@ -109,15 +109,19 @@ fun RouteMapView(
         val map = mapInstance ?: return@LaunchedEffect
         if (!isMapLoaded) return@LaunchedEffect
 
-        // Redraw polyline
-        currentPolyline?.let { map.removePolyline(it) }
+        // Efficiently update polyline without recreating object
         if (points.size >= 2) {
             val latLngs = points.map { LatLng(it.latitude, it.longitude) }
-            val options = PolylineOptions()
-                .addAll(latLngs)
-                .color(android.graphics.Color.parseColor("#00E5FF"))
-                .width(5f)
-            currentPolyline = map.addPolyline(options)
+            val poly = currentPolyline
+            if (poly == null) {
+                val options = PolylineOptions()
+                    .addAll(latLngs)
+                    .color(android.graphics.Color.parseColor("#3B82F6"))
+                    .width(5.5f)
+                currentPolyline = map.addPolyline(options)
+            } else {
+                poly.points = latLngs
+            }
 
             // Add start pin if not yet placed
             if (startMarker == null && points.isNotEmpty()) {
@@ -133,22 +137,19 @@ fun RouteMapView(
         // Update current position marker
         if (currentLat != null && currentLon != null) {
             val currentLatLng = LatLng(currentLat, currentLon)
-            if (currentMarker == null) {
+            val marker = currentMarker
+            if (marker == null) {
                 currentMarker = map.addMarker(
                     MarkerOptions()
                         .position(currentLatLng)
                         .title("Current Position")
                 )
             } else {
-                currentMarker?.position = currentLatLng
+                marker.position = currentLatLng
             }
 
             if (isLiveTracking) {
-                val camera = CameraPosition.Builder()
-                    .target(currentLatLng)
-                    .zoom(16.0)
-                    .build()
-                map.animateCamera(CameraUpdateFactory.newCameraPosition(camera), 800)
+                map.easeCamera(CameraUpdateFactory.newLatLng(currentLatLng), 400)
             }
         } else if (!isLiveTracking && points.size >= 2) {
             // Zoom bounds to fit historical route

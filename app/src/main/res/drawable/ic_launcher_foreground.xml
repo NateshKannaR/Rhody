@@ -4,33 +4,27 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Glowing Speedometer Outer Gauge Arc -->
+    <!-- Dynamic Outer Telemetry Speed Arc -->
     <path
-        android:pathData="M33,70 A28,28 0 1,1 75,70"
-        android:strokeColor="#00E5FF"
-        android:strokeWidth="5"
+        android:pathData="M32,74 A30,30 0 1,1 76,74"
+        android:strokeColor="#2563EB"
+        android:strokeWidth="4.5"
         android:strokeLineCap="round" />
-    <!-- High Speed Red Zone -->
+    <!-- High Performance Emerald Safety Apex Accent -->
     <path
-        android:pathData="M69,38 A28,28 0 0,1 75,70"
-        android:strokeColor="#FF3366"
-        android:strokeWidth="5"
+        android:pathData="M68,36 A30,30 0 0,1 76,74"
+        android:strokeColor="#10B981"
+        android:strokeWidth="4.5"
         android:strokeLineCap="round" />
-    <!-- Center Road Pulse Wave -->
+    <!-- Precision Telemetry Rhody Apex Wave -->
     <path
-        android:pathData="M24,78 L42,54 L49,63 L61,43 L69,54 L84,78"
-        android:strokeColor="#00F5D4"
-        android:strokeWidth="4"
+        android:pathData="M30,68 L44,48 L52,58 L63,40 L71,50 L78,68"
+        android:strokeColor="#F8FAFC"
+        android:strokeWidth="3.5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
-    <!-- Speed Needle Marker -->
+    <!-- Live Guardian Safety Radar Dot -->
     <path
-        android:pathData="M54,54 L68,36"
-        android:strokeColor="#FFB703"
-        android:strokeWidth="3.5"
-        android:strokeLineCap="round" />
-    <!-- Center Hub Dot -->
-    <path
-        android:pathData="M54,50 A4,4 0 1,1 53.99,50 Z"
-        android:fillColor="#00F5D4" />
+        android:pathData="M54,34 A4,4 0 1,1 53.99,34 Z"
+        android:fillColor="#10B981" />
 </vector>

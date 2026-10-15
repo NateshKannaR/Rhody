@@ -21,6 +21,11 @@ import com.roadpulse.app.domain.calculator.TripCalculator
 import com.roadpulse.app.domain.model.TripMetrics
 import com.roadpulse.app.domain.model.TripStatus
 import com.roadpulse.app.service.TripRecordingController
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.roadpulse.app.data.auth.AuthManager
+import com.roadpulse.app.ui.screens.auth.AuthScreen
 import com.roadpulse.app.ui.navigation.BottomBar
 import com.roadpulse.app.ui.navigation.Screen
 import com.roadpulse.app.ui.screens.analytics.AnalyticsScreen
@@ -73,64 +78,79 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             RoadPulseTheme {
-                val navController = rememberNavController()
-                val metrics by TripRecordingController.metrics.collectAsState()
+                val authState by AuthManager.authState.collectAsState()
+                var guestModeActive by remember { mutableStateOf(false) }
 
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    containerColor = CarbonDark,
-                    bottomBar = {
-                        BottomBar(
+                if (!authState.isLoggedIn && !guestModeActive) {
+                    AuthScreen(
+                        onAuthenticated = {
+                            guestModeActive = true
+                        }
+                    )
+                } else {
+                    val navController = rememberNavController()
+                    val metrics by TripRecordingController.metrics.collectAsState()
+
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize(),
+                        containerColor = CarbonDark,
+                        bottomBar = {
+                            BottomBar(
+                                navController = navController,
+                                isRecording = metrics.isRecording
+                            )
+                        }
+                    ) { innerPadding ->
+                        NavHost(
                             navController = navController,
-                            isRecording = metrics.isRecording
-                        )
-                    }
-                ) { innerPadding ->
-                    NavHost(
-                        navController = navController,
-                        startDestination = Screen.Dashboard.route,
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        composable(Screen.Dashboard.route) {
-                            DashboardScreen(
-                                onNavigateToLiveTrip = {
-                                    navController.navigate(Screen.LiveTrip.route)
-                                },
-                                onNavigateToProfile = {
-                                    navController.navigate(Screen.Profile.route)
-                                }
-                            )
-                        }
+                            startDestination = Screen.Dashboard.route,
+                            modifier = Modifier.padding(innerPadding)
+                        ) {
+                            composable(Screen.Dashboard.route) {
+                                DashboardScreen(
+                                    onNavigateToLiveTrip = {
+                                        navController.navigate(Screen.LiveTrip.route)
+                                    },
+                                    onNavigateToProfile = {
+                                        navController.navigate(Screen.Profile.route)
+                                    }
+                                )
+                            }
 
-                        composable(Screen.LiveTrip.route) {
-                            LiveTripScreen()
-                        }
+                            composable(Screen.LiveTrip.route) {
+                                LiveTripScreen(
+                                    onFinishTrip = { tripId ->
+                                        navController.navigate(Screen.createTripDetailRoute(tripId))
+                                    }
+                                )
+                            }
 
-                        composable(Screen.Analytics.route) {
-                            AnalyticsScreen()
-                        }
+                            composable(Screen.Analytics.route) {
+                                AnalyticsScreen()
+                            }
 
-                        composable(Screen.History.route) {
-                            HistoryScreen(
-                                onNavigateToTripDetail = { tripId ->
-                                    navController.navigate(Screen.createTripDetailRoute(tripId))
-                                }
-                            )
-                        }
+                            composable(Screen.History.route) {
+                                HistoryScreen(
+                                    onNavigateToTripDetail = { tripId ->
+                                        navController.navigate(Screen.createTripDetailRoute(tripId))
+                                    }
+                                )
+                            }
 
-                        composable(Screen.Profile.route) {
-                            ProfileScreen()
-                        }
+                            composable(Screen.Profile.route) {
+                                ProfileScreen()
+                            }
 
-                        composable(
-                            route = Screen.TRIP_DETAIL_ROUTE,
-                            arguments = listOf(navArgument("tripId") { type = NavType.LongType })
-                        ) { backStackEntry ->
-                            val tripId = backStackEntry.arguments?.getLong("tripId") ?: 0L
-                            TripDetailScreen(
-                                tripId = tripId,
-                                onNavigateBack = { navController.popBackStack() }
-                            )
+                            composable(
+                                route = Screen.TRIP_DETAIL_ROUTE,
+                                arguments = listOf(navArgument("tripId") { type = NavType.LongType })
+                            ) { backStackEntry ->
+                                val tripId = backStackEntry.arguments?.getLong("tripId") ?: 0L
+                                TripDetailScreen(
+                                    tripId = tripId,
+                                    onNavigateBack = { navController.popBackStack() }
+                                )
+                            }
                         }
                     }
                 }

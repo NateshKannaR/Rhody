@@ -48,11 +48,15 @@ object TripRecordingController {
 
     fun addLivePoint(point: TrackPointEntity) {
         val currentList = _livePoints.value
-        _livePoints.value = currentList + point
+        if (currentList.size >= 350) {
+            _livePoints.value = currentList.takeLast(250) + point
+        } else {
+            _livePoints.value = currentList + point
+        }
     }
 
     fun setLivePoints(points: List<TrackPointEntity>) {
-        _livePoints.value = points
+        _livePoints.value = if (points.size > 300) points.takeLast(300) else points
     }
 
     fun clearLivePoints() {

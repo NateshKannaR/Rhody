@@ -17,12 +17,19 @@ object CloudSyncManager {
     private const val PREFS_NAME = "roadpulse_sync_prefs"
     private const val KEY_SERVER_URL = "server_base_url"
 
-    var serverBaseUrl: String = "http://10.0.2.2:3000"
+    const val DEFAULT_SERVER_URL = "https://rhodybynk.vercel.app"
+
+    var serverBaseUrl: String = DEFAULT_SERVER_URL
         private set
 
     fun init(context: Context) {
         val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        serverBaseUrl = prefs.getString(KEY_SERVER_URL, "http://10.0.2.2:3000") ?: "http://10.0.2.2:3000"
+        val saved = prefs.getString(KEY_SERVER_URL, null)
+        serverBaseUrl = if (saved.isNullOrEmpty() || saved.contains("10.0.2.2")) {
+            DEFAULT_SERVER_URL
+        } else {
+            saved
+        }
     }
 
     fun setServerUrl(context: Context, newUrl: String) {
@@ -148,4 +155,60 @@ object CloudSyncManager {
             connection?.disconnect()
         }
     }
+
+    suspend fun broadcastLiveBeacon(
+        tripId: Long,
+        metrics: com.roadpulse.app.domain.model.TripMetrics,
+        isMoving: Boolean,
+        batteryPercent: Int?
+    ): Result<Boolean> = withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
+        try {
+            val url = URL("$serverBaseUrl/api/trips/$tripId/live")
+            val authState = com.roadpulse.app.data.auth.AuthManager.authState.value
+            connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                setRequestProperty("Accept", "application/json")
+                if (!authState.token.isNullOrEmpty()) {
+                    setRequestProperty("Authorization", "Bearer ${authState.token}")
+                }
+                connectTimeout = 4000
+                readTimeout = 4000
+                doOutput = true
+                doInput = true
+            }
+
+            val payload = JSONObject().apply {
+                put("riderName", authState.user?.name ?: authState.user?.email?.substringBefore("@") ?: "Rider")
+                put("status", metrics.tripStatus.name)
+                put("isMoving", isMoving)
+                put("currentSpeedKmh", metrics.currentSpeedKmh.toDouble())
+                put("maxSpeedKmh", metrics.maxSpeedKmh.toDouble())
+                put("latitude", metrics.currentLatitude ?: 0.0)
+                put("longitude", metrics.currentLongitude ?: 0.0)
+                if (batteryPercent != null) put("batteryPercent", batteryPercent)
+                put("totalDistanceKm", metrics.totalDistanceMeters / 1000.0)
+                put("elapsedTimeMs", metrics.elapsedTimeMs)
+                put("timestamp", System.currentTimeMillis())
+            }
+
+            OutputStreamWriter(connection.outputStream, "UTF-8").use { writer ->
+                writer.write(payload.toString())
+                writer.flush()
+            }
+
+            val responseCode = connection.responseCode
+            if (responseCode in 200..299) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("HTTP $responseCode"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        } finally {
+            connection?.disconnect()
+        }
+    }
 }
+

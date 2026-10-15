@@ -1,5 +1,6 @@
 package com.roadpulse.app.ui.screens.livetrip
 
+import android.content.Intent
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -7,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -53,6 +56,7 @@ import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
 import com.roadpulse.app.ui.theme.RacingRed
 import com.roadpulse.app.ui.theme.SportAmber
+import com.roadpulse.app.ui.theme.SuccessGreen
 import com.roadpulse.app.ui.theme.TextMuted
 import com.roadpulse.app.ui.theme.TextPrimary
 import com.roadpulse.app.ui.theme.TextSecondary
@@ -61,6 +65,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun LiveTripScreen(
+    onFinishTrip: ((Long) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -254,6 +259,59 @@ fun LiveTripScreen(
                         modifier = Modifier.weight(1f)
                     )
                 }
+
+                // Parent Safety Live Tracking Pill
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(CarbonDark.copy(alpha = 0.92f))
+                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                        .clickable {
+                            val activeId = metrics.activeTripId ?: System.currentTimeMillis()
+                            val shareUrl = "https://rhodybynk.vercel.app/?live=$activeId"
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, "Track my live motorcycle ride on Rhody: $shareUrl")
+                                type = "text/plain"
+                            }
+                            context.startActivity(Intent.createChooser(sendIntent, "Share Live Ride with Parents"))
+                        }
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(SuccessGreen)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "PARENT LIVE SAFETY MONITOR",
+                                color = TextPrimary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = if (metrics.tripStatus == TripStatus.RECORDING) "Broadcasting live GPS & speed to parents" else "Tap to share live tracking link with parents",
+                                color = TextSecondary,
+                                fontSize = 9.sp
+                            )
+                        }
+                    }
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share with Parents",
+                        tint = NeonCyan,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
 
@@ -273,7 +331,7 @@ fun LiveTripScreen(
                             .height(56.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = NeonCyan,
-                            contentColor = CarbonDark
+                            contentColor = TextPrimary
                         ),
                         shape = RoundedCornerShape(16.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
@@ -324,7 +382,13 @@ fun LiveTripScreen(
                         }
 
                         Button(
-                            onClick = { TripRecordingController.finishTrip(context) },
+                            onClick = {
+                                val tripId = metrics.activeTripId
+                                TripRecordingController.finishTrip(context)
+                                if (tripId != null && tripId > 0L) {
+                                    onFinishTrip?.invoke(tripId)
+                                }
+                            },
                             modifier = Modifier
                                 .weight(1.2f)
                                 .height(56.dp),
@@ -363,7 +427,7 @@ fun LiveTripScreen(
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = NeonCyan,
-                                contentColor = CarbonDark
+                                contentColor = TextPrimary
                             ),
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                         ) {
@@ -382,7 +446,13 @@ fun LiveTripScreen(
                         }
 
                         Button(
-                            onClick = { TripRecordingController.finishTrip(context) },
+                            onClick = {
+                                val tripId = metrics.activeTripId
+                                TripRecordingController.finishTrip(context)
+                                if (tripId != null && tripId > 0L) {
+                                    onFinishTrip?.invoke(tripId)
+                                }
+                            },
                             modifier = Modifier
                                 .weight(1.1f)
                                 .height(56.dp),

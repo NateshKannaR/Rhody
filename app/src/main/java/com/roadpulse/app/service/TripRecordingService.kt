@@ -27,6 +27,7 @@ import com.roadpulse.app.RoadPulseApp
 import com.roadpulse.app.data.database.RoadPulseDatabase
 import com.roadpulse.app.data.database.TrackPointEntity
 import com.roadpulse.app.data.repository.TripRepository
+import com.roadpulse.app.data.sync.CloudSyncManager
 import com.roadpulse.app.domain.calculator.TripCalculator
 import com.roadpulse.app.domain.filter.FilterConfig
 import com.roadpulse.app.domain.filter.GpsQualityFilter
@@ -68,10 +69,15 @@ class TripRecordingService : LifecycleService() {
     private var movingDurationMs: Long = 0L
     private var cumulativeDistanceMeters: Double = 0.0
     private var maxSpeedMps: Float = 0f
+    private var lastSensorUpdateMs: Long = 0L
 
     private val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             if (event == null) return
+            val now = System.currentTimeMillis()
+            if (now - lastSensorUpdateMs < 100L) return // Cap at 10 Hz to prevent UI thread bombardment
+            lastSensorUpdateMs = now
+
             val xG = event.values[0] / 9.80665f
             val yG = event.values[1] / 9.80665f
             val totalG = kotlin.math.sqrt(xG * xG + yG * yG)
@@ -230,15 +236,46 @@ class TripRecordingService : LifecycleService() {
         stopTicker()
         tripStatus = TripStatus.FINISHED
 
-        val finalMetrics = currentMetrics.copy(
-            tripStatus = TripStatus.FINISHED,
-            currentSpeedKmh = 0f
-        )
-        TripRecordingController.updateMetrics(finalMetrics)
-
         lifecycleScope.launch {
             if (activeTripId > 0L) {
+                // Failsafe for 0 KM: recalculate from recorded points if distance is 0
+                if (cumulativeDistanceMeters <= 0.0) {
+                    val points = repository.getPoints(activeTripId)
+                    var fallbackDist = 0.0
+                    for (i in 1 until points.size) {
+                        fallbackDist += TripCalculator.calculateDistanceMeters(
+                            points[i - 1].latitude, points[i - 1].longitude,
+                            points[i].latitude, points[i].longitude
+                        )
+                    }
+                    if (fallbackDist > 0.0) {
+                        cumulativeDistanceMeters = fallbackDist
+                    }
+                }
+
+                val finalMetrics = currentMetrics.copy(
+                    tripStatus = TripStatus.FINISHED,
+                    currentSpeedKmh = 0f,
+                    totalDistanceMeters = cumulativeDistanceMeters
+                )
+                TripRecordingController.updateMetrics(finalMetrics)
                 repository.finishTrip(activeTripId, finalMetrics)
+
+                // Inform parents ride has concluded safely
+                try {
+                    CloudSyncManager.broadcastLiveBeacon(
+                        tripId = activeTripId,
+                        metrics = finalMetrics,
+                        isMoving = false,
+                        batteryPercent = getBatteryPercentage()
+                    )
+                } catch (_: Exception) {}
+            } else {
+                val finalMetrics = currentMetrics.copy(
+                    tripStatus = TripStatus.FINISHED,
+                    currentSpeedKmh = 0f
+                )
+                TripRecordingController.updateMetrics(finalMetrics)
             }
             releaseWakeLock()
             ServiceCompat.stopForeground(this@TripRecordingService, ServiceCompat.STOP_FOREGROUND_REMOVE)
@@ -391,6 +428,16 @@ class TripRecordingService : LifecycleService() {
 
         TripRecordingController.updateMetrics(currentMetrics)
         TripRecordingController.updateFix(fix)
+        previousAcceptedFix = fix
+    }
+
+    private fun getBatteryPercentage(): Int? {
+        return try {
+            val bm = getSystemService(Context.BATTERY_SERVICE) as? android.os.BatteryManager
+            bm?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun startTicker() {
@@ -425,6 +472,21 @@ class TripRecordingService : LifecycleService() {
                     if (counter % 3 == 0) {
                         updateNotificationOnly()
                         repository.updateTripProgress(activeTripId, currentMetrics, tripStatus)
+
+                        // Broadcast live telemetry beacon to cloud for parents/guardians
+                        if (activeTripId > 0L) {
+                            val isMoving = currentMetrics.currentSpeedKmh >= TripCalculator.MOVING_SPEED_THRESHOLD_KMH
+                            lifecycleScope.launch {
+                                try {
+                                    CloudSyncManager.broadcastLiveBeacon(
+                                        tripId = activeTripId,
+                                        metrics = currentMetrics,
+                                        isMoving = isMoving,
+                                        batteryPercent = getBatteryPercentage()
+                                    )
+                                } catch (_: Exception) {}
+                            }
+                        }
                     }
                 }
             }

@@ -169,6 +169,10 @@
         <button id="navTabStudio" onclick="switchMainView('studio')" class="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-rpBlue text-white shadow-sm transition">
           Cockpit Studio
         </button>
+        <button id="navTabParentLive" onclick="switchMainView('parentLive')" class="px-3.5 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-rpEmerald status-pulse"></span>
+          <span>Parent Live Tracking</span>
+        </button>
         <button id="navTabExplorer" onclick="switchMainView('explorer')" class="px-3.5 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition">
           Trips Log
         </button>
@@ -590,6 +594,94 @@
       </div>
     </div>
 
+  
+    <!-- ================= VIEW 4: PARENT / GUARDIAN LIVE MONITOR ================= -->
+    <div id="viewParentLive" class="space-y-4 hidden">
+      <div class="telemetry-panel p-5 space-y-4">
+        
+        <!-- Live Header Banner -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-rpBorder gap-3">
+          <div class="flex items-center space-x-3.5">
+            <div class="w-10 h-10 rounded-xl bg-rpEmerald/10 text-rpEmerald border border-rpEmerald/25 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h2 id="parentRiderTitle" class="text-lg font-bold text-white">Live Parent Safety Beacon</h2>
+                <span id="parentSafetyStatusPill" class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-rpEmerald/15 text-rpEmerald border border-rpEmerald/30 status-pulse flex items-center space-x-1">
+                  <span id="parentSafetyDot" class="w-2 h-2 rounded-full bg-rpEmerald inline-block"></span>
+                  <span id="parentSafetyStatusText">BIKE IS MOVING</span>
+                </span>
+              </div>
+              <p id="parentRiderSub" class="text-xs text-slate-400 mt-0.5">Real-time GPS coordinates, speed, and safety heartbeat</p>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <div class="bg-rpDark border border-rpBorder rounded-lg px-3 py-1.5 text-xs text-slate-300 font-tabular flex items-center space-x-2">
+              <span class="text-slate-500">Live Ping:</span>
+              <span id="parentLastHeartbeat" class="text-rpEmerald font-semibold">Just now</span>
+            </div>
+            <button onclick="copyParentLiveLink()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rpCard hover:bg-rpCardHover text-rpBlueLight border border-rpBorder transition flex items-center space-x-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+              <span>Share Link</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Parent Quick Metrics 4-strip -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-rpDark p-3.5 rounded-lg border border-rpBorder">
+            <span class="text-slate-500 text-[10px] uppercase font-semibold block">Vehicle Speed</span>
+            <div class="mt-1 flex items-baseline space-x-1.5">
+              <span id="parentLiveSpeed" class="text-2xl font-bold text-white font-tabular">0</span>
+              <span class="text-xs font-bold text-slate-400">KM/H</span>
+            </div>
+            <span id="parentMovingStatusSub" class="text-[11px] text-rpEmerald block mt-0.5">Active motion</span>
+          </div>
+
+          <div class="bg-rpDark p-3.5 rounded-lg border border-rpBorder">
+            <span class="text-slate-500 text-[10px] uppercase font-semibold block">Distance Traveled</span>
+            <div class="mt-1 flex items-baseline space-x-1.5">
+              <span id="parentLiveDist" class="text-2xl font-bold text-rpBlueLight font-tabular">0.00</span>
+              <span class="text-xs font-bold text-slate-400">KM</span>
+            </div>
+            <span class="text-[11px] text-slate-500 block mt-0.5">Total route progress</span>
+          </div>
+
+          <div class="bg-rpDark p-3.5 rounded-lg border border-rpBorder">
+            <span class="text-slate-500 text-[10px] uppercase font-semibold block">Trip Duration</span>
+            <div class="mt-1 flex items-baseline space-x-1.5">
+              <span id="parentLiveDuration" class="text-2xl font-bold text-white font-tabular">00:00:00</span>
+            </div>
+            <span class="text-[11px] text-slate-500 block mt-0.5">Elapsed ride time</span>
+          </div>
+
+          <div class="bg-rpDark p-3.5 rounded-lg border border-rpBorder">
+            <span class="text-slate-500 text-[10px] uppercase font-semibold block">Phone Battery</span>
+            <div class="mt-1 flex items-baseline space-x-1.5">
+              <span id="parentBatteryPercent" class="text-2xl font-bold text-rpEmerald font-tabular">--</span>
+              <span class="text-xs font-bold text-slate-400">%</span>
+            </div>
+            <span class="text-[11px] text-slate-500 block mt-0.5">Rider device level</span>
+          </div>
+        </div>
+
+        <!-- Full-Size Live Tracking Map -->
+        <div class="relative rounded-lg overflow-hidden border border-rpBorder">
+          <div id="parentMap" style="height: 520px; width: 100%; background: #0A0C10;"></div>
+          
+          <!-- Recenter on Rider Floating Button -->
+          <div class="absolute bottom-4 right-4 z-[400]">
+            <button onclick="recenterParentMap()" class="px-3.5 py-2 rounded-lg bg-rpBlue text-white text-xs font-semibold shadow-lg hover:bg-rpBlueHover transition flex items-center space-x-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <span>Follow Rider</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </main>
 
   <!-- ================= AUTH MODAL ================= -->
@@ -697,6 +789,7 @@
       }
       // Load real trips from MongoDB Atlas
       refreshData();
+      checkLiveTrackingQueryParam();
     });
 
     function switchMainView(viewName) {
@@ -710,7 +803,10 @@
       explorerView.classList.add('hidden');
       cloudView.classList.add('hidden');
 
-      const tabs = ['Studio', 'Explorer', 'Cloud'];
+      const parentLiveView = document.getElementById('viewParentLive');
+      if (parentLiveView) parentLiveView.classList.add('hidden');
+
+      const tabs = ['Studio', 'ParentLive', 'Explorer', 'Cloud'];
       tabs.forEach(t => {
         const btn = document.getElementById('navTab' + t);
         if (btn) {
@@ -729,6 +825,12 @@
         explorerView.classList.remove('hidden');
         const b = document.getElementById('navTabExplorer');
         if (b) b.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-md bg-rpBlue text-white shadow-sm transition';
+      } else if (viewName === 'parentLive') {
+        const parentEl = document.getElementById('viewParentLive');
+        if (parentEl) parentEl.classList.remove('hidden');
+        const b = document.getElementById('navTabParentLive');
+        if (b) b.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-md bg-rpBlue text-white shadow-sm transition';
+        initParentMap();
       } else if (viewName === 'cloud') {
         cloudView.classList.remove('hidden');
         const b = document.getElementById('navTabCloud');
@@ -1772,6 +1874,170 @@
         toast.classList.add('opacity-0', 'translate-y-2');
         setTimeout(() => toast.remove(), 300);
       }, 3500);
+    }
+
+
+    // ----------------------------------------------------
+    // PARENT / GUARDIAN LIVE SAFETY TRACKING LOGIC
+    // ----------------------------------------------------
+    var parentMapInstance = null;
+    var parentMarker = null;
+    var parentPolyline = null;
+    var parentRouteCoords = [];
+    var activeParentTripId = null;
+    var parentPollingTimer = null;
+    var lastKnownParentLatLng = null;
+
+    function initParentMap() {
+      if (parentMapInstance) {
+        setTimeout(function() { parentMapInstance.invalidateSize(); }, 150);
+        return;
+      }
+      var mapEl = document.getElementById('parentMap');
+      if (!mapEl || typeof L === 'undefined') return;
+
+      parentMapInstance = L.map('parentMap', { zoomControl: false }).setView([13.0827, 80.2707], 14);
+      L.control.zoom({ position: 'bottomright' }).addTo(parentMapInstance);
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(parentMapInstance);
+
+      if (activeParentTripId) {
+        pollParentBeacon();
+      }
+    }
+
+    function startParentTracking(tripId) {
+      activeParentTripId = tripId;
+      if (parentPollingTimer) clearInterval(parentPollingTimer);
+      pollParentBeacon();
+      parentPollingTimer = setInterval(pollParentBeacon, 3000);
+    }
+
+    async function pollParentBeacon() {
+      if (!activeParentTripId && currentTrip) {
+        activeParentTripId = currentTrip._id;
+      }
+      if (!activeParentTripId) return;
+
+      try {
+        var res = await fetch('/api/trips/' + activeParentTripId + '/live');
+        if (!res.ok) return;
+        var beacon = await res.json();
+        renderParentBeacon(beacon);
+      } catch (err) {
+        console.warn('[Parent Monitor] Poll error:', err);
+      }
+    }
+
+    function renderParentBeacon(beacon) {
+      var speed = Math.round(beacon.currentSpeedKmh || 0);
+      var isMoving = beacon.isMoving !== undefined ? beacon.isMoving : (speed > 2);
+      var status = beacon.status || 'RECORDING';
+
+      var titleEl = document.getElementById('parentRiderTitle');
+      if (titleEl && beacon.riderName) {
+        titleEl.innerText = beacon.riderName + "'s Live Safety Beacon";
+      }
+
+      var pill = document.getElementById('parentSafetyStatusPill');
+      var dot = document.getElementById('parentSafetyDot');
+      var text = document.getElementById('parentSafetyStatusText');
+      var sub = document.getElementById('parentMovingStatusSub');
+
+      if (status === 'FINISHED') {
+        if (pill) pill.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-rpBlue/20 text-rpBlueLight border border-rpBlue/30 flex items-center space-x-1';
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-rpBlueLight inline-block';
+        if (text) text.innerText = 'TRIP COMPLETED SAFELY';
+        if (sub) { sub.innerText = 'Rider reached destination safely'; sub.className = 'text-[11px] text-rpBlueLight block mt-0.5'; }
+      } else if (isMoving && speed > 2) {
+        if (pill) pill.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-rpEmerald/15 text-rpEmerald border border-rpEmerald/30 status-pulse flex items-center space-x-1';
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-rpEmerald inline-block';
+        if (text) text.innerText = 'BIKE IS MOVING — ' + speed + ' KM/H';
+        if (sub) { sub.innerText = 'In motion (' + speed + ' km/h)'; sub.className = 'text-[11px] text-rpEmerald block mt-0.5'; }
+      } else {
+        if (pill) pill.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-rpAmber/15 text-rpAmber border border-rpAmber/30 status-pulse flex items-center space-x-1';
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-rpAmber inline-block';
+        if (text) text.innerText = 'BIKE IS STOPPED';
+        if (sub) { sub.innerText = 'Stationary / engine idle'; sub.className = 'text-[11px] text-rpAmber block mt-0.5'; }
+      }
+
+      var spdEl = document.getElementById('parentLiveSpeed');
+      var distEl = document.getElementById('parentLiveDist');
+      var durEl = document.getElementById('parentLiveDuration');
+      var batEl = document.getElementById('parentBatteryPercent');
+      var timeEl = document.getElementById('parentLastHeartbeat');
+
+      if (spdEl) spdEl.innerText = speed;
+      if (distEl) distEl.innerText = Number(beacon.totalDistanceKm || 0).toFixed(2);
+      if (durEl) durEl.innerText = formatDuration(beacon.elapsedTimeMs || 0);
+      if (batEl) batEl.innerText = (beacon.batteryPercent !== null && beacon.batteryPercent !== undefined) ? beacon.batteryPercent : '--';
+      if (timeEl) timeEl.innerText = new Date(beacon.updatedAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      if (parentMapInstance && beacon.latitude && beacon.longitude) {
+        var latLng = [beacon.latitude, beacon.longitude];
+        lastKnownParentLatLng = latLng;
+
+        if (!parentMarker) {
+          parentMarker = L.circleMarker(latLng, {
+            radius: 9,
+            color: '#10B981',
+            fillColor: '#FFFFFF',
+            fillOpacity: 1,
+            weight: 3
+          }).addTo(parentMapInstance).bindPopup('<strong>' + (beacon.riderName || 'Rider') + ' (Live)</strong>');
+          parentMapInstance.setView(latLng, 16);
+        } else {
+          parentMarker.setLatLng(latLng);
+        }
+
+        parentRouteCoords.push(latLng);
+        if (!parentPolyline) {
+          parentPolyline = L.polyline(parentRouteCoords, {
+            color: '#10B981',
+            weight: 4,
+            opacity: 0.85
+          }).addTo(parentMapInstance);
+        } else {
+          parentPolyline.setLatLngs(parentRouteCoords);
+        }
+      }
+    }
+
+    function recenterParentMap() {
+      if (parentMapInstance && lastKnownParentLatLng) {
+        parentMapInstance.setView(lastKnownParentLatLng, 16, { animate: true });
+      }
+    }
+
+    function copyParentLiveLink() {
+      var idToShare = activeParentTripId || (currentTrip ? currentTrip._id : '');
+      var shareUrl = window.location.origin + '?live=' + encodeURIComponent(idToShare);
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl).then(function() {
+          showToast('Parent Live Tracking link copied to clipboard!', 'success');
+        }).catch(function() {
+          prompt('Copy live parent tracking link:', shareUrl);
+        });
+      } else {
+        prompt('Copy live parent tracking link:', shareUrl);
+      }
+    }
+
+    function checkLiveTrackingQueryParam() {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var liveId = params.get('live') || params.get('trip');
+        if (liveId) {
+          switchMainView('parentLive');
+          startParentTracking(liveId);
+        }
+      } catch (e) {
+        console.warn('URL param check failed:', e);
+      }
     }
 
     // Duration Formatter Helper

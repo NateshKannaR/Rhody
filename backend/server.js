@@ -321,6 +321,103 @@ app.get('/api/trips/:id', async (req, res) => {
   }
 });
 
+// In-memory live beacons cache for ultra-fast real-time parent tracking
+const liveBeacons = new Map();
+
+// API: Broadcast live telemetry beacon (from rider's Android app)
+app.post('/api/trips/:id/live', async (req, res) => {
+  try {
+    const tripId = req.params.id;
+    const {
+      riderName,
+      status,
+      isMoving,
+      currentSpeedKmh,
+      maxSpeedKmh,
+      latitude,
+      longitude,
+      altitudeMeters,
+      batteryPercent,
+      totalDistanceKm,
+      elapsedTimeMs,
+      timestamp
+    } = req.body;
+
+    const beaconData = {
+      tripId,
+      riderName: riderName || 'Rider',
+      status: status || 'RECORDING',
+      isMoving: Boolean(isMoving),
+      currentSpeedKmh: Number(currentSpeedKmh || 0),
+      maxSpeedKmh: Number(maxSpeedKmh || 0),
+      latitude: Number(latitude || 0),
+      longitude: Number(longitude || 0),
+      altitudeMeters: altitudeMeters ? Number(altitudeMeters) : null,
+      batteryPercent: batteryPercent ? Number(batteryPercent) : null,
+      totalDistanceKm: Number(totalDistanceKm || 0),
+      elapsedTimeMs: Number(elapsedTimeMs || 0),
+      updatedAt: new Date(),
+      timestamp: timestamp || Date.now()
+    };
+
+    liveBeacons.set(tripId, beaconData);
+
+    if (db) {
+      db.collection('live_beacons').updateOne(
+        { tripId },
+        { $set: beaconData },
+        { upsert: true }
+      ).catch(e => console.warn('[Beacon DB write]:', e.message));
+    }
+
+    res.json({ success: true, timestamp: beaconData.updatedAt });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get live telemetry beacon (for Parents / Guardians to monitor)
+app.get('/api/trips/:id/live', async (req, res) => {
+  try {
+    const tripId = req.params.id;
+    let beacon = liveBeacons.get(tripId);
+
+    if (!beacon && db) {
+      beacon = await db.collection('live_beacons').findOne({ tripId });
+    }
+
+    if (!beacon && db) {
+      let query = { _id: tripId };
+      if (ObjectId.isValid(tripId)) {
+        query = { $or: [{ _id: new ObjectId(tripId) }, { localId: Number(tripId) }, { _id: tripId }] };
+      }
+      const trip = await db.collection('trips').findOne(query);
+      if (trip) {
+        beacon = {
+          tripId: trip._id.toString(),
+          riderName: trip.userEmail ? trip.userEmail.split('@')[0] : 'Rider',
+          status: trip.status || 'FINISHED',
+          isMoving: false,
+          currentSpeedKmh: 0,
+          maxSpeedKmh: Math.round((trip.maxSpeedMps || 0) * 3.6),
+          totalDistanceKm: ((trip.totalDistanceMeters || 0) / 1000).toFixed(2),
+          elapsedTimeMs: trip.totalDurationMs || trip.movingDurationMs || 0,
+          updatedAt: trip.updatedAt || new Date()
+        };
+      }
+    }
+
+    if (!beacon) {
+      return res.status(404).json({ error: 'Live ride beacon not found or expired' });
+    }
+
+    res.json(beacon);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // API: Sync trip from Android or Web client
 app.post('/api/trips/sync', async (req, res) => {
   if (!db) return res.status(503).json({ error: 'Database disconnected' });
