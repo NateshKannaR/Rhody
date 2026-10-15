@@ -23,6 +23,32 @@ adb install -r Rhody-v1.0.0.apk
 
 ---
 
+## 🎬 2-Minute Video Walkthrough: The Problem, The Solution & How It Works
+
+> Watch the full **2-minute video presentation** explaining why generic GPS apps fall short for motorcyclists, how Rhody transforms any Android smartphone into an IMU telemetry cockpit, and how Guardian Parent Tracking delivers real-time peace of mind.
+
+<p align="center">
+  <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-Demo-2Min.mp4" target="_blank">
+    <img src="docs/rhody_demo_preview.gif" width="760" alt="Rhody 2-Minute Video Walkthrough Preview" style="border-radius: 12px; border: 1px solid #1F2636; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);" />
+  </a>
+  <br>
+  <em>▶️ <strong><a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-Demo-2Min.mp4">Click to Watch Full HD 2-Minute Video (MP4)</a></strong> &bull; Local Mirror: <code>docs/rhody_overview_2min.mp4</code></em>
+</p>
+
+### ⏱️ Video Storyboard & Chapter Breakdown
+
+| Chapter | Timestamp | Phase | What's Covered |
+| :---: | :---: | :--- | :--- |
+| **01** | `0:00 - 0:14` | **The Vision** | Motorcycle freedom on the open road meets modern rider safety concerns & family peace of mind. |
+| **02** | `0:14 - 0:35` | **The Core Problem** | • **Parent Anxiety**: Loved ones worry with zero visibility during highway commutes or weekend mountain runs.<br>• **Generic GPS Inadequacy**: Google Maps and fitness apps lack motorcycle lean angle, 0-100 sprint acceleration splits, and moving vs. stopped status.<br>• **Hardware Costs**: Dedicated motorsport data-loggers cost $400 - $1,000+ with complex wiring. |
+| **03** | `0:35 - 0:54` | **The Solution** | How Rhody turns an everyday Android smartphone mounted on handlebars into an executive telemetry cockpit using internal IMU gyroscopes + GPS. |
+| **04** | `0:54 - 1:13` | **Step 1: Cockpit HUD** | High-contrast digital speedometer (0-160 km/h), aviation dual-axis G-force reticle, and automated standing launch 0-60 & 0-100 km/h split timers. |
+| **05** | `1:13 - 1:33` | **Step 2: Guardian Parent Safety** | • **1-Tap Share**: Rider sends a private link via WhatsApp or SMS.<br>• **Zero Login / Zero App**: Parents open their web browser to view live speed, bike moving vs. stopped status, battery %, and live GPS beacon. |
+| **06** | `1:33 - 1:48` | **Step 3: Post-Ride Telemetry** | Maximum motorcycle cornering lean angle (`42° Left / 38° Right`), speed vs. distance elevation curves, GPX export, and cloud sync. |
+| **07** | `1:48 - 2:00` | **Get Started / Download** | Official Android APK release (`v1.0.0`), direct download link (`rhodyy.vercel.app/apk`), and open source GitHub repo. |
+
+---
+
 ## 📱 Mobile App Screenshots
 
 | Dashboard Cockpit & Speedometer | Live Ride & Parent Guardian Tracking | Performance Telemetry & Lean Angle |

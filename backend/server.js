@@ -600,6 +600,10 @@ app.get('/apk', (req, res) => {
   res.redirect('https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk');
 });
 
+app.get('/video', (req, res) => {
+  res.redirect('https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/rhody_overview_2min.mp4');
+});
+
 // Fallback to SPA index.html
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
