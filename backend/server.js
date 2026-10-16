@@ -241,53 +241,57 @@ app.get('/api/auth/me', async (req, res) => {
   }
 });
 
+let guestProfileCache = {
+  id: 'guest',
+  name: 'Natesh',
+  email: 'pilot@rhody.io',
+  avatar: '',
+  bio: 'Weekend canyon carver & telemetry enthusiast. Western Ghats apex seeker.',
+  bikeModel: 'Yamaha MT-15 V2',
+  bikeSpecs: '155cc Liquid VVA • 18.4 PS',
+  bikePlate: 'KA-01-EQ-1550',
+  tireSetup: 'MRF Nylogrip Zapper (Cold PSI: F 32 / R 34)',
+  emergencyContactName: 'Family Guardian (Mom & Dad)',
+  emergencyContactPhone: '+91 98765 43210',
+  speedUnit: 'kmh'
+};
+
 // GET /api/user/profile
 app.get('/api/user/profile', async (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
   const decoded = verifyToken(token);
+  const targetEmail = (decoded && decoded.email) ? decoded.email.toLowerCase() : 'pilot@rhody.io';
 
-  const defaultProfile = {
-    id: 'guest',
-    name: 'Natesh',
-    email: 'pilot@rhody.io',
-    avatar: '',
-    bio: 'Weekend canyon carver & telemetry enthusiast. Western Ghats apex seeker.',
-    bikeModel: 'Yamaha MT-09 SP',
-    bikeSpecs: '890cc Crossplane-3 • 119 BHP',
-    bikePlate: 'TN-38-RH-0909',
-    tireSetup: 'Pirelli Diablo Rosso IV (Cold PSI: F 32 / R 36)',
-    emergencyContactName: 'Family Guardian (Mom & Dad)',
-    emergencyContactPhone: '+91 98765 43210',
-    speedUnit: 'kmh'
-  };
-
-  if (!decoded || !db) {
-    return res.json({ success: true, profile: defaultProfile });
+  if (!db) {
+    return res.json({ success: true, profile: guestProfileCache });
   }
 
   try {
-    const user = await db.collection('users').findOne({ email: decoded.email.toLowerCase() });
-    if (!user) return res.json({ success: true, profile: defaultProfile });
-    res.json({
-      success: true,
-      profile: {
-        id: user._id.toString(),
-        name: user.name || 'Natesh',
-        email: user.email,
-        avatar: user.avatar || '',
-        bio: user.bio || defaultProfile.bio,
-        bikeModel: user.bikeModel || defaultProfile.bikeModel,
-        bikeSpecs: user.bikeSpecs || defaultProfile.bikeSpecs,
-        bikePlate: user.bikePlate || defaultProfile.bikePlate,
-        tireSetup: user.tireSetup || defaultProfile.tireSetup,
-        emergencyContactName: user.emergencyContactName || defaultProfile.emergencyContactName,
-        emergencyContactPhone: user.emergencyContactPhone || defaultProfile.emergencyContactPhone,
-        speedUnit: user.speedUnit || 'kmh'
-      }
-    });
+    const user = await db.collection('users').findOne({ email: targetEmail });
+    if (!user) {
+      return res.json({ success: true, profile: guestProfileCache });
+    }
+    const profile = {
+      id: user._id ? user._id.toString() : 'guest',
+      name: user.name || guestProfileCache.name,
+      email: user.email || targetEmail,
+      avatar: (user.avatar !== undefined && user.avatar !== '') ? user.avatar : guestProfileCache.avatar,
+      bio: user.bio || guestProfileCache.bio,
+      bikeModel: user.bikeModel || guestProfileCache.bikeModel,
+      bikeSpecs: user.bikeSpecs || guestProfileCache.bikeSpecs,
+      bikePlate: user.bikePlate || guestProfileCache.bikePlate,
+      tireSetup: user.tireSetup || guestProfileCache.tireSetup,
+      emergencyContactName: user.emergencyContactName || guestProfileCache.emergencyContactName,
+      emergencyContactPhone: user.emergencyContactPhone || guestProfileCache.emergencyContactPhone,
+      speedUnit: user.speedUnit || guestProfileCache.speedUnit || 'kmh'
+    };
+    if (targetEmail === 'pilot@rhody.io' && profile.avatar) {
+      guestProfileCache.avatar = profile.avatar;
+    }
+    res.json({ success: true, profile });
   } catch (err) {
-    res.json({ success: true, profile: defaultProfile });
+    res.json({ success: true, profile: guestProfileCache });
   }
 });
 
@@ -296,6 +300,7 @@ app.post('/api/user/profile', async (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
   const decoded = verifyToken(token);
+  const targetEmail = (decoded && decoded.email) ? decoded.email.toLowerCase() : 'pilot@rhody.io';
 
   const {
     name, avatar, bio, bikeModel, bikeSpecs, bikePlate,
@@ -304,7 +309,7 @@ app.post('/api/user/profile', async (req, res) => {
 
   const updateFields = { updatedAt: new Date() };
   if (name !== undefined) updateFields.name = String(name).trim();
-  if (avatar !== undefined) updateFields.avatar = avatar; // base64 data URL
+  if (avatar !== undefined) updateFields.avatar = avatar; // base64 data URL or empty string
   if (bio !== undefined) updateFields.bio = String(bio).trim();
   if (bikeModel !== undefined) updateFields.bikeModel = String(bikeModel).trim();
   if (bikeSpecs !== undefined) updateFields.bikeSpecs = String(bikeSpecs).trim();
@@ -314,11 +319,14 @@ app.post('/api/user/profile', async (req, res) => {
   if (emergencyContactPhone !== undefined) updateFields.emergencyContactPhone = String(emergencyContactPhone).trim();
   if (speedUnit !== undefined) updateFields.speedUnit = speedUnit;
 
-  if (decoded && decoded.email && db) {
+  guestProfileCache = Object.assign({}, guestProfileCache, updateFields);
+
+  if (db) {
     try {
       await db.collection('users').updateOne(
-        { email: decoded.email.toLowerCase() },
-        { $set: updateFields }
+        { email: targetEmail },
+        { $set: { ...updateFields, email: targetEmail } },
+        { upsert: true }
       );
     } catch (err) {
       console.warn('[Profile Save Warning]:', err.message);
@@ -328,7 +336,7 @@ app.post('/api/user/profile', async (req, res) => {
   res.json({
     success: true,
     message: 'Profile updated successfully',
-    profile: updateFields
+    profile: guestProfileCache
   });
 });
 

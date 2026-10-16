@@ -295,6 +295,8 @@ function capitalizeFirst(s) {
 // ----------------------------------------------------
 function loadProfileFromStorage() {
   const cached = localStorage.getItem('rhody_rider_profile');
+  const cachedAvatar = localStorage.getItem('rhody_user_avatar');
+
   if (cached) {
     try {
       const parsed = JSON.parse(cached);
@@ -302,11 +304,32 @@ function loadProfileFromStorage() {
     } catch (e) {}
   }
 
+  // Backup avatar persistence
+  if (cachedAvatar && !riderProfile.avatar) {
+    riderProfile.avatar = cachedAvatar;
+  }
+
   fetch('/api/user/profile')
     .then(r => r.json())
     .then(data => {
       if (data && data.profile) {
+        // PERMANENT FIX: Never overwrite an existing user avatar with empty string or null!
+        const currentAvatar = riderProfile.avatar || localStorage.getItem('rhody_user_avatar') || '';
+        
         riderProfile = Object.assign({}, riderProfile, data.profile);
+
+        if (!data.profile.avatar && currentAvatar) {
+          riderProfile.avatar = currentAvatar;
+        } else if (data.profile.avatar) {
+          try {
+            localStorage.setItem('rhody_user_avatar', data.profile.avatar);
+          } catch (e) {}
+        }
+
+        try {
+          localStorage.setItem('rhody_rider_profile', JSON.stringify(riderProfile));
+        } catch (e) {}
+
         renderDashboardProfile();
         renderDashboardBike();
         renderYoutubeDynamicHub();
@@ -324,17 +347,25 @@ function renderDashboardProfile() {
   const navAvatarImg = document.getElementById('navUserAvatarImg');
   const navAvatarInit = document.getElementById('navUserAvatarInit');
   const removeBtn = document.getElementById('btnRemovePhoto');
+  const navProfileName = document.getElementById('navProfileName');
 
   if (greeting) greeting.textContent = riderProfile.name || 'Natesh';
   if (handle) handle.textContent = riderProfile.handle || '@natesh_pilot';
   if (bio) bio.textContent = riderProfile.bio || 'Weekend canyon carver & telemetry enthusiast.';
+  if (navProfileName) navProfileName.textContent = riderProfile.name || 'Natesh';
 
   const initial = (riderProfile.name || 'N').charAt(0).toUpperCase();
 
-  if (riderProfile.avatar) {
-    if (avatarImg) { avatarImg.src = riderProfile.avatar; avatarImg.classList.remove('hidden'); }
+  // Check backup avatar if state is missing it
+  const activeAvatar = riderProfile.avatar || localStorage.getItem('rhody_user_avatar') || '';
+  if (activeAvatar && !riderProfile.avatar) {
+    riderProfile.avatar = activeAvatar;
+  }
+
+  if (activeAvatar) {
+    if (avatarImg) { avatarImg.src = activeAvatar; avatarImg.classList.remove('hidden'); }
     if (avatarPlaceholder) avatarPlaceholder.classList.add('hidden');
-    if (navAvatarImg) { navAvatarImg.src = riderProfile.avatar; navAvatarImg.classList.remove('hidden'); }
+    if (navAvatarImg) { navAvatarImg.src = activeAvatar; navAvatarImg.classList.remove('hidden'); }
     if (navAvatarInit) navAvatarInit.classList.add('hidden');
     if (removeBtn) removeBtn.classList.remove('hidden');
   } else {
@@ -437,14 +468,14 @@ function handleProfilePhotoUpload(event) {
     const img = new Image();
     img.onload = function() {
       const canvas = document.createElement('canvas');
-      const maxDim = 360;
+      const maxDim = 320;
       let width = img.width;
       let height = img.height;
 
       if (width > height) {
-        if (width > maxDim) { height *= maxDim / width; width = maxDim; }
+        if (width > maxDim) { height = Math.round(height * (maxDim / width)); width = maxDim; }
       } else {
-        if (height > maxDim) { width *= maxDim / height; height = maxDim; }
+        if (height > maxDim) { width = Math.round(width * (maxDim / height)); height = maxDim; }
       }
 
       canvas.width = width;
@@ -452,11 +483,16 @@ function handleProfilePhotoUpload(event) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
 
-      const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+      const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.82);
       riderProfile.avatar = optimizedBase64;
+      try {
+        localStorage.setItem('rhody_user_avatar', optimizedBase64);
+      } catch (err) {
+        console.warn('Avatar backup storage warning:', err);
+      }
       saveProfile();
       renderDashboardProfile();
-      showToast('Profile photo updated', 'success');
+      showToast('Profile photo updated permanently', 'success');
     };
     img.src = rawBase64;
   };
@@ -465,13 +501,26 @@ function handleProfilePhotoUpload(event) {
 
 function removeRiderAvatar() {
   riderProfile.avatar = '';
+  try {
+    localStorage.removeItem('rhody_user_avatar');
+  } catch (err) {}
   saveProfile();
   renderDashboardProfile();
   showToast('Profile photo removed', 'info');
 }
 
 function saveProfile() {
-  localStorage.setItem('rhody_rider_profile', JSON.stringify(riderProfile));
+  try {
+    localStorage.setItem('rhody_rider_profile', JSON.stringify(riderProfile));
+    if (riderProfile.avatar) {
+      localStorage.setItem('rhody_user_avatar', riderProfile.avatar);
+    } else {
+      localStorage.removeItem('rhody_user_avatar');
+    }
+  } catch (e) {
+    console.warn('LocalStorage save warning:', e);
+  }
+
   fetch('/api/user/profile', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
