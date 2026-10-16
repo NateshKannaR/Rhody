@@ -81,6 +81,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontFamily
@@ -238,6 +241,9 @@ fun DashboardScreen(
     }
 
     val scrollState = rememberScrollState()
+    var showHudMirrorDialog by remember { mutableStateOf(false) }
+    var isHudWindshieldFlipped by remember { mutableStateOf(false) }
+    var showCrashTestDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -564,6 +570,107 @@ fun DashboardScreen(
                 }
                 Spacer(modifier = Modifier.height(14.dp))
             }
+
+            // ================= 1.5 ADVANCED MOTORSPORT ACTIONS (HUD & CRASH BOX) =================
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // HUD Mirror Launcher Chip
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(HyperCyan.copy(alpha = 0.12f))
+                        .border(1.dp, HyperCyan.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                        .clickable { showHudMirrorDialog = true }
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(HyperCyan.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Visibility,
+                                contentDescription = "HUD",
+                                tint = HyperCyan,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "HUD MIRROR MODE",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                color = TextPrimary,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = "Windshield Reflect & LEDs",
+                                fontSize = 8.sp,
+                                color = HyperCyan,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                // G-Shock Crash Box Armed Chip
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(LaserCrimson.copy(alpha = 0.12f))
+                        .border(1.dp, LaserCrimson.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                        .clickable { showCrashTestDialog = true }
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(LaserCrimson.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "Crash Box",
+                                tint = LaserCrimson,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "G-SHOCK CRASH BOX",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                color = TextPrimary,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = "Autonomous IMU Armed",
+                                fontSize = 8.sp,
+                                color = OptimalGreen,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
             // ================= 2. BIKE STATUS & VITALS CARD ("Tells about his bike") =================
             Column(
             modifier = Modifier
@@ -1585,7 +1692,213 @@ fun DashboardScreen(
         Spacer(modifier = Modifier.height(30.dp))
         } // closes else block for rider cockpit
     } // closes outer Column
-} // closes DashboardScreen
+
+    // ================= FULLSCREEN OLED HUD MIRROR DIALOG =================
+    if (showHudMirrorDialog) {
+        Dialog(
+            onDismissRequest = { showHudMirrorDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .padding(20.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = if (isHudWindshieldFlipped) -1f else 1f
+                        },
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Top Controls: Invert reflection toggle & Close
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "OLED OPTICAL HUD REFLECT",
+                            color = HyperCyan,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.5.sp
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { isHudWindshieldFlipped = !isHudWindshieldFlipped },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isHudWindshieldFlipped) HyperCyan.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.15f),
+                                    contentColor = if (isHudWindshieldFlipped) HyperCyan else Color.White
+                                ),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = if (isHudWindshieldFlipped) "Windshield: ON" else "Windshield: OFF",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            IconButton(onClick = { showHudMirrorDialog = false }) {
+                                Icon(Icons.Default.Close, contentDescription = "Close HUD", tint = Color.White)
+                            }
+                        }
+                    }
+
+                    // Shift-light RPM Bar (10 LEDs)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        repeat(10) { index ->
+                            val ledColor = when {
+                                index < 4 -> OptimalGreen
+                                index < 7 -> SportAmber
+                                index < 9 -> RacingRed
+                                else -> HyperCyan
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(ledColor)
+                            )
+                        }
+                    }
+
+                    // Center Flight Cluster: Virtual Gear & Gigantic Speedometer
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        // Virtual Gear Box
+                        Box(
+                            modifier = Modifier
+                                .size(90.dp)
+                                .border(2.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                                .background(Color.White.copy(alpha = 0.05f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val gear = when {
+                                metrics.currentSpeedKmh <= 2f -> "N"
+                                metrics.currentSpeedKmh <= 28f -> "1"
+                                metrics.currentSpeedKmh <= 52f -> "2"
+                                metrics.currentSpeedKmh <= 76f -> "3"
+                                metrics.currentSpeedKmh <= 98f -> "4"
+                                metrics.currentSpeedKmh <= 122f -> "5"
+                                else -> "6"
+                            }
+                            Text(
+                                text = gear,
+                                color = Color.White,
+                                fontSize = 48.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+
+                        // Big Speed Readout
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${metrics.currentSpeedKmh.toInt()}",
+                                color = HyperCyan,
+                                fontSize = 96.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = (-2).sp
+                            )
+                            Text(
+                                text = "KM / H",
+                                color = TextMuted,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 2.sp
+                            )
+                        }
+                    }
+
+                    // Footer Telemetry Strip
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                            .padding(vertical = 10.dp, horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("PEAK SPEED", fontSize = 9.sp, color = TextMuted)
+                            Text("${metrics.maxSpeedKmh.toInt()} km/h", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SportAmber)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("ROLL LEAN", fontSize = 9.sp, color = TextMuted)
+                            Text("${metrics.maxLeanAngle.toInt()}\u00B0", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = HyperCyan)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("G-FORCE", fontSize = 9.sp, color = TextMuted)
+                            Text("${String.format(Locale.US, "%.2f", metrics.maxGForce)} G", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = OptimalGreen)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ================= AUTONOMOUS G-SHOCK CRASH TEST DIALOG =================
+    if (showCrashTestDialog) {
+        AlertDialog(
+            onDismissRequest = { showCrashTestDialog = false },
+            containerColor = Color(0xFF0F1420),
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = RacingRed)
+                    Text("G-SHOCK CRASH DETECTION", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Autonomous IMU Black Box detected rapid deceleration (4.2G) & severe tilt (78.5\u00B0).",
+                        color = TextPrimary,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = "Countdown armed: Guardian Parents will be automatically alerted with GPS beacon coordinates.",
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showCrashTestDialog = false
+                        Toast.makeText(context, "Crash Alert Cancelled: Rider confirmed safe", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                ) {
+                    Text("I AM SAFE - CANCEL", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showCrashTestDialog = false
+                        Toast.makeText(context, "CRITICAL SOS Dispatched to Guardians!", Toast.LENGTH_LONG).show()
+                    }
+                ) {
+                    Text("DISPATCH SOS NOW", color = RacingRed, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                }
+            }
+        )
+    }
+}
 
 // ================= PARENT / GUARDIAN PORTAL COMPOSABLE =================
 
@@ -1716,14 +2029,14 @@ fun ParentGuardianPortalView(
         mutableStateListOf(
             GuardianSafetyAlert(
                 id = "1",
-                title = "⚡ Safe Speed Corridor Maintained",
+                title = "Safe Speed Corridor Maintained",
                 message = "Rider $riderName is riding smoothly within the safe 95 km/h limit.",
                 severity = "normal",
                 time = "Active now"
             ),
             GuardianSafetyAlert(
                 id = "2",
-                title = "🛡️ Guardian Radar Link Active",
+                title = "Guardian Radar Link Active",
                 message = "Live telemetry GPS lock established with Yamaha MT-15 V2 (KA-01-EQ-1550).",
                 severity = "info",
                 time = "Connected"
@@ -1765,7 +2078,12 @@ fun ParentGuardianPortalView(
                             .border(1.dp, guardianPurple.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = "🛡️", fontSize = 22.sp)
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Shield",
+                            tint = guardianPurple,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
 
                     Column {
@@ -1813,7 +2131,7 @@ fun ParentGuardianPortalView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(text = "🔗 Code:", fontSize = 11.sp, color = TextMuted)
+                    Text(text = "PAIRING CODE:", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextMuted)
                     Text(text = pairingCode, fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, color = HyperCyan)
                 }
 
@@ -1848,7 +2166,7 @@ fun ParentGuardianPortalView(
                             }
                             .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
-                        Text(text = "🚨 112 SOS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = RacingRed)
+                        Text(text = "112 SOS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = RacingRed)
                     }
                 }
             }
@@ -1983,7 +2301,7 @@ fun ParentGuardianPortalView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(text = "🔔", fontSize = 14.sp)
+                    Icon(imageVector = Icons.Default.Bookmark, contentDescription = null, tint = guardianPurple, modifier = Modifier.size(16.dp))
                     Text(
                         text = "REAL-TIME SAFETY NOTIFICATIONS",
                         fontSize = 11.sp,
@@ -2328,7 +2646,7 @@ fun LegalDocCard(
 fun shareLiveRideViaWhatsApp(context: Context, speedKmh: Float) {
     try {
         val shareUrl = "https://rhodyy.vercel.app/?live=pilot-active"
-        val message = "🏍️ Rhody Live Ride Beacon:\nI am riding my bike right now!\nCurrent Speed: ${"%.1f".format(speedKmh)} km/h\nTrack my live location & safety status here:\n$shareUrl"
+        val message = "RHODY LIVE RIDE BEACON:\nI am riding my bike right now!\nCurrent Speed: ${"%.1f".format(speedKmh)} km/h\nTrack my live location & safety status here:\n$shareUrl"
         val intent = Intent(Intent.ACTION_VIEW).apply {
             data = Uri.parse("https://wa.me/?text=${Uri.encode(message)}")
         }

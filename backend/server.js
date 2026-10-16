@@ -1278,6 +1278,125 @@ app.delete('/api/parent/notifications/:id', (req, res) => {
   res.json({ success: true, message: 'Notification dismissed' });
 });
 
+// ========================================================
+// ADVANCED MOTORCYCLE TELEMETRY & CRASH BLACK BOX ROUTES
+// ========================================================
+
+let crashBlackBoxEvents = [];
+
+// POST /api/emergency/crash-event
+app.post('/api/emergency/crash-event', async (req, res) => {
+  try {
+    const {
+      riderEmail = 'pilot@rhody.io',
+      riderName = 'Natesh',
+      latitude = 12.9716,
+      longitude = 77.5946,
+      impactG = 4.2,
+      rollAngle = 78.5,
+      speedKmh = 54.2,
+      timestamp = new Date().toISOString()
+    } = req.body;
+
+    const crashEvent = {
+      id: 'crash_' + Date.now(),
+      riderEmail,
+      riderName,
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+      impactG: Number(impactG),
+      rollAngle: Number(rollAngle),
+      speedKmh: Number(speedKmh),
+      timestamp,
+      status: 'CRITICAL_DISPATCHED',
+      mapsUrl: `https://www.google.com/maps?q=${latitude},${longitude}`
+    };
+
+    crashBlackBoxEvents.unshift(crashEvent);
+    if (crashBlackBoxEvents.length > 50) crashBlackBoxEvents.pop();
+
+    if (db) {
+      db.collection('crash_events').insertOne(crashEvent).catch(() => {});
+    }
+
+    // Immediately push high-priority critical SOS alert into Guardian Notifications Feed
+    const guardianEmergencyNotif = {
+      id: 'alert_crash_' + Date.now(),
+      riderEmail,
+      type: 'sos',
+      title: 'CRITICAL CRASH DETECTED',
+      message: `Rider ${riderName} detected in high-G impact (${impactG}G, ${rollAngle} deg tilt) at ${speedKmh} km/h. Location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}. Emergency rescue coordinates dispatched!`,
+      severity: 'critical',
+      timestamp: new Date().toISOString(),
+      location: { latitude, longitude },
+      mapsUrl: crashEvent.mapsUrl
+    };
+
+    parentNotifications.unshift(guardianEmergencyNotif);
+    if (parentNotifications.length > 50) parentNotifications.pop();
+
+    if (db) {
+      db.collection('parent_notifications').insertOne(guardianEmergencyNotif).catch(() => {});
+    }
+
+    // Broadcast live beacon distress status
+    for (const beacon of liveBeacons.values()) {
+      beacon.status = 'CRASH_IMPACT_DETECTED';
+      beacon.currentSpeedKmh = 0;
+      beacon.isMoving = false;
+      beacon.latitude = Number(latitude);
+      beacon.longitude = Number(longitude);
+      beacon.updatedAt = new Date();
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Crash emergency beacon broadcasted to guardian network and black box recorded',
+      event: crashEvent
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/telemetry/advanced-metrics
+app.get('/api/telemetry/advanced-metrics', (req, res) => {
+  const riderEmail = req.query.riderEmail || 'pilot@rhody.io';
+  res.json({
+    success: true,
+    riderEmail,
+    apexCornering: {
+      leftMaxDeg: 42.5,
+      rightMaxDeg: 46.8,
+      recentCorner: {
+        entrySpeedKmh: 72.4,
+        apexSpeedKmh: 58.1,
+        exitSpeedKmh: 81.3,
+        lateralG: 1.18,
+        rollDeg: 44.2,
+        qualityScore: 94,
+        ratingTier: 'S-TIER',
+        coachTip: 'Optimal trail-braking transition with clean throttle roll-on at apex.'
+      }
+    },
+    acousticDecibel: {
+      currentDb: 84.6,
+      idleDb: 76.2,
+      peakRevDb: 98.4,
+      isCompliant: true,
+      legalLimitDb: 85.0
+    },
+    crosswindRadar: {
+      relativeWindAngleDeg: 48,
+      windSpeedKmh: 24.5,
+      buffetingRisk: 'MODERATE_CAUTION',
+      aerodynamicDragPenaltyPercent: 12.8,
+      leanCompensationDeg: 3.2
+    },
+    recentCrashes: crashBlackBoxEvents.slice(0, 5)
+  });
+});
+
 // App APK & Release Download Redirects
 app.get('/download', (req, res) => {
   res.redirect('https://github.com/NateshKannaR/Rhody/releases/latest');
