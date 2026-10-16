@@ -31,9 +31,17 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.HealthAndSafety
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.TwoWheeler
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -44,6 +52,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -55,9 +65,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -70,9 +82,15 @@ import com.roadpulse.app.data.auth.AuthManager
 import com.roadpulse.app.data.sync.CloudSyncManager
 import com.roadpulse.app.ui.theme.CarbonDark
 import com.roadpulse.app.ui.theme.CardBorder
+import com.roadpulse.app.ui.theme.CardBorderGlow
+import com.roadpulse.app.ui.theme.CobaltBlue
 import com.roadpulse.app.ui.theme.ElectricBlue
+import com.roadpulse.app.ui.theme.HyperCyan
 import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
+import com.roadpulse.app.ui.theme.ObsidianGlass
+import com.roadpulse.app.ui.theme.ObsidianSurface
+import com.roadpulse.app.ui.theme.OptimalGreen
 import com.roadpulse.app.ui.theme.RacingRed
 import com.roadpulse.app.ui.theme.SportAmber
 import com.roadpulse.app.ui.theme.SuccessGreen
@@ -92,16 +110,29 @@ fun ProfileScreen(
 
     val authState by AuthManager.authState.collectAsState()
 
+    // Preferences & Settings State
+    var isKmhSelected by remember { mutableStateOf(true) }
+    var isHighFrequencyGps by remember { mutableStateOf(true) }
+    var isLeanWarningEnabled by remember { mutableStateOf(true) }
+    var isAutoPauseEnabled by remember { mutableStateOf(true) }
+
+    // Rider Emergency Info State
+    var bloodGroup by remember { mutableStateOf("O+") }
+    var emergencyContactName by remember { mutableStateOf("Parents / ICE") }
+    var emergencyContactPhone by remember { mutableStateOf("+91 98765 43210") }
+
+    // Auth form state
     var isLoginMode by remember { mutableStateOf(true) }
     var emailInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
-    var nameInput by remember { mutableStateOf("") }
+    var nameInput by remember { mutableStateOf("Natesh Kanna") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
 
+    // Server & Cloud config
     var serverUrlInput by remember { mutableStateOf(CloudSyncManager.serverBaseUrl) }
     var showServerConfig by remember { mutableStateOf(false) }
     var isCheckingHealth by remember { mutableStateOf(false) }
@@ -117,10 +148,10 @@ fun ProfileScreen(
             .fillMaxSize()
             .background(CarbonDark)
             .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp, vertical = 20.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top Header
+        // ================= HEADER =================
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -128,108 +159,103 @@ fun ProfileScreen(
         ) {
             Column {
                 Text(
-                    text = "ACCOUNT & CLOUD",
-                    color = NeonCyan,
-                    fontSize = 20.sp,
+                    text = "SETTINGS & PROFILE",
+                    color = HyperCyan,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp
+                    letterSpacing = 1.5.sp
                 )
                 Text(
-                    text = if (authState.isLoggedIn) "MONGODB ATLAS SYNCHRONIZED" else "OFFLINE / LOCAL STORAGE",
-                    color = if (authState.isLoggedIn) SuccessGreen else TextSecondary,
-                    fontSize = 11.sp,
+                    text = if (authState.isLoggedIn) "MONGODB ATLAS SYNCHRONIZED" else "OFFLINE / LOCAL STORAGE MODE",
+                    color = if (authState.isLoggedIn) OptimalGreen else TextSecondary,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+                    letterSpacing = 0.8.sp
                 )
             }
 
             IconButton(
                 onClick = { showServerConfig = !showServerConfig },
                 modifier = Modifier
-                    .size(40.dp)
-                    .background(MidnightCard, shape = CircleShape)
-                    .border(1.dp, CardBorder, shape = CircleShape)
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(ObsidianSurface)
+                    .border(1.dp, CardBorder, CircleShape)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Server Settings",
-                    tint = if (showServerConfig) NeonCyan else TextSecondary,
-                    modifier = Modifier.size(20.dp)
+                    imageVector = Icons.Default.Tune,
+                    contentDescription = "Config",
+                    tint = if (showServerConfig) HyperCyan else TextSecondary,
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Collapsible Server Configuration Card
+        // ================= COLLAPSIBLE SERVER CONFIG =================
         AnimatedVisibility(visible = showServerConfig) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-                    .background(MidnightCard, shape = RoundedCornerShape(16.dp))
-                    .border(1.dp, ElectricBlue.copy(alpha = 0.5f), shape = RoundedCornerShape(16.dp))
-                    .padding(16.dp)
+                    .padding(bottom = 14.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MidnightCard)
+                    .border(1.dp, CardBorderGlow, RoundedCornerShape(18.dp))
+                    .padding(14.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Dns,
                         contentDescription = null,
-                        tint = ElectricBlue,
-                        modifier = Modifier.size(20.dp)
+                        tint = HyperCyan,
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Backend Server & MongoDB Gateway",
+                        text = "BACKEND GATEWAY & MONGODB",
                         color = TextPrimary,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
                     )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "Configure API endpoint (use http://10.0.2.2:3000 for Android Emulator, or local machine LAN IP on physical phones):",
-                    color = TextSecondary,
-                    fontSize = 12.sp
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
                 OutlinedTextField(
                     value = serverUrlInput,
                     onValueChange = { serverUrlInput = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Server URL", color = TextSecondary) },
+                    label = { Text("Server Base URL", color = TextSecondary, fontSize = 11.sp) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = NeonCyan,
+                        focusedBorderColor = HyperCyan,
                         unfocusedBorderColor = CardBorder,
                         focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
+                        unfocusedTextColor = TextPrimary,
+                        focusedContainerColor = ObsidianSurface,
+                        unfocusedContainerColor = ObsidianSurface
                     ),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(12.dp)
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
                         onClick = {
                             CloudSyncManager.setServerUrl(context, serverUrlInput)
                             Toast.makeText(context, "Server URL updated!", Toast.LENGTH_SHORT).show()
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
+                        colors = ButtonDefaults.buttonColors(containerColor = HyperCyan, contentColor = CarbonDark),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Save URL", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Save URL", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
 
                     OutlinedButton(
@@ -250,226 +276,489 @@ fun ProfileScreen(
                             }
                         },
                         shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = HyperCyan),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                     ) {
                         if (isCheckingHealth) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = NeonCyan, strokeWidth = 2.dp)
+                            CircularProgressIndicator(modifier = Modifier.size(14.dp), color = HyperCyan, strokeWidth = 2.dp)
                         } else {
-                            Text("Test Ping", fontSize = 12.sp, color = NeonCyan)
+                            Text("Test Ping", fontSize = 11.sp)
                         }
                     }
                 }
 
                 healthStatusMessage?.let { msg ->
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = msg,
-                        color = if (msg.contains("Online", ignoreCase = true)) SuccessGreen else RacingRed,
-                        fontSize = 12.sp,
+                        color = if (msg.contains("Online", ignoreCase = true)) OptimalGreen else RacingRed,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
             }
         }
 
-        if (authState.isLoggedIn && authState.user != null) {
-            // ================= LOGGED IN STATE =================
-            val user = authState.user!!
+        // ================= 1. RIDER IDENTITY & HERO PROFILE CARD =================
+        val displayName = if (authState.isLoggedIn && !authState.user?.name.isNullOrBlank()) {
+            authState.user!!.name
+        } else {
+            "Natesh Kanna"
+        }
+        val displayEmail = if (authState.isLoggedIn && !authState.user?.email.isNullOrBlank()) {
+            authState.user!!.email
+        } else {
+            "natesh.kanna@rhody.io"
+        }
 
-            // User Profile Hero Card
-            Column(
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(MidnightCard, ObsidianGlass)
+                    )
+                )
+                .border(1.dp, CardBorderGlow, RoundedCornerShape(22.dp))
+                .padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MidnightCard, shape = RoundedCornerShape(20.dp))
-                    .border(1.dp, CardBorder, shape = RoundedCornerShape(20.dp))
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .size(68.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(HyperCyan, CobaltBlue)
+                        )
+                    )
+                    .border(2.dp, HyperCyan, CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                // Avatar badge
+                Text(
+                    text = displayName.firstOrNull()?.uppercaseChar()?.toString() ?: "N",
+                    color = CarbonDark,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = displayName,
+                color = TextPrimary,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.5.sp
+            )
+
+            Text(
+                text = displayEmail,
+                color = TextSecondary,
+                fontSize = 12.sp
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Cloud Status Pill
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(30.dp))
+                    .background(CarbonDark)
+                    .border(1.dp, if (authState.isLoggedIn) OptimalGreen.copy(alpha = 0.5f) else CardBorder, RoundedCornerShape(30.dp))
+                    .padding(horizontal = 12.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(7.dp)
                         .clip(CircleShape)
-                        .background(CarbonDark)
-                        .border(2.dp, NeonCyan, shape = CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val initial = user.name.firstOrNull()?.uppercaseChar()?.toString()
-                        ?: user.email.firstOrNull()?.uppercaseChar()?.toString()
-                        ?: "D"
-                    Text(
-                        text = initial,
-                        color = NeonCyan,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
+                        .background(if (authState.isLoggedIn) OptimalGreen else SportAmber)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = user.name.ifEmpty { "Rhody Pilot" },
-                    color = TextPrimary,
-                    fontSize = 20.sp,
+                    text = if (authState.isLoggedIn) "MongoDB Atlas Synced" else "Offline Local Storage Mode",
+                    color = if (authState.isLoggedIn) OptimalGreen else SportAmber,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
                 )
+            }
+        }
 
-                Text(
-                    text = user.email,
-                    color = TextSecondary,
-                    fontSize = 14.sp
-                )
+        Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Cloud Status Pill
-                Row(
-                    modifier = Modifier
-                        .background(CarbonDark, shape = RoundedCornerShape(30.dp))
-                        .border(1.dp, SuccessGreen.copy(alpha = 0.4f), shape = RoundedCornerShape(30.dp))
-                        .padding(horizontal = 14.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(SuccessGreen)
+        // ================= 2. EMERGENCY MEDICAL & SAFETY CARD =================
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(MidnightCard)
+                .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.HealthAndSafety,
+                        contentDescription = null,
+                        tint = RacingRed,
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "MongoDB Atlas Connected",
-                        color = SuccessGreen,
+                        text = "RIDER EMERGENCY & SAFETY (ICE)",
+                        color = TextPrimary,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(RacingRed.copy(alpha = 0.15f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "BLOOD: $bloodGroup",
+                        color = RacingRed,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Cloud Synchronization Card
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MidnightCard, shape = RoundedCornerShape(20.dp))
-                    .border(1.dp, CardBorder, shape = RoundedCornerShape(20.dp))
-                    .padding(20.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CloudDone,
-                        contentDescription = null,
-                        tint = NeonCyan,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "Cloud Telemetry Sync",
-                            color = TextPrimary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Cluster: cluster0.wwp3oig.mongodb.net",
-                            color = TextSecondary,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
+                SettingInfoItem(
+                    title = "EMERGENCY CONTACT",
+                    value = emergencyContactPhone,
+                    icon = Icons.Default.Phone,
+                    accentColor = HyperCyan,
+                    modifier = Modifier.weight(1f)
+                )
+                SettingInfoItem(
+                    title = "BLOOD GROUP",
+                    value = "$bloodGroup (Universal Donor)",
+                    icon = Icons.Default.HealthAndSafety,
+                    accentColor = RacingRed,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
 
-                Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ================= 3. MOTORCYCLE GARAGE SPECS =================
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(MidnightCard)
+                .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.TwoWheeler,
+                        contentDescription = null,
+                        tint = HyperCyan,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "MOTORCYCLE GARAGE",
+                        color = TextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
+                    )
+                }
 
                 Text(
-                    text = "Your trips and high-frequency GPS fixes are automatically pushed to your account and visualized on the web dashboard.",
-                    color = TextSecondary,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp
+                    text = "PRIMARY BIKE",
+                    color = HyperCyan,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
                 )
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-                Button(
-                    onClick = {
-                        isSyncingTrips = true
-                        syncStatusMessage = null
-                        coroutineScope.launch {
-                            try {
-                                val trips = repository.getAllTrips()
-                                var syncedCount = 0
-                                var errorCount = 0
-                                for (trip in trips) {
-                                    val points = repository.getPoints(trip.id)
-                                    val result = CloudSyncManager.syncTripToMongo(trip, points)
-                                    if (result.isSuccess) {
-                                        syncedCount++
-                                    } else {
-                                        errorCount++
-                                    }
-                                }
-                                syncStatusMessage = if (errorCount == 0) {
-                                    "Successfully synced $syncedCount trips to MongoDB Atlas!"
-                                } else {
-                                    "Synced $syncedCount trips ($errorCount failed). Check server."
-                                }
-                            } catch (e: Exception) {
-                                syncStatusMessage = "Sync error: ${e.message}"
-                            } finally {
-                                isSyncingTrips = false
-                            }
-                        }
-                    },
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SettingInfoItem(
+                    title = "BIKE MODEL",
+                    value = "Yamaha MT-15 V2",
+                    icon = Icons.Default.TwoWheeler,
+                    accentColor = HyperCyan,
+                    modifier = Modifier.weight(1f)
+                )
+                SettingInfoItem(
+                    title = "REGISTRATION",
+                    value = "KA-01-EQ-1550",
+                    icon = Icons.Default.Badge,
+                    accentColor = OptimalGreen,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SettingInfoItem(
+                    title = "ENGINE DISPLACEMENT",
+                    value = "155cc Liquid VVA",
+                    icon = Icons.Default.Speed,
+                    accentColor = SportAmber,
+                    modifier = Modifier.weight(1f)
+                )
+                SettingInfoItem(
+                    title = "TIRE TARGETS",
+                    value = "F: 32 PSI | R: 34 PSI",
+                    icon = Icons.Default.Tune,
+                    accentColor = ElectricBlue,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ================= 4. APP PREFERENCES & UNIT SWITCHES =================
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(MidnightCard)
+                .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "APPLICATION PREFERENCES",
+                color = TextPrimary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.8.sp
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Speed Units Switch: KM/H vs MPH
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Speed & Distance Units",
+                        color = TextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (isKmhSelected) "Metric (KM/H, Kilometers)" else "Imperial (MPH, Miles)",
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+
+                Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = NeonCyan),
-                    shape = RoundedCornerShape(12.dp),
-                    enabled = !isSyncingTrips
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(ObsidianSurface)
+                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                        .padding(2.dp)
                 ) {
-                    if (isSyncingTrips) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = CarbonDark,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isKmhSelected) HyperCyan else Color.Transparent)
+                            .clickable { isKmhSelected = true }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
                         Text(
-                            text = "Syncing with Atlas...",
-                            color = CarbonDark,
-                            fontWeight = FontWeight.Bold
+                            text = "KM/H",
+                            color = if (isKmhSelected) CarbonDark else TextSecondary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black
                         )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.CloudUpload,
-                            contentDescription = null,
-                            tint = CarbonDark
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (!isKmhSelected) HyperCyan else Color.Transparent)
+                            .clickable { isKmhSelected = false }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
                         Text(
-                            text = "Sync All Local Trips Now",
-                            color = CarbonDark,
-                            fontWeight = FontWeight.Bold
+                            text = "MPH",
+                            color = if (!isKmhSelected) CarbonDark else TextSecondary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black
                         )
                     }
                 }
+            }
 
-                syncStatusMessage?.let { msg ->
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = msg,
-                        color = if (msg.contains("Successfully", ignoreCase = true)) SuccessGreen else SportAmber,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // High Precision GPS Toggle
+            PreferenceToggleRow(
+                title = "High-Precision GPS (1 Hz)",
+                subtitle = "Sample GPS fix every 1000ms for precision telemetry",
+                checked = isHighFrequencyGps,
+                onCheckedChange = { isHighFrequencyGps = it }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Motorcycle Lean Warning Toggle
+            PreferenceToggleRow(
+                title = "Apex Lean Warning (>45°)",
+                subtitle = "Audible & visual warning on extreme motorcycle lean",
+                checked = isLeanWarningEnabled,
+                onCheckedChange = { isLeanWarningEnabled = it }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Auto-pause Toggle
+            PreferenceToggleRow(
+                title = "Auto-Pause at Red Lights & Stops",
+                subtitle = "Exclude idle traffic stop duration from moving speed",
+                checked = isAutoPauseEnabled,
+                onCheckedChange = { isAutoPauseEnabled = it }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ================= 5. CLOUD TELEMETRY SYNC TO MONGODB =================
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(MidnightCard)
+                .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+                .padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.CloudUpload,
+                    contentDescription = null,
+                    tint = HyperCyan,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "MONGODB ATLAS CLOUD SYNC",
+                    color = TextPrimary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.8.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Pushes all locally saved rides to MongoDB Atlas cluster for instant companion viewing on the Rhody Web Dashboard.",
+                color = TextSecondary,
+                fontSize = 11.sp,
+                lineHeight = 16.sp
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {
+                    isSyncingTrips = true
+                    syncStatusMessage = null
+                    coroutineScope.launch {
+                        try {
+                            val trips = repository.getAllTrips()
+                            var syncedCount = 0
+                            var errorCount = 0
+                            for (trip in trips) {
+                                val points = repository.getPoints(trip.id)
+                                val result = CloudSyncManager.syncTripToMongo(trip, points)
+                                if (result.isSuccess) {
+                                    syncedCount++
+                                } else {
+                                    errorCount++
+                                }
+                            }
+                            syncStatusMessage = if (errorCount == 0) {
+                                "Successfully synced $syncedCount trips to MongoDB Atlas!"
+                            } else {
+                                "Synced $syncedCount trips ($errorCount failed). Check server."
+                            }
+                        } catch (e: Exception) {
+                            syncStatusMessage = "Sync error: ${e.message}"
+                        } finally {
+                            isSyncingTrips = false
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = HyperCyan, contentColor = CarbonDark),
+                shape = RoundedCornerShape(12.dp),
+                enabled = !isSyncingTrips
+            ) {
+                if (isSyncingTrips) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = CarbonDark, strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Syncing to Atlas...", fontWeight = FontWeight.Bold)
+                } else {
+                    Icon(imageVector = Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Sync All Local Trips to Cloud", fontWeight = FontWeight.Black)
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            syncStatusMessage?.let { msg ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = msg,
+                    color = if (msg.contains("Successfully", ignoreCase = true)) OptimalGreen else SportAmber,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
 
-            // Logout Button
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ================= 6. ACCOUNT SIGN IN / OUT =================
+        if (authState.isLoggedIn) {
             OutlinedButton(
                 onClick = {
                     AuthManager.logout()
@@ -477,104 +766,48 @@ fun ProfileScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = RacingRed
-                ),
+                    .height(48.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = RacingRed),
                 border = androidx.compose.foundation.BorderStroke(1.dp, RacingRed.copy(alpha = 0.6f)),
                 shape = RoundedCornerShape(14.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Logout,
-                    contentDescription = null,
-                    tint = RacingRed
-                )
+                Icon(imageVector = Icons.Default.Logout, contentDescription = null, tint = RacingRed, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Sign Out of Rhody",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = RacingRed
-                )
+                Text(text = "Sign Out of Rhody Account", fontWeight = FontWeight.Bold, color = RacingRed)
             }
-
         } else {
-            // ================= LOGGED OUT (SIGN IN / REGISTER) =================
-
-            // Header Banner
+            // Sign in / Create Account Form
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MidnightCard, shape = RoundedCornerShape(20.dp))
-                    .border(1.dp, CardBorder, shape = RoundedCornerShape(20.dp))
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MidnightCard)
+                    .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+                    .padding(16.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .background(NeonCyan.copy(alpha = 0.1f))
-                        .border(1.dp, NeonCyan.copy(alpha = 0.3f), shape = CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Cloud,
-                        contentDescription = null,
-                        tint = NeonCyan,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "CLOUD TELEMETRY",
-                    color = TextPrimary,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "Sign in or register to sync your trips, sprint timers, and live routes with MongoDB Atlas and access the companion Web Dashboard.",
-                    color = TextSecondary,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Toggle tabs: [ Sign In ] [ Create Account ]
+                // Tab switcher
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(CarbonDark, shape = RoundedCornerShape(14.dp))
-                        .border(1.dp, CardBorder, shape = RoundedCornerShape(14.dp))
-                        .padding(4.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(ObsidianSurface)
+                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                        .padding(3.dp)
                 ) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (isLoginMode) NeonCyan else Color.Transparent)
-                            .clickable {
-                                isLoginMode = true
-                                errorMessage = null
-                                successMessage = null
-                            }
-                            .padding(vertical = 10.dp),
+                            .background(if (isLoginMode) HyperCyan else Color.Transparent)
+                            .clickable { isLoginMode = true }
+                            .padding(vertical = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "SIGN IN",
                             color = if (isLoginMode) CarbonDark else TextSecondary,
                             fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp,
-                            fontSize = 12.sp
+                            fontSize = 11.sp
                         )
                     }
 
@@ -582,262 +815,233 @@ fun ProfileScreen(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (!isLoginMode) NeonCyan else Color.Transparent)
-                            .clickable {
-                                isLoginMode = false
-                                errorMessage = null
-                                successMessage = null
-                            }
-                            .padding(vertical = 10.dp),
+                            .background(if (!isLoginMode) HyperCyan else Color.Transparent)
+                            .clickable { isLoginMode = false }
+                            .padding(vertical = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "CREATE ACCOUNT",
+                            text = "REGISTER",
                             color = if (!isLoginMode) CarbonDark else TextSecondary,
                             fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp,
-                            fontSize = 12.sp
+                            fontSize = 11.sp
                         )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // Form Inputs Card
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MidnightCard, shape = RoundedCornerShape(20.dp))
-                    .border(1.dp, CardBorder, shape = RoundedCornerShape(20.dp))
-                    .padding(20.dp)
-            ) {
-                // If Register mode: Name Field
                 if (!isLoginMode) {
                     OutlinedTextField(
                         value = nameInput,
                         onValueChange = { nameInput = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Driver / Rider Name") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Badge, contentDescription = null, tint = TextSecondary)
-                        },
+                        label = { Text("Rider Name", fontSize = 11.sp) },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = NeonCyan,
+                            focusedBorderColor = HyperCyan,
                             unfocusedBorderColor = CardBorder,
                             focusedTextColor = TextPrimary,
                             unfocusedTextColor = TextPrimary
                         ),
-                        shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Next
-                        )
+                        shape = RoundedCornerShape(12.dp)
                     )
-
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
 
-                // Email Field
                 OutlinedTextField(
                     value = emailInput,
                     onValueChange = { emailInput = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Email Address") },
-                    placeholder = { Text("driver@roadpulse.io", color = TextMuted) },
-                    leadingIcon = {
-                        Icon(Icons.Default.Email, contentDescription = null, tint = TextSecondary)
-                    },
+                    label = { Text("Email", fontSize = 11.sp) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = NeonCyan,
+                        focusedBorderColor = HyperCyan,
                         unfocusedBorderColor = CardBorder,
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary
                     ),
-                    shape = RoundedCornerShape(12.dp),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email,
-                        imeAction = ImeAction.Next
-                    )
+                    shape = RoundedCornerShape(12.dp)
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Password Field
                 OutlinedTextField(
                     value = passwordInput,
                     onValueChange = { passwordInput = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Password") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Lock, contentDescription = null, tint = TextSecondary)
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                                tint = TextSecondary
-                            )
-                        }
-                    },
+                    label = { Text("Password", fontSize = 11.sp) },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = NeonCyan,
+                        focusedBorderColor = HyperCyan,
                         unfocusedBorderColor = CardBorder,
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary
                     ),
-                    shape = RoundedCornerShape(12.dp),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = { focusManager.clearFocus() }
-                    )
+                    shape = RoundedCornerShape(12.dp)
                 )
 
-                // Error / Success Message Banner
-                errorMessage?.let { err ->
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(RacingRed.copy(alpha = 0.15f), shape = RoundedCornerShape(10.dp))
-                            .border(1.dp, RacingRed.copy(alpha = 0.4f), shape = RoundedCornerShape(10.dp))
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Error, contentDescription = null, tint = RacingRed, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = err, color = RacingRed, fontSize = 13.sp)
-                    }
-                }
+                Spacer(modifier = Modifier.height(14.dp))
 
-                successMessage?.let { succ ->
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(SuccessGreen.copy(alpha = 0.15f), shape = RoundedCornerShape(10.dp))
-                            .border(1.dp, SuccessGreen.copy(alpha = 0.4f), shape = RoundedCornerShape(10.dp))
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SuccessGreen, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = succ, color = SuccessGreen, fontSize = 13.sp)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Submit Button
                 Button(
                     onClick = {
                         focusManager.clearFocus()
                         val email = emailInput.trim()
                         val password = passwordInput.trim()
-
                         if (email.isEmpty() || !email.contains("@")) {
-                            errorMessage = "Please enter a valid email address."
+                            Toast.makeText(context, "Enter a valid email", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
-                        if (password.length < 6) {
-                            errorMessage = "Password must be at least 6 characters."
-                            return@Button
-                        }
-
                         isLoading = true
-                        errorMessage = null
-                        successMessage = null
-
                         coroutineScope.launch {
                             if (isLoginMode) {
                                 val result = AuthManager.login(email, password)
                                 isLoading = false
                                 if (result.isSuccess) {
-                                    val user = result.getOrNull()
-                                    successMessage = "Welcome back, ${user?.name}!"
-                                    Toast.makeText(context, "Welcome back, ${user?.name}!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Welcome back, ${result.getOrNull()?.name}!", Toast.LENGTH_SHORT).show()
                                 } else {
-                                    errorMessage = result.exceptionOrNull()?.message ?: "Login failed"
+                                    Toast.makeText(context, "Login failed: ${result.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
                                 }
                             } else {
-                                val name = nameInput.trim().ifEmpty { email.substringBefore("@") }
+                                val name = nameInput.trim().ifEmpty { "Natesh Kanna" }
                                 val result = AuthManager.register(email, password, name)
                                 isLoading = false
                                 if (result.isSuccess) {
-                                    val user = result.getOrNull()
-                                    successMessage = "Account created! Welcome, ${user?.name}."
-                                    Toast.makeText(context, "Account created successfully!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Account created!", Toast.LENGTH_SHORT).show()
                                 } else {
-                                    errorMessage = result.exceptionOrNull()?.message ?: "Registration failed"
+                                    Toast.makeText(context, "Failed: ${result.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isLoginMode) NeonCyan else ElectricBlue,
-                        contentColor = if (isLoginMode) CarbonDark else TextPrimary
-                    ),
-                    shape = RoundedCornerShape(14.dp),
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = HyperCyan, contentColor = CarbonDark),
+                    shape = RoundedCornerShape(12.dp),
                     enabled = !isLoading
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            color = if (isLoginMode) CarbonDark else TextPrimary,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = if (isLoginMode) "Signing In..." else "Creating Account...",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        )
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = CarbonDark, strokeWidth = 2.dp)
                     } else {
-                        Text(
-                            text = if (isLoginMode) "Sign In to Rhody" else "Create Rhody Account",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        )
+                        Text(if (isLoginMode) "Sign In" else "Create Account", fontWeight = FontWeight.Black)
                     }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-            // Architecture Note
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MidnightCard.copy(alpha = 0.6f), shape = RoundedCornerShape(16.dp))
-                    .border(1.dp, CardBorder, shape = RoundedCornerShape(16.dp))
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = "ROAD PULSE ARCHITECTURE",
-                    color = NeonCyan,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+        // ================= 7. APP INFO FOOTER =================
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "RHODY MOTORCYCLE TELEMETRY",
+                color = TextSecondary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.sp
+            )
+            Text(
+                text = "Version 2.4.0 • Obsidian Cyber Build 2026.10",
+                color = TextMuted,
+                fontSize = 10.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Designed for high-performance telemetry & rider safety.",
+                color = TextMuted,
+                fontSize = 9.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+    }
+}
+
+// Subcomponents
+@Composable
+private fun SettingInfoItem(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(ObsidianSurface)
+            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+            .padding(10.dp)
+    ) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(14.dp)
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.width(5.dp))
                 Text(
-                    text = "• 100% Offline-First: Trip recording never relies on network connection.\n• Automatic MongoDB Sync: Synchronizes trip coordinates, distance, and speeds when connected.\n• Web Companion: Real-time map and speed vs distance graphs accessible anywhere.",
-                    color = TextSecondary,
-                    fontSize = 12.sp,
-                    lineHeight = 18.sp
+                    text = title,
+                    color = TextMuted,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
                 )
             }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = value,
+                color = TextPrimary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
         }
+    }
+}
+
+@Composable
+private fun PreferenceToggleRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = TextPrimary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = subtitle,
+                color = TextSecondary,
+                fontSize = 10.sp
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = CarbonDark,
+                checkedTrackColor = HyperCyan,
+                uncheckedThumbColor = TextMuted,
+                uncheckedTrackColor = ObsidianSurface
+            )
+        )
     }
 }

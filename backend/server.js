@@ -332,6 +332,63 @@ app.post('/api/user/profile', async (req, res) => {
   });
 });
 
+const defaultMotorcyclePlaces = [
+  {
+    _id: 'wp_nandi',
+    name: 'Nandi Hills Apex Climb',
+    category: 'pass',
+    lat: 13.3702,
+    lng: 77.6835,
+    altitude: 1478,
+    notes: 'Epic morning mountain run with 40 hairpins & sweeping high-elevation corners.'
+  },
+  {
+    _id: 'wp_bikers_cafe',
+    name: "Biker's Highway Cafe (NH44)",
+    category: 'garage',
+    lat: 13.0645,
+    lng: 77.5898,
+    altitude: 910,
+    notes: 'Popular superbike pitstop, high-octane fuel & tire pressure station.'
+  },
+  {
+    _id: 'wp_kolar',
+    name: 'Kolar Fast Expressway Twisties',
+    category: 'track',
+    lat: 13.1362,
+    lng: 78.1291,
+    altitude: 822,
+    notes: 'Smooth asphalt 6-lane section with wide sweepers for high-speed aero testing.'
+  },
+  {
+    _id: 'wp_agumbe',
+    name: 'Agumbe Ghat Rainforest Twisties',
+    category: 'pass',
+    lat: 13.5042,
+    lng: 75.0934,
+    altitude: 826,
+    notes: 'Legendary 14 hairpin curves through Western Ghats rainforest canopy with 45° lean angles.'
+  },
+  {
+    _id: 'wp_yercaud',
+    name: 'Yercaud 20-Hairpin Loop',
+    category: 'pass',
+    lat: 11.7753,
+    lng: 78.2093,
+    altitude: 1515,
+    notes: 'Challenging continuous hairpins with fresh grippy tarmac and cool mountain elevation.'
+  },
+  {
+    _id: 'wp_kolli',
+    name: 'Kolli Hills 70 Hairpin Pass',
+    category: 'pass',
+    lat: 11.2485,
+    lng: 78.3389,
+    altitude: 1300,
+    notes: 'The ultimate motorcycle test: 70 continuous hairpin bends climbing into misty peak.'
+  }
+];
+
 // GET /api/user/places
 app.get('/api/user/places', async (req, res) => {
   const authHeader = req.headers.authorization;
@@ -339,7 +396,7 @@ app.get('/api/user/places', async (req, res) => {
   const decoded = verifyToken(token);
 
   if (!db) {
-    return res.json({ success: true, places: [] });
+    return res.json({ success: true, places: defaultMotorcyclePlaces });
   }
 
   try {
@@ -348,9 +405,12 @@ app.get('/api/user/places', async (req, res) => {
       : { userEmail: 'guest' };
 
     const dbPlaces = await db.collection('places').find(filter).sort({ createdAt: -1 }).toArray();
-    res.json({ success: true, places: dbPlaces || [] });
+    if (dbPlaces && dbPlaces.length > 0) {
+      return res.json({ success: true, places: dbPlaces });
+    }
+    res.json({ success: true, places: defaultMotorcyclePlaces });
   } catch (err) {
-    res.json({ success: true, places: [] });
+    res.json({ success: true, places: defaultMotorcyclePlaces });
   }
 });
 

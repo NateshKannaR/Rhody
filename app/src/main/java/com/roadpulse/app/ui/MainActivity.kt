@@ -109,10 +109,18 @@ class MainActivity : ComponentActivity() {
                             composable(Screen.Dashboard.route) {
                                 DashboardScreen(
                                     onNavigateToLiveTrip = {
-                                        navController.navigate(Screen.LiveTrip.route)
+                                        navController.navigate(Screen.Trips.route)
                                     },
                                     onNavigateToProfile = {
-                                        navController.navigate(Screen.Profile.route)
+                                        navController.navigate(Screen.Settings.route)
+                                    }
+                                )
+                            }
+
+                            composable(Screen.Trips.route) {
+                                LiveTripScreen(
+                                    onFinishTrip = { tripId ->
+                                        navController.navigate(Screen.createTripDetailRoute(tripId))
                                     }
                                 )
                             }
@@ -125,7 +133,11 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
 
-                            composable(Screen.Analytics.route) {
+                            composable(Screen.Analysis.route) {
+                                AnalyticsScreen()
+                            }
+
+                            composable("analytics") {
                                 AnalyticsScreen()
                             }
 
@@ -135,6 +147,10 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate(Screen.createTripDetailRoute(tripId))
                                     }
                                 )
+                            }
+
+                            composable(Screen.Settings.route) {
+                                ProfileScreen()
                             }
 
                             composable(Screen.Profile.route) {

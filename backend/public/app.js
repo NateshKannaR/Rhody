@@ -42,6 +42,59 @@ var gpsWatchId = null;
 var parentPollInterval = null;
 var beaconPushInterval = null;
 
+// Motorcycle Garage Catalog
+var motorcycleGarage = {
+  mt15: {
+    key: 'mt15',
+    name: 'Yamaha MT-15 V2',
+    model: 'Yamaha MT-15 V2 (2024)',
+    specs: '155cc Liquid VVA &bull; 18.4 PS',
+    plate: 'KA-01-EQ-1550',
+    tireSetup: 'MRF Nylogrip Zapper (Cold PSI: F 32 / R 34)',
+    frontPsi: 'F: 32 PSI',
+    rearPsi: 'R: 34 PSI',
+    fuelPercent: 82,
+    fuelLiters: '8.2L remaining',
+    estRange: '~380 KM Estimated Range',
+    vvaBadge: 'VVA ENGAGED',
+    absBadge: 'ABS ACTIVE',
+    tcsBadge: 'TCS READY',
+    coolantVal: '88&deg;C',
+    coolantStatus: 'Nominal',
+    batteryVal: '12.6 V',
+    batteryStatus: 'Healthy',
+    oilVal: '76%',
+    oilNext: 'Next: 2.4k km',
+    odoVal: '8,420 km',
+    query: 'Yamaha MT-15 V2 motorcycle review pure exhaust sound'
+  },
+  mt09: {
+    key: 'mt09',
+    name: 'Yamaha MT-09 SP',
+    model: 'Yamaha MT-09 SP (2024)',
+    specs: '890cc Triple CP3 &bull; 119 BHP &bull; 93 Nm',
+    plate: 'TN-38-RH-0909',
+    tireSetup: 'Pirelli Diablo Rosso IV (Cold PSI: F 32 / R 36)',
+    frontPsi: 'F: 32 PSI',
+    rearPsi: 'R: 36 PSI',
+    fuelPercent: 65,
+    fuelLiters: '9.1L remaining',
+    estRange: '~240 KM Estimated Range',
+    vvaBadge: 'CP3 TORQUE ACTIVE',
+    absBadge: 'CORNERING ABS ACTIVE',
+    tcsBadge: 'LEAN TCS LEVEL 2',
+    coolantVal: '92&deg;C',
+    coolantStatus: 'Nominal',
+    batteryVal: '12.8 V',
+    batteryStatus: 'Healthy',
+    oilVal: '84%',
+    oilNext: 'Next: 4.2k km',
+    odoVal: '12,650 km',
+    query: 'Yamaha MT-09 SP motorcycle review pure sound'
+  }
+};
+var activeBikeKey = 'mt15';
+
 // Rider Profile State
 var riderProfile = {
   name: 'Natesh',
@@ -49,16 +102,80 @@ var riderProfile = {
   avatar: '',
   handle: '@natesh_pilot',
   bio: 'Weekend canyon carver & telemetry enthusiast. Western Ghats apex seeker pushing precision motorcycle telemetry.',
-  bikeModel: 'Yamaha MT-09 SP',
-  bikeSpecs: '890cc Triple • 119 BHP • 93 Nm',
-  bikePlate: 'TN-38-RH-0909',
-  tireSetup: 'Pirelli Diablo Rosso IV (Cold PSI: F 32 / R 36)',
+  bikeModel: 'Yamaha MT-15 V2',
+  bikeSpecs: '155cc Liquid VVA • 18.4 PS',
+  bikePlate: 'KA-01-EQ-1550',
+  tireSetup: 'MRF Nylogrip Zapper (Cold PSI: F 32 / R 34)',
   emergencyContactName: 'Family Guardian (Mom & Dad)',
   emergencyContactPhone: '+91 98765 43210',
   speedUnit: 'kmh',
   defaultMapLayer: 'dark',
   gpsPrecision: 'sport'
 };
+
+// Curated Real Motorcycle Twisties & Radar Waypoints
+var defaultSavedPlaces = [
+  {
+    _id: 'wp_nandi',
+    id: 'wp_nandi',
+    name: 'Nandi Hills Apex Climb',
+    category: 'pass',
+    lat: 13.3702,
+    lng: 77.6835,
+    altitude: 1478,
+    notes: 'Epic morning mountain run with 40 hairpins & sweeping high-elevation corners.'
+  },
+  {
+    _id: 'wp_bikers_cafe',
+    id: 'wp_bikers_cafe',
+    name: "Biker's Highway Cafe (NH44)",
+    category: 'garage',
+    lat: 13.0645,
+    lng: 77.5898,
+    altitude: 910,
+    notes: 'Popular superbike pitstop, high-octane fuel & tire pressure station.'
+  },
+  {
+    _id: 'wp_kolar',
+    id: 'wp_kolar',
+    name: 'Kolar Fast Expressway Twisties',
+    category: 'track',
+    lat: 13.1362,
+    lng: 78.1291,
+    altitude: 822,
+    notes: 'Smooth asphalt 6-lane section with wide sweepers for high-speed aero testing.'
+  },
+  {
+    _id: 'wp_agumbe',
+    id: 'wp_agumbe',
+    name: 'Agumbe Ghat Rainforest Twisties',
+    category: 'pass',
+    lat: 13.5042,
+    lng: 75.0934,
+    altitude: 826,
+    notes: 'Legendary 14 hairpin curves through Western Ghats rainforest canopy with 45° lean angles.'
+  },
+  {
+    _id: 'wp_yercaud',
+    id: 'wp_yercaud',
+    name: 'Yercaud 20-Hairpin Loop',
+    category: 'pass',
+    lat: 11.7753,
+    lng: 78.2093,
+    altitude: 1515,
+    notes: 'Challenging continuous hairpins with fresh grippy tarmac and cool mountain elevation.'
+  },
+  {
+    _id: 'wp_kolli',
+    id: 'wp_kolli',
+    name: 'Kolli Hills 70 Hairpin Pass',
+    category: 'pass',
+    lat: 11.2485,
+    lng: 78.3389,
+    altitude: 1300,
+    notes: 'The ultimate motorcycle test: 70 continuous hairpin bends climbing into misty peak.'
+  }
+];
 
 // Real Saved Places (Loaded exclusively from MongoDB Atlas / User Storage)
 var savedPlaces = [];
@@ -67,7 +184,7 @@ var dashboardActiveRoute = null;
 var currentDashCategoryFilter = 'all';
 
 // Real YouTube Active Query
-var currentYoutubeQuery = 'Yamaha MT-09 SP motorcycle review pure sound';
+var currentYoutubeQuery = 'Yamaha MT-15 V2 motorcycle review pure exhaust sound';
 
 // ----------------------------------------------------
 // INITIALIZATION
@@ -250,16 +367,82 @@ function renderDashboardProfile() {
   }
 }
 
-function renderDashboardBike() {
+function switchActiveBike(key, silent = false) {
+  if (!motorcycleGarage[key]) return;
+  activeBikeKey = key;
+  const bike = motorcycleGarage[key];
+
+  riderProfile.bikeModel = bike.model;
+  riderProfile.bikeSpecs = bike.specs;
+  riderProfile.bikePlate = bike.plate;
+  riderProfile.tireSetup = bike.tireSetup;
+
+  // Toggle button styling
+  const btn15 = document.getElementById('bikeBtn_mt15');
+  const btn09 = document.getElementById('bikeBtn_mt09');
+  if (btn15 && btn09) {
+    if (key === 'mt15') {
+      btn15.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 transition';
+      btn09.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition';
+    } else {
+      btn09.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 transition';
+      btn15.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition';
+    }
+  }
+
+  // Update DOM readouts
   const model = document.getElementById('dashBikeModel');
   const specs = document.getElementById('dashBikeSpecs');
   const plate = document.getElementById('dashBikePlate');
   const tires = document.getElementById('dashTires');
+  const tiresF = document.getElementById('dashTiresFront');
+  const tiresR = document.getElementById('dashTiresRear');
+  const fuelPct = document.getElementById('dashFuelPercent');
+  const fuelLit = document.getElementById('dashFuelLiters');
+  const estRange = document.getElementById('dashEstRange');
+  const fuelBar = document.getElementById('dashFuelBar');
+  const absBadge = document.getElementById('dashAbsBadge');
+  const tcsBadge = document.getElementById('dashTcsBadge');
+  const vvaBadge = document.getElementById('dashVvaBadge');
+  const coolantVal = document.getElementById('dashCoolantVal');
+  const coolantStatus = document.getElementById('dashCoolantStatus');
+  const batteryVal = document.getElementById('dashBatteryVal');
+  const batteryStatus = document.getElementById('dashBatteryStatus');
+  const oilVal = document.getElementById('dashOilVal');
+  const oilNext = document.getElementById('dashOilNext');
+  const odoVal = document.getElementById('dashOdoVal');
 
-  if (model) model.textContent = riderProfile.bikeModel || 'Yamaha MT-09 SP';
-  if (specs) specs.textContent = riderProfile.bikeSpecs || '890cc Triple • 119 BHP • 93 Nm';
-  if (plate) plate.textContent = riderProfile.bikePlate || 'TN-38-RH-0909';
-  if (tires) tires.textContent = riderProfile.tireSetup || 'Pirelli Diablo Rosso IV';
+  if (model) model.textContent = bike.name;
+  if (specs) specs.innerHTML = bike.specs;
+  if (plate) plate.textContent = bike.plate;
+  if (tires) tires.textContent = bike.tireSetup.split('(')[0].trim();
+  if (tiresF) tiresF.textContent = bike.frontPsi;
+  if (tiresR) tiresR.textContent = bike.rearPsi;
+  if (fuelPct) fuelPct.textContent = `${bike.fuelPercent}%`;
+  if (fuelLit) fuelLit.textContent = bike.fuelLiters;
+  if (estRange) estRange.textContent = bike.estRange;
+  if (fuelBar) fuelBar.style.width = `${bike.fuelPercent}%`;
+  if (absBadge) absBadge.textContent = bike.absBadge;
+  if (tcsBadge) tcsBadge.textContent = bike.tcsBadge;
+  if (vvaBadge) vvaBadge.textContent = bike.vvaBadge;
+  if (coolantVal) coolantVal.innerHTML = bike.coolantVal;
+  if (coolantStatus) coolantStatus.textContent = bike.coolantStatus;
+  if (batteryVal) batteryVal.textContent = bike.batteryVal;
+  if (batteryStatus) batteryStatus.textContent = bike.batteryStatus;
+  if (oilVal) oilVal.textContent = bike.oilVal;
+  if (oilNext) oilNext.textContent = bike.oilNext;
+  if (odoVal) odoVal.textContent = bike.odoVal;
+
+  // Refresh YouTube Hub with bike query
+  currentYoutubeQuery = bike.query;
+  if (!silent) {
+    renderYoutubeDynamicHub();
+    showToast(`Active motorcycle switched to ${bike.name}`, 'info');
+  }
+}
+
+function renderDashboardBike() {
+  switchActiveBike(activeBikeKey, true);
 }
 
 function handleProfilePhotoUpload(event) {
@@ -321,17 +504,27 @@ function loadPlacesFromBackend() {
   const cached = localStorage.getItem('rhody_saved_places');
   if (cached) {
     try {
-      savedPlaces = JSON.parse(cached) || [];
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        savedPlaces = parsed;
+      }
     } catch (e) {
       savedPlaces = [];
     }
   }
 
+  if (savedPlaces.length === 0) {
+    savedPlaces = defaultSavedPlaces.slice();
+  }
+
   fetch('/api/user/places')
     .then(r => r.json())
     .then(data => {
-      if (data && Array.isArray(data.places)) {
+      if (data && Array.isArray(data.places) && data.places.length > 0) {
         savedPlaces = data.places;
+        localStorage.setItem('rhody_saved_places', JSON.stringify(savedPlaces));
+      } else if (savedPlaces.length === 0) {
+        savedPlaces = defaultSavedPlaces.slice();
         localStorage.setItem('rhody_saved_places', JSON.stringify(savedPlaces));
       }
       renderDashboardPlaces();
@@ -339,6 +532,9 @@ function loadPlacesFromBackend() {
       renderYoutubeDynamicHub();
     })
     .catch(() => {
+      if (savedPlaces.length === 0) {
+        savedPlaces = defaultSavedPlaces.slice();
+      }
       renderDashboardPlaces();
       renderDashboardPlacesMarkers();
     });
@@ -406,18 +602,90 @@ function initDashboardMap() {
 }
 
 function promptSaveMapPin(lat, lng) {
-  const placeName = prompt(`Pin Waypoint at (${lat.toFixed(4)}, ${lng.toFixed(4)})\nEnter place name:`, 'Scenic Apex Corner');
-  if (!placeName || !placeName.trim()) return;
+  openAddPlaceModal(lat, lng);
+}
+
+function openAddPlaceModal(lat, lng) {
+  const modal = document.getElementById('addPlaceModal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+
+  const latInput = document.getElementById('newPlaceLat');
+  const lngInput = document.getElementById('newPlaceLng');
+
+  if (lat !== undefined && lng !== undefined) {
+    if (latInput) latInput.value = parseFloat(lat).toFixed(6);
+    if (lngInput) lngInput.value = parseFloat(lng).toFixed(6);
+  } else if (lastKnownGpsFix) {
+    if (latInput && !latInput.value) latInput.value = lastKnownGpsFix.lat.toFixed(6);
+    if (lngInput && !lngInput.value) lngInput.value = lastKnownGpsFix.lng.toFixed(6);
+  }
+
+  const nameInput = document.getElementById('newPlaceName');
+  if (nameInput) setTimeout(() => nameInput.focus(), 60);
+}
+
+function closeAddPlaceModal() {
+  const modal = document.getElementById('addPlaceModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function populateNewPlaceWithCurrentGps() {
+  if (!navigator.geolocation) {
+    showToast('Geolocation not supported by browser', 'error');
+    return;
+  }
+  showToast('Acquiring high-accuracy GPS fix...', 'info');
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const alt = pos.coords.altitude ? Math.round(pos.coords.altitude) : '';
+    const latInput = document.getElementById('newPlaceLat');
+    const lngInput = document.getElementById('newPlaceLng');
+    const altInput = document.getElementById('newPlaceAltitude');
+    if (latInput) latInput.value = lat.toFixed(6);
+    if (lngInput) lngInput.value = lng.toFixed(6);
+    if (altInput && alt) altInput.value = alt;
+    showToast('GPS coordinates populated!', 'success');
+  }, function(err) {
+    showToast('GPS fix error: ' + err.message, 'error');
+  }, { enableHighAccuracy: true, timeout: 8000 });
+}
+
+function submitNewPlaceForm(e) {
+  e.preventDefault();
+  const name = document.getElementById('newPlaceName')?.value?.trim();
+  const category = document.getElementById('newPlaceCategory')?.value || 'pass';
+  const lat = parseFloat(document.getElementById('newPlaceLat')?.value);
+  const lng = parseFloat(document.getElementById('newPlaceLng')?.value);
+  const alt = parseFloat(document.getElementById('newPlaceAltitude')?.value) || null;
+  const notes = document.getElementById('newPlaceNotes')?.value?.trim() || '';
+
+  if (!name || isNaN(lat) || isNaN(lng)) {
+    showToast('Please provide a valid name and GPS coordinates', 'error');
+    return;
+  }
 
   const newPlace = {
-    name: placeName.trim(),
-    category: 'pass',
-    lat: parseFloat(lat),
-    lng: parseFloat(lng),
-    notes: 'Pinned on telemetry radar map'
+    name: name,
+    category: category,
+    lat: lat,
+    lng: lng,
+    altitude: alt,
+    notes: notes || 'Custom waypoint stored in Rhody radar'
   };
 
   saveNewPlaceToBackend(newPlace);
+  closeAddPlaceModal();
+  document.getElementById('addPlaceForm')?.reset();
+  if (dashboardMapInstance) {
+    dashboardMapInstance.flyTo([lat, lng], 13);
+  }
+}
+
+function openGoogleMapsRoute(lat, lng) {
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  window.open(url, '_blank');
 }
 
 function saveNewPlaceToBackend(placeDoc) {
@@ -577,9 +845,10 @@ function renderDashboardPlacesMarkers() {
           <span style="font-size: 10px; font-weight: bold; color: ${pinColor}; text-transform: uppercase;">${place.category}</span>
         </div>
         <p style="font-size: 11px; color: #94A3B8; margin: 4px 0 8px 0; line-height: 1.4;">${place.notes || 'Real waypoint stored in Rhody database.'}</p>
-        <div style="display: flex; gap: 6px;">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
           <button onclick="routeToPlace(${place.lat}, ${place.lng}, '${place.name.replace(/'/g, "\\'")}')" style="flex: 1; background: #00F0FF; color: #07090E; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">Route</button>
-          <button onclick="searchYoutubeForPlace('${place.name.replace(/'/g, "\\'")}')" style="background: rgba(239,68,68,0.2); color: #FF4D4D; border: 1px solid rgba(239,68,68,0.4); padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;">▶ Vlogs</button>
+          <button onclick="openGoogleMapsRoute(${place.lat}, ${place.lng})" style="background: rgba(16,185,129,0.2); color: #10B981; border: 1px solid rgba(16,185,129,0.4); padding: 6px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;" title="Open in Google Maps">🗺️ Maps</button>
+          <button onclick="searchYoutubeForPlace('${place.name.replace(/'/g, "\\'")}')" style="background: rgba(239,68,68,0.2); color: #FF4D4D; border: 1px solid rgba(239,68,68,0.4); padding: 6px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;">▶ Vlogs</button>
           <button onclick="deletePlace('${place._id || place.id}')" style="background: rgba(255,255,255,0.06); color: #94A3B8; border: 1px solid rgba(255,255,255,0.1); padding: 6px 8px; border-radius: 8px; font-size: 11px; cursor: pointer;" title="Delete">🗑️</button>
         </div>
       </div>
@@ -612,11 +881,11 @@ function renderDashboardPlaces() {
           </p>
         </div>
         <div class="flex items-center space-x-3 pt-1">
-          <button onclick="saveCurrentGpsLocation()" class="px-4 py-2 text-xs font-bold rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/50 shadow-[0_0_15px_rgba(0,240,255,0.2)] flex items-center space-x-1.5 transition">
-            <span>📍 Pin Current Location</span>
+          <button onclick="openAddPlaceModal()" class="px-4 py-2 text-xs font-bold rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/50 shadow-[0_0_15px_rgba(0,240,255,0.2)] flex items-center space-x-1.5 transition">
+            <span>+ Add Saved Place</span>
           </button>
-          <button onclick="document.getElementById('dashPlaceSearchInput').focus()" class="px-4 py-2 text-xs font-medium rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border border-white/10 transition">
-            <span>🔍 Search Real Places</span>
+          <button onclick="saveCurrentGpsLocation()" class="px-4 py-2 text-xs font-medium rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border border-white/10 transition">
+            <span>📍 Pin Current Location</span>
           </button>
         </div>
       </div>
@@ -663,17 +932,20 @@ function renderDashboardPlaces() {
           <p class="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">${place.notes || 'Waypoint pinned on telemetry map'}</p>
         </div>
         
-        <div class="pt-3 flex items-center space-x-2 border-t border-white/[0.06] mt-3">
-          <button onclick="flyToDashboardPlace(${place.lat}, ${place.lng}, '${safeName}')" class="flex-1 py-1.5 px-2.5 text-xs font-semibold rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-400/30 transition text-center">
-            View on Map
+        <div class="pt-3 flex flex-wrap items-center gap-1.5 border-t border-white/[0.06] mt-3">
+          <button onclick="flyToDashboardPlace(${place.lat}, ${place.lng}, '${safeName}')" class="flex-1 min-w-[65px] py-1.5 px-2 text-xs font-semibold rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-400/30 transition text-center">
+            Map
           </button>
-          <button onclick="routeToPlace(${place.lat}, ${place.lng}, '${safeName}')" class="py-1.5 px-3 text-xs font-medium rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border border-white/10 transition">
+          <button onclick="routeToPlace(${place.lat}, ${place.lng}, '${safeName}')" class="py-1.5 px-2.5 text-xs font-medium rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border border-white/10 transition">
             Route
           </button>
-          <button onclick="searchYoutubeForPlace('${safeName}')" title="Watch YouTube vlogs for this place" class="py-1.5 px-2.5 text-xs font-bold rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 transition">
+          <button onclick="openGoogleMapsRoute(${place.lat}, ${place.lng})" title="Open directly in Google Maps navigation" class="py-1.5 px-2.5 text-xs font-bold rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-400/30 transition flex items-center space-x-1">
+            <span>🗺️ Maps</span>
+          </button>
+          <button onclick="searchYoutubeForPlace('${safeName}')" title="Watch YouTube vlogs for this place" class="py-1.5 px-2 text-xs font-bold rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 transition">
             ▶ Vlogs
           </button>
-          <button onclick="deletePlace('${place._id || place.id}')" title="Delete waypoint" class="p-1.5 text-slate-500 hover:text-rose-400 transition">
+          <button onclick="deletePlace('${place._id || place.id}')" title="Delete waypoint" class="p-1.5 text-slate-500 hover:text-rose-400 transition ml-auto">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
         </div>

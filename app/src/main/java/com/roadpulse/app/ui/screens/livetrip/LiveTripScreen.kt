@@ -3,9 +3,11 @@ package com.roadpulse.app.ui.screens.livetrip
 import android.content.Intent
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,10 +25,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.TwoWheeler
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -35,10 +39,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -51,16 +59,25 @@ import com.roadpulse.app.ui.components.GpsStatusBadge
 import com.roadpulse.app.ui.components.RouteMapView
 import com.roadpulse.app.ui.theme.CarbonDark
 import com.roadpulse.app.ui.theme.CardBorder
+import com.roadpulse.app.ui.theme.CardBorderGlow
 import com.roadpulse.app.ui.theme.ElectricBlue
+import com.roadpulse.app.ui.theme.HyperCyan
 import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
+import com.roadpulse.app.ui.theme.ObsidianGlass
+import com.roadpulse.app.ui.theme.ObsidianSurface
+import com.roadpulse.app.ui.theme.OptimalGreen
 import com.roadpulse.app.ui.theme.RacingRed
 import com.roadpulse.app.ui.theme.SportAmber
 import com.roadpulse.app.ui.theme.SuccessGreen
 import com.roadpulse.app.ui.theme.TextMuted
 import com.roadpulse.app.ui.theme.TextPrimary
 import com.roadpulse.app.ui.theme.TextSecondary
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.atan
 import kotlin.math.roundToInt
 
 @Composable
@@ -85,6 +102,29 @@ fun LiveTripScreen(
         label = "pulseAlpha"
     )
 
+    // Calculate start timestamp when ride began
+    val startedAtString = remember(metrics.elapsedTimeMs, metrics.tripStatus) {
+        if (metrics.tripStatus != TripStatus.IDLE && metrics.elapsedTimeMs > 0) {
+            val startTimeMs = System.currentTimeMillis() - metrics.elapsedTimeMs
+            val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+            "Started at " + sdf.format(Date(startTimeMs))
+        } else {
+            "Ready to Record"
+        }
+    }
+
+    // Physics-based lean angle estimation from lateral G (theta = atan(G_lat))
+    val leanAngleDegrees = remember(liveGForce.lateralG) {
+        val rawDegrees = Math.toDegrees(atan(liveGForce.lateralG.toDouble())).toFloat()
+        rawDegrees.coerceIn(-60f, 60f)
+    }
+
+    val animatedLean by animateFloatAsState(
+        targetValue = leanAngleDegrees,
+        animationSpec = tween(120),
+        label = "LeanAngleAnimation"
+    )
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -103,24 +143,23 @@ fun LiveTripScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(horizontal = 14.dp, vertical = 12.dp)
                 .align(Alignment.TopCenter)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .background(MidnightCard.copy(alpha = 0.94f))
-                    .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
-                    .padding(16.dp)
+                    .background(ObsidianGlass.copy(alpha = 0.95f))
+                    .border(1.dp, CardBorderGlow, RoundedCornerShape(20.dp))
+                    .padding(14.dp)
             ) {
-                // Header Status Row
+                // Header Status Row: REC LIVE + Started At + GPS
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Status Pill
                     Row(
                         modifier = Modifier
                             .background(CarbonDark, shape = RoundedCornerShape(30.dp))
@@ -149,14 +188,22 @@ fun LiveTripScreen(
                         )
                     }
 
-                    // GPS Status Badge
+                    // Started At timestamp callout
+                    Text(
+                        text = startedAtString,
+                        color = HyperCyan,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace
+                    )
+
                     GpsStatusBadge(
                         gpsStatus = metrics.gpsStatus,
                         accuracyMeters = metrics.accuracyMeters
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Primary Speed Reading Row
                 Row(
@@ -167,25 +214,25 @@ fun LiveTripScreen(
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = "${metrics.currentSpeedKmh.roundToInt()}",
-                            color = NeonCyan,
-                            fontSize = 48.sp,
+                            color = HyperCyan,
+                            fontSize = 46.sp,
                             fontWeight = FontWeight.Black,
                             fontFamily = FontFamily.Monospace,
                             letterSpacing = (-2).sp
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                        Column(modifier = Modifier.padding(bottom = 6.dp)) {
                             Text(
                                 text = "KM/H",
-                                color = TextSecondary,
+                                color = TextPrimary,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 1.sp
                             )
                             Text(
-                                text = "CURRENT SPEED",
+                                text = "DIGITAL SPEED",
                                 color = TextMuted,
-                                fontSize = 9.sp,
+                                fontSize = 8.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -199,42 +246,42 @@ fun LiveTripScreen(
                         Text(
                             text = "PEAK SPEED",
                             color = TextMuted,
-                            fontSize = 9.sp,
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
                         )
                         Text(
                             text = "${metrics.maxSpeedKmh.roundToInt()} km/h",
                             color = RacingRed,
-                            fontSize = 15.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Black,
                             fontFamily = FontFamily.Monospace
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Divider line
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(1.dp)
-                        .background(CardBorder.copy(alpha = 0.6f))
+                        .background(CardBorder.copy(alpha = 0.5f))
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // 4-Column Secondary Telemetry Grid
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     HudStatPill(
                         label = "DIST",
                         value = String.format(Locale.US, "%.2f", metrics.totalDistanceKm),
                         unit = "KM",
-                        color = NeonCyan,
+                        color = HyperCyan,
                         modifier = Modifier.weight(1f)
                     )
                     HudStatPill(
@@ -245,23 +292,32 @@ fun LiveTripScreen(
                         modifier = Modifier.weight(1.1f)
                     )
                     HudStatPill(
-                        label = "AVG",
+                        label = "AVG SPEED",
                         value = "${metrics.avgMovingSpeedKmh.roundToInt()}",
                         unit = "KM/H",
                         color = ElectricBlue,
                         modifier = Modifier.weight(1f)
                     )
                     HudStatPill(
-                        label = "G-FORCE",
-                        value = String.format(Locale.US, "%.2f", liveGForce.maxG),
+                        label = "LAT G",
+                        value = String.format(Locale.US, "%.2f", liveGForce.lateralG),
                         unit = "G",
-                        color = NeonCyan,
+                        color = OptimalGreen,
                         modifier = Modifier.weight(1f)
                     )
                 }
 
-                // Parent Safety Live Tracking Pill
                 Spacer(modifier = Modifier.height(10.dp))
+
+                // ================= LIVE MOTORCYCLE LEAN ANGLE METER =================
+                LiveLeanAngleBar(
+                    leanDegrees = animatedLean,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Parent Safety Live Tracking Pill
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -278,38 +334,38 @@ fun LiveTripScreen(
                             }
                             context.startActivity(Intent.createChooser(sendIntent, "Share Live Ride with Parents"))
                         }
-                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                        .padding(horizontal = 10.dp, vertical = 7.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(7.dp)
                                 .clip(CircleShape)
-                                .background(SuccessGreen)
+                                .background(OptimalGreen)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(7.dp))
                         Column {
                             Text(
                                 text = "PARENT LIVE SAFETY MONITOR",
                                 color = TextPrimary,
-                                fontSize = 10.sp,
+                                fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.5.sp
                             )
                             Text(
-                                text = if (metrics.tripStatus == TripStatus.RECORDING) "Broadcasting live GPS & speed to parents" else "Tap to share live tracking link with parents",
+                                text = if (metrics.tripStatus == TripStatus.RECORDING) "Broadcasting live GPS & speed to parents" else "Tap to share live tracking link",
                                 color = TextSecondary,
-                                fontSize = 9.sp
+                                fontSize = 8.sp
                             )
                         }
                     }
                     Icon(
                         imageVector = Icons.Default.Share,
-                        contentDescription = "Share with Parents",
-                        tint = NeonCyan,
-                        modifier = Modifier.size(18.dp)
+                        contentDescription = "Share",
+                        tint = HyperCyan,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
@@ -319,7 +375,7 @@ fun LiveTripScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 20.dp)
+                .padding(horizontal = 18.dp, vertical = 18.dp)
                 .align(Alignment.BottomCenter)
         ) {
             when (metrics.tripStatus) {
@@ -330,8 +386,8 @@ fun LiveTripScreen(
                             .fillMaxWidth()
                             .height(56.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = NeonCyan,
-                            contentColor = TextPrimary
+                            containerColor = HyperCyan,
+                            contentColor = CarbonDark
                         ),
                         shape = RoundedCornerShape(16.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
@@ -353,7 +409,7 @@ fun LiveTripScreen(
                 TripStatus.RECORDING -> {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         OutlinedButton(
                             onClick = { TripRecordingController.pauseTrip(context) },
@@ -362,7 +418,7 @@ fun LiveTripScreen(
                                 .height(56.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = MidnightCard.copy(alpha = 0.95f),
+                                containerColor = ObsidianGlass.copy(alpha = 0.95f),
                                 contentColor = SportAmber
                             ),
                             border = androidx.compose.foundation.BorderStroke(1.5.dp, SportAmber.copy(alpha = 0.8f))
@@ -370,7 +426,7 @@ fun LiveTripScreen(
                             Icon(
                                 imageVector = Icons.Default.Pause,
                                 contentDescription = null,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
@@ -402,7 +458,7 @@ fun LiveTripScreen(
                             Icon(
                                 imageVector = Icons.Default.Stop,
                                 contentDescription = null,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
@@ -417,7 +473,7 @@ fun LiveTripScreen(
                 TripStatus.PAUSED -> {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
                             onClick = { TripRecordingController.resumeTrip(context) },
@@ -426,15 +482,15 @@ fun LiveTripScreen(
                                 .height(56.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = NeonCyan,
-                                contentColor = TextPrimary
+                                containerColor = HyperCyan,
+                                contentColor = CarbonDark
                             ),
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
                                 contentDescription = null,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
@@ -466,7 +522,7 @@ fun LiveTripScreen(
                             Icon(
                                 imageVector = Icons.Default.Stop,
                                 contentDescription = null,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
@@ -478,6 +534,119 @@ fun LiveTripScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+// Live Motorcycle Lean Angle Meter Component
+@Composable
+fun LiveLeanAngleBar(
+    leanDegrees: Float,
+    modifier: Modifier = Modifier
+) {
+    val absLean = abs(leanDegrees).roundToInt()
+    val leanSide = when {
+        absLean < 2 -> "UPRIGHT"
+        leanDegrees < 0 -> "${absLean}° LEFT"
+        else -> "${absLean}° RIGHT"
+    }
+
+    val leanStatusColor = when {
+        absLean >= 45 -> RacingRed
+        absLean >= 30 -> SportAmber
+        absLean >= 15 -> HyperCyan
+        else -> OptimalGreen
+    }
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(CarbonDark.copy(alpha = 0.9f))
+            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.TwoWheeler,
+                        contentDescription = null,
+                        tint = leanStatusColor,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "LEAN ANGLE",
+                        color = TextMuted,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.6.sp
+                    )
+                }
+
+                Text(
+                    text = leanSide,
+                    color = leanStatusColor,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Canvas Tilt Indicator Bar (-50° Left to +50° Right)
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+            ) {
+                val width = size.width
+                val height = size.height
+                val midX = width / 2f
+
+                // Background slot track
+                drawLine(
+                    color = Color(0xFF1E2538),
+                    start = Offset(0f, height / 2f),
+                    end = Offset(width, height / 2f),
+                    strokeWidth = 6.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+
+                // Center Notch (0° Upright marker)
+                drawLine(
+                    color = Color.White.copy(alpha = 0.7f),
+                    start = Offset(midX, 0f),
+                    end = Offset(midX, height),
+                    strokeWidth = 2.dp.toPx(),
+                    cap = StrokeCap.Square
+                )
+
+                // Lean offset line from center
+                val maxScaleDeg = 50f
+                val clampedLean = leanDegrees.coerceIn(-maxScaleDeg, maxScaleDeg)
+                val indicatorX = midX + (clampedLean / maxScaleDeg) * (midX - 10.dp.toPx())
+
+                drawLine(
+                    color = leanStatusColor,
+                    start = Offset(midX, height / 2f),
+                    end = Offset(indicatorX, height / 2f),
+                    strokeWidth = 6.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+
+                // Apex cursor dot
+                drawCircle(
+                    color = Color.White,
+                    radius = 4.dp.toPx(),
+                    center = Offset(indicatorX, height / 2f)
+                )
             }
         }
     }
@@ -496,13 +665,13 @@ private fun HudStatPill(
             .clip(RoundedCornerShape(12.dp))
             .background(CarbonDark.copy(alpha = 0.85f))
             .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .padding(horizontal = 8.dp, vertical = 7.dp)
     ) {
         Column {
             Text(
                 text = label,
                 color = TextMuted,
-                fontSize = 9.sp,
+                fontSize = 8.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 0.5.sp
             )
@@ -530,4 +699,3 @@ private fun HudStatPill(
         }
     }
 }
-

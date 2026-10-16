@@ -1,5 +1,10 @@
 package com.roadpulse.app.ui.navigation
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -12,6 +17,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,8 +27,11 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.roadpulse.app.ui.theme.CardBorder
+import com.roadpulse.app.ui.theme.CardBorderGlow
+import com.roadpulse.app.ui.theme.HyperCyan
 import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
+import com.roadpulse.app.ui.theme.ObsidianGlass
 import com.roadpulse.app.ui.theme.RacingRed
 import com.roadpulse.app.ui.theme.TextMuted
 
@@ -35,18 +44,39 @@ fun BottomBar(
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry.value?.destination?.route
 
+    val infiniteTransition = rememberInfiniteTransition(label = "pulseRec")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(700),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "recDotPulse"
+    )
+
     NavigationBar(
-        modifier = modifier.border(width = 1.dp, color = CardBorder),
-        containerColor = MidnightCard,
-        tonalElevation = 6.dp
+        modifier = modifier
+            .background(ObsidianGlass)
+            .border(width = 1.dp, color = CardBorder),
+        containerColor = ObsidianGlass,
+        tonalElevation = 8.dp
     ) {
         Screen.bottomNavItems.forEach { screen ->
-            val selected = currentRoute == screen.route
+            val isSelected = when (screen) {
+                Screen.Dashboard -> currentRoute == Screen.Dashboard.route
+                Screen.Trips -> currentRoute == Screen.Trips.route || currentRoute == Screen.LiveTrip.route
+                Screen.Analysis -> currentRoute == Screen.Analysis.route || currentRoute == "analytics"
+                Screen.Settings -> currentRoute == Screen.Settings.route || currentRoute == Screen.Profile.route
+                else -> currentRoute == screen.route
+            }
+
             NavigationBarItem(
-                selected = selected,
+                selected = isSelected,
                 onClick = {
-                    if (currentRoute != screen.route) {
-                        navController.navigate(screen.route) {
+                    val targetRoute = screen.route
+                    if (currentRoute != targetRoute) {
+                        navController.navigate(targetRoute) {
                             popUpTo(Screen.Dashboard.route) {
                                 saveState = true
                             }
@@ -60,17 +90,17 @@ fun BottomBar(
                         Icon(
                             imageVector = screen.icon,
                             contentDescription = screen.title,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(24.dp)
                         )
-                        // Active recording red dot badge on LiveTrip tab
-                        if (screen == Screen.LiveTrip && isRecording) {
+                        // Active recording glowing red dot badge on Trips tab
+                        if ((screen == Screen.Trips || screen == Screen.LiveTrip) && isRecording) {
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(9.dp)
                                     .align(Alignment.TopEnd)
-                                    .offset(x = 2.dp, y = (-2).dp)
+                                    .offset(x = 3.dp, y = (-3).dp)
                                     .clip(CircleShape)
-                                    .background(RacingRed)
+                                    .background(RacingRed.copy(alpha = pulseAlpha))
                             )
                         }
                     }
@@ -78,8 +108,9 @@ fun BottomBar(
                 label = {
                     Text(
                         text = screen.title,
-                        fontSize = 10.sp,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                        fontSize = 11.sp,
+                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                        letterSpacing = 0.5.sp
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
@@ -87,7 +118,7 @@ fun BottomBar(
                     selectedTextColor = NeonCyan,
                     unselectedIconColor = TextMuted,
                     unselectedTextColor = TextMuted,
-                    indicatorColor = NeonCyan.copy(alpha = 0.12f)
+                    indicatorColor = NeonCyan.copy(alpha = 0.14f)
                 )
             )
         }
