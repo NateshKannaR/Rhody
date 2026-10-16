@@ -32,7 +32,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddLocation
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CheckCircle
@@ -47,16 +46,19 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.TwoWheeler
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -116,16 +118,14 @@ import com.roadpulse.app.ui.theme.TextPrimary
 import com.roadpulse.app.ui.theme.TextSecondary
 import java.util.Locale
 
-// Data model for rider's saved places & motorcycle twisties
-data class SavedPlace(
-    val id: String,
+// Data model for motorcycle component health lifecycle
+data class ComponentHealth(
     val name: String,
-    val category: String, // "Twisties", "Pit Stop", "Expressway", "Mountain Pass"
-    val latitude: Double,
-    val longitude: Double,
-    val description: String,
-    val distanceApprox: String,
-    val highlight: String
+    val intervalKm: Int,
+    val remainingKm: Int,
+    val percentage: Int,
+    val statusText: String,
+    val color: Color
 )
 
 // Data model for real YouTube motovlog & telemetry video guides
@@ -173,71 +173,19 @@ fun DashboardScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryFilter by remember { mutableStateOf("All") }
 
-    // Dialog state for adding a custom place
-    var showAddPlaceDialog by remember { mutableStateOf(false) }
-    var newPlaceName by remember { mutableStateOf("") }
-    var newPlaceCategory by remember { mutableStateOf("Twisties") }
-    var newPlaceLat by remember { mutableStateOf("") }
-    var newPlaceLng by remember { mutableStateOf("") }
-    var newPlaceDesc by remember { mutableStateOf("") }
-
-    // Curated real saved places on Google Maps (Twisties, Pit Stops, Straights)
-    val savedPlaces = remember {
-        mutableStateListOf(
-            SavedPlace(
-                id = "p1",
-                name = "Nandi Hills Peak & Twisties",
-                category = "Twisties",
-                latitude = 13.3702,
-                longitude = 77.6835,
-                description = "36 Hairpin Curves • High-Grip Mountain Asphalt",
-                distanceApprox = "42 km away",
-                highlight = "Apex Lean Rating: 9.6/10"
-            ),
-            SavedPlace(
-                id = "p2",
-                name = "Biker's Highway Cafe NH44",
-                category = "Pit Stop",
-                latitude = 13.1989,
-                longitude = 77.7068,
-                description = "Biker Pit Stop • 97 High Octane Petrol & Coffee",
-                distanceApprox = "18 km away",
-                highlight = "Tire Air & Diagnostics Station"
-            ),
-            SavedPlace(
-                id = "p3",
-                name = "Kolar Expressway Straights",
-                category = "Expressway",
-                latitude = 13.1378,
-                longitude = 78.1291,
-                description = "6-Lane Smooth Expressway • Top Speed & Aerodynamics",
-                distanceApprox = "56 km away",
-                highlight = "Sprint Benchmark Sector"
-            ),
-            SavedPlace(
-                id = "p4",
-                name = "Agumbe Rainforest Twisties",
-                category = "Mountain Pass",
-                latitude = 13.5042,
-                longitude = 75.0931,
-                description = "Famous Sunset Ghats • Technical Counter-steering",
-                distanceApprox = "320 km away",
-                highlight = "Legendary Wet Tarmac Route"
-            ),
-            SavedPlace(
-                id = "p5",
-                name = "Yercaud 20 Hairpins Loop",
-                category = "Mountain Pass",
-                latitude = 11.7753,
-                longitude = 78.2093,
-                description = "20 Tight Hairpin Bends • Steep Incline Climbing",
-                distanceApprox = "215 km away",
-                highlight = "Extreme Lean Practice"
-            )
+    // Motorcycle Component Preventative Health Lifecycles
+    val bikeComponents = remember {
+        listOf(
+            ComponentHealth("Engine Oil & Filter", 4000, 1150, 71, "OPTIMAL (71%)", OptimalGreen),
+            ComponentHealth("Drive Chain & Slack", 500, 150, 30, "LUBE SOON (30%)", SportAmber),
+            ComponentHealth("High-Flow Air Filter", 10000, 5150, 51, "OPTIMAL (51%)", OptimalGreen),
+            ComponentHealth("NGK Spark Plug", 12000, 7150, 60, "OPTIMAL (60%)", OptimalGreen),
+            ComponentHealth("Radiator Coolant", 15000, 8150, 54, "OPTIMAL (54%)", OptimalGreen),
+            ComponentHealth("Sintered Brake Pads", 8000, 4150, 52, "OPTIMAL (52%)", OptimalGreen)
         )
     }
 
-    // Curated real YouTube motorcycle telemetry & route videos
+    // Curated real YouTube motorcycle telemetry & maintenance guides
     val youtubeVideos = remember {
         listOf(
             VideoRecommendation(
@@ -249,28 +197,20 @@ fun DashboardScreen(
                 viewCount = "480K views"
             ),
             VideoRecommendation(
-                id = "9bZkp7q19f0",
-                title = "Nandi Hills 36 Hairpins Cornering & Lean Angles (Dawn Motovlog)",
-                channel = "Apex Motovlogs India",
-                duration = "15:20",
-                category = "Places",
-                viewCount = "310K views"
-            ),
-            VideoRecommendation(
-                id = "e-ORhEE9VVg",
-                title = "NH44 High Speed Biker Breakfast Run - Bangalore to Kolar",
-                channel = "Throttle Pulse",
-                duration = "18:05",
-                category = "Places",
-                viewCount = "220K views"
-            ),
-            VideoRecommendation(
                 id = "3JZ_D3ELwOQ",
                 title = "Yamaha MT-15 V2 Maintenance: Tire Pressure, Chain Slack & ECU",
                 channel = "Trackday Mechanics",
                 duration = "10:30",
-                category = "Bike",
+                category = "Maintenance",
                 viewCount = "195K views"
+            ),
+            VideoRecommendation(
+                id = "e-ORhEE9VVg",
+                title = "Engine Oil & Filter Change (Yamalube 10W40 Full Synthetic)",
+                channel = "Apex Performance Garage",
+                duration = "14:10",
+                category = "Maintenance",
+                viewCount = "280K views"
             ),
             VideoRecommendation(
                 id = "bW3l5eSgB2E",
@@ -283,25 +223,11 @@ fun DashboardScreen(
         )
     }
 
-    // Filtered lists based on search query
-    val filteredPlaces = remember(searchQuery, selectedCategoryFilter, savedPlaces) {
-        savedPlaces.filter { place ->
-            val matchesCategory = selectedCategoryFilter == "All" ||
-                    (selectedCategoryFilter == "Places" && (place.category == "Twisties" || place.category == "Mountain Pass" || place.category == "Expressway")) ||
-                    place.category.equals(selectedCategoryFilter, ignoreCase = true)
-            val matchesQuery = searchQuery.isBlank() ||
-                    place.name.contains(searchQuery, ignoreCase = true) ||
-                    place.category.contains(searchQuery, ignoreCase = true) ||
-                    place.description.contains(searchQuery, ignoreCase = true)
-            matchesCategory && matchesQuery
-        }
-    }
-
     val filteredVideos = remember(searchQuery, selectedCategoryFilter) {
         youtubeVideos.filter { video ->
             val matchesCategory = selectedCategoryFilter == "All" ||
                     (selectedCategoryFilter == "Bike" && video.category == "Bike") ||
-                    (selectedCategoryFilter == "Places" && video.category == "Places") ||
+                    (selectedCategoryFilter == "Maintenance" && video.category == "Maintenance") ||
                     (selectedCategoryFilter == "Guides" && video.category == "Guides")
             val matchesQuery = searchQuery.isBlank() ||
                     video.title.contains(searchQuery, ignoreCase = true) ||
@@ -868,7 +794,7 @@ fun DashboardScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             // Filter Chips Row
-            val filterChips = listOf("All", "Places", "Bike", "Guides")
+            val filterChips = listOf("All", "Maintenance", "Bike", "Guides")
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -932,7 +858,7 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // ================= 5. SAVED PLACES IN GOOGLE MAPS =================
+        // ================= 5. MOTORCYCLE WHOLE MANAGEMENT HUB =================
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -943,65 +869,401 @@ fun DashboardScreen(
             ) {
                 Column {
                     Text(
-                        text = "SAVED PLACES & TWISTIES",
+                        text = "MOTORCYCLE WHOLE MANAGEMENT",
                         color = TextPrimary,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 1.sp
                     )
                     Text(
-                        text = "Synced with Google Maps Navigation",
+                        text = "Engineering Specs • Maintenance Lifecycles • Legal Docs",
                         color = HyperCyan,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
 
-                IconButton(
-                    onClick = { showAddPlaceDialog = true },
+                Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(ObsidianSurface)
-                        .border(1.dp, CardBorder, CircleShape)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(HyperCyan.copy(alpha = 0.15f))
+                        .border(1.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AddLocation,
-                        contentDescription = "Save New Location",
-                        tint = HyperCyan,
-                        modifier = Modifier.size(18.dp)
+                    Text(
+                        text = "14,850 KM",
+                        color = HyperCyan,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (filteredPlaces.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MidnightCard)
-                        .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-                        .padding(20.dp),
-                    contentAlignment = Alignment.Center
+            // Technical Specs Matrix Grid
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MidnightCard)
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                    .padding(14.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "YAMAHA MT-15 V2 SPEC MATRIX",
+                            color = TextSecondary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.8.sp
+                        )
+                        Text(
+                            text = "BS6 OBD-2",
+                            color = OptimalGreen,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        SpecCell("ENGINE", "155cc VVA", "Liquid-Cooled 4V", modifier = Modifier.weight(1f))
+                        SpecCell("POWER", "18.4 PS", "@ 10,000 RPM", modifier = Modifier.weight(1f))
+                        SpecCell("TORQUE", "14.1 Nm", "@ 7,500 RPM", modifier = Modifier.weight(1f))
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        SpecCell("GEARBOX", "6-Speed", "Assist & Slipper", modifier = Modifier.weight(1f))
+                        SpecCell("FUEL TANK", "10 Liters", "1.5L Reserve", modifier = Modifier.weight(1f))
+                        SpecCell("WEIGHT", "141 kg", "Dual ABS 282mm", modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Preventative Maintenance Component Lifecycles
+            Text(
+                text = "PREVENTATIVE COMPONENT HEALTH",
+                color = TextSecondary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.8.sp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                bikeComponents.forEach { comp ->
+                    ComponentHealthRow(comp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Legal Document Expiries & RSA
+            Text(
+                text = "LEGAL COMPLIANCE & ROADSIDE RSA",
+                color = TextSecondary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.8.sp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                LegalDocCard(
+                    title = "INSURANCE",
+                    policy = "Bajaj Allianz #88219",
+                    status = "43 Days Left",
+                    color = OptimalGreen,
+                    modifier = Modifier.weight(1f)
+                )
+                LegalDocCard(
+                    title = "EMISSION PUC",
+                    policy = "KA01-PUC-9021",
+                    status = "59 Days Left",
+                    color = SportAmber,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 24x7 RSA Hotline
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(ObsidianSurface)
+                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                    .clickable { launchEmergencyCall(context, "18004201600") }
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Phone,
+                            contentDescription = null,
+                            tint = HyperCyan,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "YAMAHA 24x7 ROADSIDE ASSISTANCE",
+                                color = TextPrimary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Hotline: 1800-420-1600 (Tap to Call)",
+                                color = HyperCyan,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
                     Text(
-                        text = "No saved places matched \"$searchQuery\"",
-                        color = TextSecondary,
-                        fontSize = 12.sp
+                        text = "CALL",
+                        color = OptimalGreen,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
                     )
                 }
-            } else {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Fuel Economy & Mileage Calculator Stats
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MidnightCard)
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                    .padding(14.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.LocalGasStation,
+                                contentDescription = null,
+                                tint = SportAmber,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "FUEL LOG & MILEAGE CALCULATOR",
+                                color = TextPrimary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.8.sp
+                            )
+                        }
+                        Text(
+                            text = "XP95 OCTANE",
+                            color = SportAmber,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        SpecCell("AVG MILEAGE", "47.8 KM/L", "Calculated real", modifier = Modifier.weight(1f))
+                        SpecCell("COST / KM", "₹2.14", "Per kilometer", modifier = Modifier.weight(1f))
+                        SpecCell("CONSUMED", "24.7 Liters", "Last 3 fill-ups", modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(22.dp))
+
+        // ================= 5.5 BIKE PARENTING & GUARDIAN SAFETY BEACON =================
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "BIKE PARENTING & SAFETY BEACON",
+                        color = TextPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = "Live Ride Sharing • Speed Warning Alerts • Instant SOS",
+                        color = OptimalGreen,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(OptimalGreen.copy(alpha = 0.15f))
+                        .border(1.dp, OptimalGreen.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    filteredPlaces.forEach { place ->
-                        SavedPlaceCard(
-                            place = place,
-                            onNavigateInGoogleMaps = {
-                                launchGoogleMaps(context, place.latitude, place.longitude, place.name)
+                    Text(
+                        text = "BEACON ACTIVE",
+                        color = OptimalGreen,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Guardian Safety Card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MidnightCard)
+                    .border(1.dp, OptimalGreen.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                    .padding(14.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "GUARDIAN CONTACT",
+                                color = TextMuted,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Family Guardian (Dad & Mom)",
+                                color = TextPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "+91 98765 43210",
+                                color = HyperCyan,
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+
+                        // Call SOS Button
+                        Button(
+                            onClick = { launchEmergencyCall(context, "+919876543210") },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = RacingRed,
+                                contentColor = TextPrimary
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Phone,
+                                contentDescription = "Emergency Call",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("SOS", fontWeight = FontWeight.Black, fontSize = 11.sp)
+                        }
+                    }
+
+                    // Speed Warning Threshold Indicator
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(ObsidianSurface)
+                            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                            .padding(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = SportAmber,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Parent Speed Limit Alert",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp
+                                )
                             }
+                            Text(
+                                text = "95 km/h MAX",
+                                color = SportAmber,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                    }
+
+                    // 1-Tap WhatsApp Share Ride Button
+                    Button(
+                        onClick = { shareLiveRideViaWhatsApp(context, metrics.currentSpeedKmh) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = OptimalGreen,
+                            contentColor = CarbonDark
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "SHARE LIVE BEACON VIA WHATSAPP",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.5.sp
                         )
                     }
                 }
@@ -1093,133 +1355,6 @@ fun DashboardScreen(
         Spacer(modifier = Modifier.height(30.dp))
     }
 
-    // ================= ADD SAVED LOCATION MODAL DIALOG =================
-    if (showAddPlaceDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddPlaceDialog = false },
-            containerColor = MidnightCard,
-            title = {
-                Text(
-                    text = "SAVE LOCATION TO MAPS",
-                    color = HyperCyan,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp
-                )
-            },
-            text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    OutlinedTextField(
-                        value = newPlaceName,
-                        onValueChange = { newPlaceName = it },
-                        label = { Text("Place Name (e.g. Yelagiri Hills)", color = TextSecondary, fontSize = 11.sp) },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = HyperCyan,
-                            unfocusedBorderColor = CardBorder,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    OutlinedTextField(
-                        value = newPlaceCategory,
-                        onValueChange = { newPlaceCategory = it },
-                        label = { Text("Category (Twisties / Pit Stop / Highway)", color = TextSecondary, fontSize = 11.sp) },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = HyperCyan,
-                            unfocusedBorderColor = CardBorder,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = newPlaceLat,
-                            onValueChange = { newPlaceLat = it },
-                            label = { Text("Latitude", color = TextSecondary, fontSize = 11.sp) },
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = HyperCyan,
-                                unfocusedBorderColor = CardBorder,
-                                focusedTextColor = TextPrimary,
-                                unfocusedTextColor = TextPrimary
-                            ),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = newPlaceLng,
-                            onValueChange = { newPlaceLng = it },
-                            label = { Text("Longitude", color = TextSecondary, fontSize = 11.sp) },
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = HyperCyan,
-                                unfocusedBorderColor = CardBorder,
-                                focusedTextColor = TextPrimary,
-                                unfocusedTextColor = TextPrimary
-                            ),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    OutlinedTextField(
-                        value = newPlaceDesc,
-                        onValueChange = { newPlaceDesc = it },
-                        label = { Text("Description / Road Condition", color = TextSecondary, fontSize = 11.sp) },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = HyperCyan,
-                            unfocusedBorderColor = CardBorder,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val lat = newPlaceLat.toDoubleOrNull() ?: 12.9716
-                        val lng = newPlaceLng.toDoubleOrNull() ?: 77.5946
-                        if (newPlaceName.isNotBlank()) {
-                            savedPlaces.add(
-                                SavedPlace(
-                                    id = "p_${System.currentTimeMillis()}",
-                                    name = newPlaceName,
-                                    category = newPlaceCategory.ifBlank { "Twisties" },
-                                    latitude = lat,
-                                    longitude = lng,
-                                    description = newPlaceDesc.ifBlank { "Custom saved destination" },
-                                    distanceApprox = "Custom Route",
-                                    highlight = "Custom Rider Pin"
-                                )
-                            )
-                            Toast.makeText(context, "Saved $newPlaceName to Google Maps list", Toast.LENGTH_SHORT).show()
-                            showAddPlaceDialog = false
-                            newPlaceName = ""
-                            newPlaceLat = ""
-                            newPlaceLng = ""
-                            newPlaceDesc = ""
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = HyperCyan, contentColor = CarbonDark)
-                ) {
-                    Text("SAVE PLACE", fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddPlaceDialog = false }) {
-                    Text("CANCEL", color = TextSecondary)
-                }
-            }
-        )
     }
 }
 
@@ -1286,119 +1421,180 @@ fun BikeVitalMiniPill(
 }
 
 @Composable
-fun SavedPlaceCard(
-    place: SavedPlace,
-    onNavigateInGoogleMaps: () -> Unit,
+fun SpecCell(
+    label: String,
+    value: String,
+    sub: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(ObsidianSurface)
+            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+            .padding(8.dp)
+    ) {
+        Column {
+            Text(
+                text = label,
+                color = TextMuted,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = value,
+                color = TextPrimary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace
+            )
+            Text(
+                text = sub,
+                color = HyperCyan,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+@Composable
+fun ComponentHealthRow(
+    comp: ComponentHealth,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MidnightCard)
-            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-            .clickable { onNavigateInGoogleMaps() }
-            .padding(14.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(ObsidianSurface)
+            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+            .padding(10.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Category Badge
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(
-                                when (place.category) {
-                                    "Twisties" -> HyperCyan.copy(alpha = 0.15f)
-                                    "Mountain Pass" -> SportAmber.copy(alpha = 0.15f)
-                                    "Expressway" -> CobaltBlue.copy(alpha = 0.15f)
-                                    else -> OptimalGreen.copy(alpha = 0.15f)
-                                }
-                            )
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = place.category.uppercase(),
-                            color = when (place.category) {
-                                "Twisties" -> HyperCyan
-                                "Mountain Pass" -> SportAmber
-                                "Expressway" -> ElectricBlue
-                                else -> OptimalGreen
-                            },
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 0.6.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Text(
-                        text = place.distanceApprox,
-                        color = TextMuted,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    text = place.name,
+                    text = comp.name,
                     color = TextPrimary,
-                    fontSize = 14.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
                 )
-
                 Text(
-                    text = place.description,
-                    color = TextSecondary,
-                    fontSize = 11.sp,
-                    maxLines = 1
-                )
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Text(
-                    text = "★ ${place.highlight}",
-                    color = HyperCyan,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.SemiBold
+                    text = comp.statusText,
+                    color = comp.color,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = FontFamily.Monospace
                 )
             }
 
-            Spacer(modifier = Modifier.width(10.dp))
-
-            // 1-Tap Google Maps Navigation Button
-            Button(
-                onClick = onNavigateInGoogleMaps,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = OptimalGreen,
-                    contentColor = CarbonDark
-                ),
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = 12.dp,
-                    vertical = 8.dp
-                )
+            // Progress bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(Color.White.copy(alpha = 0.08f))
             ) {
-                Icon(
-                    imageVector = Icons.Default.Directions,
-                    contentDescription = "Navigate",
-                    modifier = Modifier.size(16.dp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction = comp.percentage / 100f)
+                        .height(5.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(comp.color)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Text(
-                    text = "MAPS",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black
+                    text = "Interval: ${comp.intervalKm} KM",
+                    color = TextMuted,
+                    fontSize = 8.sp
+                )
+                Text(
+                    text = "${comp.remainingKm} KM remaining",
+                    color = TextSecondary,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
                 )
             }
         }
+    }
+}
+
+@Composable
+fun LegalDocCard(
+    title: String,
+    policy: String,
+    status: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(ObsidianSurface)
+            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+            .padding(10.dp)
+    ) {
+        Column {
+            Text(
+                text = title,
+                color = TextMuted,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = policy,
+                color = TextPrimary,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = status,
+                color = color,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Black
+            )
+        }
+    }
+}
+
+fun shareLiveRideViaWhatsApp(context: Context, speedKmh: Float) {
+    try {
+        val shareUrl = "https://rhodyy.vercel.app/?live=pilot-active"
+        val message = "🏍️ Rhody Live Ride Beacon:\nI am riding my bike right now!\nCurrent Speed: ${"%.1f".format(speedKmh)} km/h\nTrack my live location & safety status here:\n$shareUrl"
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("https://wa.me/?text=${Uri.encode(message)}")
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "WhatsApp not installed or unable to open", Toast.LENGTH_SHORT).show()
+    }
+}
+
+fun launchEmergencyCall(context: Context, phoneNumber: String) {
+    try {
+        val intent = Intent(Intent.ACTION_DIAL).apply {
+            data = Uri.parse("tel:$phoneNumber")
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "Unable to launch dialer", Toast.LENGTH_SHORT).show()
     }
 }
 

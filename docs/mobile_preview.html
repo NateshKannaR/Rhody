@@ -201,63 +201,65 @@
               </div>
             </div>
 
-            <!-- Connected Maps: Saved Places -->
+            <!-- Motorcycle Whole Management Hub -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-1.5">
-                  <svg class="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Saved Places on Map</h4>
+                  <span class="text-cyan-400">🔧</span>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Motorcycle Whole Management</h4>
                 </div>
-                <span class="text-[11px] text-cyan-400 font-medium cursor-pointer hover:underline">Google Maps Synced</span>
+                <span class="text-[11px] text-cyan-400 font-mono font-bold">14,850 KM</span>
               </div>
 
-              <!-- Places Carousel / List -->
+              <!-- Component Health Status -->
               <div class="space-y-2">
-                <div class="glass-card glass-card-hover rounded-xl p-3 flex items-center justify-between cursor-pointer" onclick="selectPlace('Nandi Hills Viewpoint', '62 km away • Twisties & Hairpins')">
-                  <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-                      ⛰️
-                    </div>
-                    <div>
-                      <h5 class="text-xs font-bold text-white">Nandi Hills Peak</h5>
-                      <p class="text-[10px] text-slate-400">62 km • Famous sunrise twisties</p>
-                    </div>
+                <div class="glass-card rounded-xl p-3 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-white">Engine Oil & Filter (Yamalube 10W40)</span>
+                    <span class="text-[10px] text-emerald-400 font-bold">OPTIMAL (71%)</span>
                   </div>
-                  <button class="px-2.5 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-[10px] font-semibold transition-colors">Route</button>
+                  <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-emerald-400 h-full rounded-full" style="width: 71%"></div>
+                  </div>
+                  <div class="flex justify-between text-[10px] text-slate-400">
+                    <span>Interval: 4,000 KM</span>
+                    <span class="text-white font-mono">1,150 KM remaining</span>
+                  </div>
                 </div>
 
-                <div class="glass-card glass-card-hover rounded-xl p-3 flex items-center justify-between cursor-pointer" onclick="selectPlace('Biker\'s Highway Cafe NH44', '34 km away • Pitstop')">
-                  <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                      ☕
-                    </div>
-                    <div>
-                      <h5 class="text-xs font-bold text-white">Biker's Highway Cafe NH44</h5>
-                      <p class="text-[10px] text-slate-400">34 km • Fuel & Breakfast Stop</p>
-                    </div>
+                <div class="glass-card rounded-xl p-3 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-white">Drive Chain Clean, Lube & Tension</span>
+                    <span class="text-[10px] text-amber-400 font-bold">CHECK SOON (30%)</span>
                   </div>
-                  <button class="px-2.5 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-[10px] font-semibold transition-colors">Route</button>
+                  <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-amber-400 h-full rounded-full" style="width: 30%"></div>
+                  </div>
+                  <div class="flex justify-between text-[10px] text-slate-400">
+                    <span>Interval: 500 KM</span>
+                    <span class="text-white font-mono">150 KM remaining</span>
+                  </div>
                 </div>
+              </div>
 
-                <div class="glass-card glass-card-hover rounded-xl p-3 flex items-center justify-between cursor-pointer" onclick="selectPlace('Kolar Gold Fields Track', '78 km away • Open Straights')">
-                  <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                      🏁
-                    </div>
-                    <div>
-                      <h5 class="text-xs font-bold text-white">Kolar Highway Straights</h5>
-                      <p class="text-[10px] text-slate-400">78 km • 4-lane smooth tarmac</p>
-                    </div>
+              <!-- Bike Parenting & Guardian Safety Beacon -->
+              <div class="glass-card rounded-xl p-3 space-y-2.5 border border-emerald-500/30">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-emerald-400">🛡️</span>
+                    <h5 class="text-xs font-bold text-white">Bike Parenting & Guardian Beacon</h5>
                   </div>
-                  <button class="px-2.5 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-[10px] font-semibold transition-colors">Route</button>
+                  <span class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">ACTIVE</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Guardian: Dad & Mom (+91 98765 43210) • Speed limit alert at 95 km/h.</p>
+                <div class="flex gap-2">
+                  <a href="https://wa.me/?text=Rhody%20Live%20Ride%20Beacon%20Active" target="_blank" class="flex-1 py-1.5 text-center bg-emerald-500 text-black font-bold text-[11px] rounded-lg">WhatsApp Share</a>
+                  <a href="tel:+919876543210" class="px-3 py-1.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold text-[11px] rounded-lg">SOS</a>
                 </div>
               </div>
             </div>
 
-            <!-- Universal Search (Places & YouTube Videos) -->
+            <!-- Universal Search (YouTube Guides & Mechanics) -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-1.5">

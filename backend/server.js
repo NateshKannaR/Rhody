@@ -389,78 +389,97 @@ const defaultMotorcyclePlaces = [
   }
 ];
 
-// GET /api/user/places
-app.get('/api/user/places', async (req, res) => {
+// ----------------------------------------------------
+// MOTORCYCLE WHOLE MANAGEMENT ENDPOINTS (PILLAR 1 & 4)
+// ----------------------------------------------------
+const defaultBikeManagement = {
+  specs: {
+    makeModel: 'Yamaha MT-15 V2 (BS6 OBD-2)',
+    engine: '155cc Liquid-Cooled 4V SOHC VVA',
+    power: '18.4 PS @ 10,000 RPM',
+    torque: '14.1 Nm @ 7,500 RPM',
+    gearbox: '6-Speed Constant Mesh w/ Assist & Slipper Clutch',
+    fuelTank: '10 Liters (1.5L Reserve)',
+    brakes: 'Dual Channel ABS (282mm Front / 220mm Rear Disc)',
+    kerbWeight: '141 kg',
+    currentOdometer: 14850
+  },
+  components: {
+    engineOil: { lastServiceOdo: 12000, intervalKm: 4000, name: 'Engine Oil & Filter (Yamalube 10W40)' },
+    driveChain: { lastServiceOdo: 14500, intervalKm: 500, name: 'Drive Chain Lube & Slack Adjust' },
+    airFilter: { lastServiceOdo: 10000, intervalKm: 10000, name: 'High-Flow Air Filter Element' },
+    sparkPlug: { lastServiceOdo: 10000, intervalKm: 12000, name: 'NGK Iridium Spark Plug' },
+    coolant: { lastServiceOdo: 8000, intervalKm: 15000, name: 'Radiator Glycol Coolant Flush' },
+    brakePads: { lastServiceOdo: 11000, intervalKm: 8000, name: 'Sintered Front & Rear Brake Pads' }
+  },
+  documents: {
+    rcNumber: 'TN-38-BZ-4242',
+    rcValidUntil: '2037-04-15',
+    insurancePolicy: 'BAJAJ-ALLIANZ-COMP-99824',
+    insuranceExpiry: '2026-11-28',
+    pucNumber: 'TN38PUC2026-092',
+    pucExpiry: '2026-12-14',
+    rsaPhone: '+91 1800 209 7979'
+  },
+  serviceHistory: [
+    { id: 'srv_1', date: '2026-08-10', odo: 12000, center: 'Yamaha Authorized Prime Service, Coimbatore', workDone: 'Periodic 3rd Service: Yamalube fully synthetic oil change, oil filter replacement, brake pad clean, chain degrease & tension set.', cost: 1850 },
+    { id: 'srv_2', date: '2026-04-12', odo: 8000, center: 'Apex Motosports Performance Garage', workDone: 'Radiator coolant flush, spark plug inspection, throttle body synchronization, steering cone bearing greasing.', cost: 2400 },
+    { id: 'srv_3', date: '2025-11-20', odo: 4000, center: 'Yamaha Authorized Prime Service, Coimbatore', workDone: 'Periodic 2nd Service: Engine oil renewal, chain lubrication, clutch free-play adjustment, ECU diagnostics test.', cost: 1320 }
+  ],
+  fuelLogs: [
+    { id: 'fuel_1', date: '2026-10-12', odo: 14850, liters: 8.5, costPerLiter: 102.6, totalCost: 872, fuelGrade: 'XP95 Octane', mileageKmPerL: 48.2 },
+    { id: 'fuel_2', date: '2026-09-28', odo: 14440, liters: 8.2, costPerLiter: 102.5, totalCost: 840, fuelGrade: 'XP95 Octane', mileageKmPerL: 47.6 },
+    { id: 'fuel_3', date: '2026-09-15', odo: 14050, liters: 8.0, costPerLiter: 102.8, totalCost: 822, fuelGrade: 'Standard Petrol', mileageKmPerL: 46.8 }
+  ]
+};
+
+// GET /api/user/bike-management
+app.get('/api/user/bike-management', async (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
   const decoded = verifyToken(token);
+  const userEmail = decoded ? decoded.email.toLowerCase() : 'guest';
 
   if (!db) {
-    return res.json({ success: true, places: defaultMotorcyclePlaces });
+    return res.json({ success: true, data: defaultBikeManagement });
   }
 
   try {
-    const filter = (decoded && decoded.email)
-      ? { $or: [{ userEmail: decoded.email.toLowerCase() }, { userEmail: 'guest' }] }
-      : { userEmail: 'guest' };
-
-    const dbPlaces = await db.collection('places').find(filter).sort({ createdAt: -1 }).toArray();
-    if (dbPlaces && dbPlaces.length > 0) {
-      return res.json({ success: true, places: dbPlaces });
+    const doc = await db.collection('bike_management').findOne({ userEmail });
+    if (doc) {
+      return res.json({ success: true, data: doc.data });
     }
-    res.json({ success: true, places: defaultMotorcyclePlaces });
+    res.json({ success: true, data: defaultBikeManagement });
   } catch (err) {
-    res.json({ success: true, places: defaultMotorcyclePlaces });
+    res.json({ success: true, data: defaultBikeManagement });
   }
 });
 
-// POST /api/user/places
-app.post('/api/user/places', async (req, res) => {
+// POST /api/user/bike-management
+app.post('/api/user/bike-management', async (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
   const decoded = verifyToken(token);
+  const userEmail = decoded ? decoded.email.toLowerCase() : 'guest';
 
   try {
-    const { name, category, lat, lng, altitude, notes } = req.body;
-    if (!name || lat === undefined || lng === undefined) {
-      return res.status(400).json({ error: 'Name, latitude, and longitude are required' });
-    }
-    const placeDoc = {
-      name: String(name).trim(),
-      category: category || 'waypoint', // 'garage', 'pass', 'fuel', 'cafe', 'track', 'waypoint'
-      lat: parseFloat(lat),
-      lng: parseFloat(lng),
-      altitude: altitude ? parseFloat(altitude) : null,
-      notes: notes ? String(notes).trim() : '',
-      userEmail: decoded ? decoded.email.toLowerCase() : 'guest',
-      createdAt: new Date()
-    };
-
+    const mgmtData = req.body;
     if (db) {
-      const result = await db.collection('places').insertOne(placeDoc);
-      placeDoc._id = result.insertedId;
-    } else {
-      placeDoc._id = 'local_' + Date.now();
+      await db.collection('bike_management').updateOne(
+        { userEmail },
+        { $set: { userEmail, data: mgmtData, updatedAt: new Date() } },
+        { upsert: true }
+      );
     }
-
-    res.status(201).json({ success: true, place: placeDoc });
+    res.json({ success: true, message: 'Motorcycle management records updated', data: mgmtData });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// DELETE /api/user/places/:id
+// DELETE /api/user/places/:id (Clean fallback for legacy calls)
 app.delete('/api/user/places/:id', async (req, res) => {
-  if (!db) return res.json({ success: true, message: 'Removed locally' });
-  try {
-    const id = req.params.id;
-    if (id && ObjectId.isValid(id)) {
-      await db.collection('places').deleteOne({ _id: new ObjectId(id) });
-    }
-    res.json({ success: true, message: 'Place removed' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  res.json({ success: true, message: 'Saved places removed' });
 });
 
 // ----------------------------------------------------

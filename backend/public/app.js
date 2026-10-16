@@ -113,75 +113,56 @@ var riderProfile = {
   gpsPrecision: 'sport'
 };
 
-// Curated Real Motorcycle Twisties & Radar Waypoints
-var defaultSavedPlaces = [
-  {
-    _id: 'wp_nandi',
-    id: 'wp_nandi',
-    name: 'Nandi Hills Apex Climb',
-    category: 'pass',
-    lat: 13.3702,
-    lng: 77.6835,
-    altitude: 1478,
-    notes: 'Epic morning mountain run with 40 hairpins & sweeping high-elevation corners.'
+// ----------------------------------------------------
+// PILLAR 1: MOTORCYCLE WHOLE MANAGEMENT DATA STATE
+// ----------------------------------------------------
+var bikeManagementData = {
+  specs: {
+    makeModel: 'Yamaha MT-15 V2 (BS6 OBD-2)',
+    engine: '155cc Liquid-Cooled 4V SOHC VVA',
+    power: '18.4 PS @ 10,000 RPM',
+    torque: '14.1 Nm @ 7,500 RPM',
+    gearbox: '6-Speed Constant Mesh w/ Assist & Slipper Clutch',
+    fuelTank: '10 Liters (1.5L Reserve)',
+    brakes: 'Dual Channel ABS (282mm Front / 220mm Rear Disc)',
+    kerbWeight: '141 kg',
+    currentOdometer: 14850
   },
-  {
-    _id: 'wp_bikers_cafe',
-    id: 'wp_bikers_cafe',
-    name: "Biker's Highway Cafe (NH44)",
-    category: 'garage',
-    lat: 13.0645,
-    lng: 77.5898,
-    altitude: 910,
-    notes: 'Popular superbike pitstop, high-octane fuel & tire pressure station.'
+  components: {
+    engineOil: { lastServiceOdo: 12000, intervalKm: 4000, name: 'Engine Oil & Filter (Yamalube 10W40)' },
+    driveChain: { lastServiceOdo: 14500, intervalKm: 500, name: 'Drive Chain Lube & Slack Adjust' },
+    airFilter: { lastServiceOdo: 10000, intervalKm: 10000, name: 'High-Flow Air Filter Element' },
+    sparkPlug: { lastServiceOdo: 10000, intervalKm: 12000, name: 'NGK Iridium Spark Plug' },
+    coolant: { lastServiceOdo: 8000, intervalKm: 15000, name: 'Radiator Glycol Coolant Flush' },
+    brakePads: { lastServiceOdo: 11000, intervalKm: 8000, name: 'Sintered Front & Rear Brake Pads' }
   },
-  {
-    _id: 'wp_kolar',
-    id: 'wp_kolar',
-    name: 'Kolar Fast Expressway Twisties',
-    category: 'track',
-    lat: 13.1362,
-    lng: 78.1291,
-    altitude: 822,
-    notes: 'Smooth asphalt 6-lane section with wide sweepers for high-speed aero testing.'
+  documents: {
+    rcNumber: 'TN-38-BZ-4242',
+    rcValidUntil: '2037-04-15',
+    insurancePolicy: 'BAJAJ-ALLIANZ-COMP-99824',
+    insuranceExpiry: '2026-11-28',
+    pucNumber: 'TN38PUC2026-092',
+    pucExpiry: '2026-12-14',
+    rsaPhone: '+91 1800 209 7979'
   },
-  {
-    _id: 'wp_agumbe',
-    id: 'wp_agumbe',
-    name: 'Agumbe Ghat Rainforest Twisties',
-    category: 'pass',
-    lat: 13.5042,
-    lng: 75.0934,
-    altitude: 826,
-    notes: 'Legendary 14 hairpin curves through Western Ghats rainforest canopy with 45° lean angles.'
-  },
-  {
-    _id: 'wp_yercaud',
-    id: 'wp_yercaud',
-    name: 'Yercaud 20-Hairpin Loop',
-    category: 'pass',
-    lat: 11.7753,
-    lng: 78.2093,
-    altitude: 1515,
-    notes: 'Challenging continuous hairpins with fresh grippy tarmac and cool mountain elevation.'
-  },
-  {
-    _id: 'wp_kolli',
-    id: 'wp_kolli',
-    name: 'Kolli Hills 70 Hairpin Pass',
-    category: 'pass',
-    lat: 11.2485,
-    lng: 78.3389,
-    altitude: 1300,
-    notes: 'The ultimate motorcycle test: 70 continuous hairpin bends climbing into misty peak.'
-  }
-];
+  serviceHistory: [
+    { id: 'srv_1', date: '2026-08-10', odo: 12000, center: 'Yamaha Authorized Prime Service, Coimbatore', workDone: 'Periodic 3rd Service: Yamalube fully synthetic oil change, oil filter replacement, brake pad clean, chain degrease & tension set.', cost: 1850 },
+    { id: 'srv_2', date: '2026-04-12', odo: 8000, center: 'Apex Motosports Performance Garage', workDone: 'Radiator coolant flush, spark plug inspection, throttle body synchronization, steering cone bearing greasing.', cost: 2400 },
+    { id: 'srv_3', date: '2025-11-20', odo: 4000, center: 'Yamaha Authorized Prime Service, Coimbatore', workDone: 'Periodic 2nd Service: Engine oil renewal, chain lubrication, clutch free-play adjustment, ECU diagnostics test.', cost: 1320 }
+  ],
+  fuelLogs: [
+    { id: 'fuel_1', date: '2026-10-12', odo: 14850, liters: 8.5, costPerLiter: 102.6, totalCost: 872, fuelGrade: 'XP95 Octane', mileageKmPerL: 48.2 },
+    { id: 'fuel_2', date: '2026-09-28', odo: 14440, liters: 8.2, costPerLiter: 102.5, totalCost: 840, fuelGrade: 'XP95 Octane', mileageKmPerL: 47.6 },
+    { id: 'fuel_3', date: '2026-09-15', odo: 14050, liters: 8.0, costPerLiter: 102.8, totalCost: 822, fuelGrade: 'Standard Petrol', mileageKmPerL: 46.8 }
+  ]
+};
 
-// Real Saved Places (Loaded exclusively from MongoDB Atlas / User Storage)
-var savedPlaces = [];
-var dashboardPlacesLayer = null;
-var dashboardActiveRoute = null;
-var currentDashCategoryFilter = 'all';
+// Guardian Parent Alert Configuration
+var guardianParentConfig = {
+  guardianName: 'Family Guardian (Dad & Mom)',
+  guardianPhone: '+91 98765 43210',
+  speedLimitKmh: 95
+};
 
 // Real YouTube Active Query
 var currentYoutubeQuery = 'Yamaha MT-15 V2 motorcycle review pure exhaust sound';
@@ -191,15 +172,15 @@ var currentYoutubeQuery = 'Yamaha MT-15 V2 motorcycle review pure exhaust sound'
 // ----------------------------------------------------
 document.addEventListener('DOMContentLoaded', function() {
   loadProfileFromStorage();
-  loadPlacesFromBackend();
+  loadBikeManagementFromStorage();
   renderDashboardProfile();
   renderDashboardBike();
+  renderBikeManagement();
   renderYoutubeDynamicHub();
   populateSettingsForm();
 
   // Initialize Maps with Leaflet
   ensureLeaflet(function() {
-    initDashboardMap();
     initTripsMap();
     initAnalysisMap();
   });
@@ -253,7 +234,7 @@ function ensureLeaflet(callback, attempt = 0) {
 // ----------------------------------------------------
 function switchMainView(viewName) {
   currentView = viewName;
-  const views = ['dashboard', 'trips', 'analysis', 'settings'];
+  const views = ['dashboard', 'trips', 'parenting', 'settings', 'analysis'];
 
   views.forEach(v => {
     const el = document.getElementById('view' + capitalizeFirst(v));
@@ -285,11 +266,12 @@ function switchMainView(viewName) {
     }
   });
 
+  if (viewName === 'parenting') {
+    renderParentingView();
+  }
+
   // Re-invalidate map sizes on tab change
   setTimeout(function() {
-    if (viewName === 'dashboard' && dashboardMapInstance) {
-      dashboardMapInstance.invalidateSize();
-    }
     if (viewName === 'trips' && tripsMapInstance) {
       tripsMapInstance.invalidateSize();
     }
@@ -498,600 +480,484 @@ function saveProfile() {
 }
 
 // ----------------------------------------------------
-// DASHBOARD: REAL SAVED PLACES & MAP CONNECTION
+// DASHBOARD: MOTORCYCLE WHOLE MANAGEMENT ENGINE (PILLAR 1 & 4)
 // ----------------------------------------------------
-function loadPlacesFromBackend() {
-  const cached = localStorage.getItem('rhody_saved_places');
+function loadBikeManagementFromStorage() {
+  const cached = localStorage.getItem('rhody_bike_management');
   if (cached) {
     try {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        savedPlaces = parsed;
+      if (parsed && parsed.specs) {
+        bikeManagementData = Object.assign({}, bikeManagementData, parsed);
       }
-    } catch (e) {
-      savedPlaces = [];
-    }
+    } catch (e) {}
   }
 
-  if (savedPlaces.length === 0) {
-    savedPlaces = defaultSavedPlaces.slice();
-  }
-
-  fetch('/api/user/places')
+  fetch('/api/user/bike-management')
     .then(r => r.json())
-    .then(data => {
-      if (data && Array.isArray(data.places) && data.places.length > 0) {
-        savedPlaces = data.places;
-        localStorage.setItem('rhody_saved_places', JSON.stringify(savedPlaces));
-      } else if (savedPlaces.length === 0) {
-        savedPlaces = defaultSavedPlaces.slice();
-        localStorage.setItem('rhody_saved_places', JSON.stringify(savedPlaces));
+    .then(res => {
+      if (res && res.data && res.data.specs) {
+        bikeManagementData = Object.assign({}, bikeManagementData, res.data);
+        saveBikeManagementToStorage(false);
       }
-      renderDashboardPlaces();
-      renderDashboardPlacesMarkers();
-      renderYoutubeDynamicHub();
+      renderBikeManagement();
+      renderParentingView();
     })
     .catch(() => {
-      if (savedPlaces.length === 0) {
-        savedPlaces = defaultSavedPlaces.slice();
+      renderBikeManagement();
+      renderParentingView();
+    });
+}
+
+function saveBikeManagementToStorage(syncBackend = true) {
+  try {
+    localStorage.setItem('rhody_bike_management', JSON.stringify(bikeManagementData));
+  } catch (e) {}
+
+  if (syncBackend) {
+    fetch('/api/user/bike-management', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bikeManagementData)
+    }).catch(() => {});
+  }
+}
+
+function renderBikeManagement() {
+  const specs = bikeManagementData.specs || {};
+  const comps = bikeManagementData.components || {};
+  const docs = bikeManagementData.documents || {};
+  const curOdo = specs.currentOdometer || 14850;
+
+  // 1. Technical Specs Matrix
+  const specEngine = document.getElementById('specEngine');
+  const specPower = document.getElementById('specPower');
+  const specGearbox = document.getElementById('specGearbox');
+  const specFuelTank = document.getElementById('specFuelTank');
+  const specBrakes = document.getElementById('specBrakes');
+  const specWeight = document.getElementById('specWeight');
+  const odoDisplay = document.getElementById('mgmtOdoDisplay');
+
+  if (specEngine) specEngine.textContent = specs.engine || '155cc Liquid-Cooled 4V SOHC VVA';
+  if (specPower) specPower.textContent = specs.power || '18.4 PS @ 10,000 RPM';
+  if (specGearbox) specGearbox.textContent = specs.gearbox || '6-Speed Constant Mesh w/ Slipper Clutch';
+  if (specFuelTank) specFuelTank.textContent = specs.fuelTank || '10 Liters (1.5L Reserve)';
+  if (specBrakes) specBrakes.textContent = specs.brakes || 'Dual Channel ABS (282mm Front / 220mm Rear Disc)';
+  if (specWeight) specWeight.textContent = specs.kerbWeight || '141 kg';
+  if (odoDisplay) odoDisplay.textContent = `${curOdo.toLocaleString()} KM`;
+
+  // 2. Scheduled Preventative Maintenance Lifecycles
+  updateComponentHealthBar('Oil', comps.engineOil, curOdo);
+  updateComponentHealthBar('Chain', comps.driveChain, curOdo);
+  updateComponentHealthBar('Air', comps.airFilter, curOdo);
+  updateComponentHealthBar('Plug', comps.sparkPlug, curOdo);
+  updateComponentHealthBar('Coolant', comps.coolant, curOdo);
+  updateComponentHealthBar('Brake', comps.brakePads, curOdo);
+
+  // 3. Legal Documents Compliance Countdown
+  if (docs.insuranceExpiry) {
+    const daysIns = calculateDaysRemaining(docs.insuranceExpiry);
+    const badge = document.getElementById('docInsuranceBadge');
+    if (badge) {
+      if (daysIns > 30) {
+        badge.textContent = `Valid till ${docs.insuranceExpiry} (${daysIns} days)`;
+        badge.className = 'text-[10px] text-emerald-400 font-bold block';
+      } else if (daysIns > 0) {
+        badge.textContent = `Expires in ${daysIns} days (${docs.insuranceExpiry})`;
+        badge.className = 'text-[10px] text-amber-400 font-bold block';
+      } else {
+        badge.textContent = `EXPIRED on ${docs.insuranceExpiry}`;
+        badge.className = 'text-[10px] text-rose-400 font-bold block';
       }
-      renderDashboardPlaces();
-      renderDashboardPlacesMarkers();
-    });
-}
-
-function savePlacesToStorage() {
-  localStorage.setItem('rhody_saved_places', JSON.stringify(savedPlaces));
-}
-
-function initDashboardMap() {
-  const container = document.getElementById('dashboardMap');
-  if (!container || dashboardMapInstance) return;
-
-  // Center map on user's current GPS or default view
-  dashboardMapInstance = L.map('dashboardMap', {
-    center: [11.0168, 76.9558],
-    zoom: 8,
-    zoomControl: true
-  });
-
-  L.tileLayer(esriDarkLayerUrl, {
-    maxNativeZoom: 16,
-    maxZoom: 19,
-    attribution: '&copy; Esri &mdash; Rhody Dark Canvas'
-  }).addTo(dashboardMapInstance);
-
-  dashboardPlacesLayer = L.layerGroup().addTo(dashboardMapInstance);
-
-  // Try locating user's real position on map
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(pos) {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      lastKnownGpsFix = { lat, lng };
-      dashboardMapInstance.setView([lat, lng], 11);
-
-      // Add rider current location beacon
-      const riderBeacon = L.divIcon({
-        className: 'rider-live-pin',
-        html: `
-          <div style="position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
-            <div style="position: absolute; inset: -6px; border-radius: 9999px; background: rgba(0, 240, 255, 0.3); animation: pulseGlow 2s infinite;"></div>
-            <div style="width: 14px; height: 14px; border-radius: 9999px; background: #00F0FF; border: 2px solid #FFFFFF; box-shadow: 0 0 10px #00F0FF;"></div>
-          </div>
-        `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-      });
-      L.marker([lat, lng], { icon: riderBeacon })
-        .bindPopup('<b style="color: #00F0FF;">Your Current Location</b>')
-        .addTo(dashboardMapInstance);
-
-      renderDashboardPlaces(); // Re-render to compute real distance to places
-    }, function() {}, { enableHighAccuracy: true, timeout: 5000 });
-  }
-
-  // Interactive Click-to-Pin on Map
-  dashboardMapInstance.on('click', function(e) {
-    const lat = e.latlng.lat;
-    const lng = e.latlng.lng;
-    promptSaveMapPin(lat, lng);
-  });
-
-  renderDashboardPlacesMarkers();
-}
-
-function promptSaveMapPin(lat, lng) {
-  openAddPlaceModal(lat, lng);
-}
-
-function openAddPlaceModal(lat, lng) {
-  const modal = document.getElementById('addPlaceModal');
-  if (!modal) return;
-  modal.classList.remove('hidden');
-
-  const latInput = document.getElementById('newPlaceLat');
-  const lngInput = document.getElementById('newPlaceLng');
-
-  if (lat !== undefined && lng !== undefined) {
-    if (latInput) latInput.value = parseFloat(lat).toFixed(6);
-    if (lngInput) lngInput.value = parseFloat(lng).toFixed(6);
-  } else if (lastKnownGpsFix) {
-    if (latInput && !latInput.value) latInput.value = lastKnownGpsFix.lat.toFixed(6);
-    if (lngInput && !lngInput.value) lngInput.value = lastKnownGpsFix.lng.toFixed(6);
-  }
-
-  const nameInput = document.getElementById('newPlaceName');
-  if (nameInput) setTimeout(() => nameInput.focus(), 60);
-}
-
-function closeAddPlaceModal() {
-  const modal = document.getElementById('addPlaceModal');
-  if (modal) modal.classList.add('hidden');
-}
-
-function populateNewPlaceWithCurrentGps() {
-  if (!navigator.geolocation) {
-    showToast('Geolocation not supported by browser', 'error');
-    return;
-  }
-  showToast('Acquiring high-accuracy GPS fix...', 'info');
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    const alt = pos.coords.altitude ? Math.round(pos.coords.altitude) : '';
-    const latInput = document.getElementById('newPlaceLat');
-    const lngInput = document.getElementById('newPlaceLng');
-    const altInput = document.getElementById('newPlaceAltitude');
-    if (latInput) latInput.value = lat.toFixed(6);
-    if (lngInput) lngInput.value = lng.toFixed(6);
-    if (altInput && alt) altInput.value = alt;
-    showToast('GPS coordinates populated!', 'success');
-  }, function(err) {
-    showToast('GPS fix error: ' + err.message, 'error');
-  }, { enableHighAccuracy: true, timeout: 8000 });
-}
-
-function submitNewPlaceForm(e) {
-  e.preventDefault();
-  const name = document.getElementById('newPlaceName')?.value?.trim();
-  const category = document.getElementById('newPlaceCategory')?.value || 'pass';
-  const lat = parseFloat(document.getElementById('newPlaceLat')?.value);
-  const lng = parseFloat(document.getElementById('newPlaceLng')?.value);
-  const alt = parseFloat(document.getElementById('newPlaceAltitude')?.value) || null;
-  const notes = document.getElementById('newPlaceNotes')?.value?.trim() || '';
-
-  if (!name || isNaN(lat) || isNaN(lng)) {
-    showToast('Please provide a valid name and GPS coordinates', 'error');
-    return;
-  }
-
-  const newPlace = {
-    name: name,
-    category: category,
-    lat: lat,
-    lng: lng,
-    altitude: alt,
-    notes: notes || 'Custom waypoint stored in Rhody radar'
-  };
-
-  saveNewPlaceToBackend(newPlace);
-  closeAddPlaceModal();
-  document.getElementById('addPlaceForm')?.reset();
-  if (dashboardMapInstance) {
-    dashboardMapInstance.flyTo([lat, lng], 13);
-  }
-}
-
-function openGoogleMapsRoute(lat, lng) {
-  const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
-  window.open(url, '_blank');
-}
-
-function saveNewPlaceToBackend(placeDoc) {
-  fetch('/api/user/places', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(placeDoc)
-  })
-    .then(r => r.json())
-    .then(data => {
-      const saved = (data && data.place) ? data.place : Object.assign({ id: 'loc_' + Date.now() }, placeDoc);
-      savedPlaces.unshift(saved);
-      savePlacesToStorage();
-      renderDashboardPlaces();
-      renderDashboardPlacesMarkers();
-      renderYoutubeDynamicHub();
-      showToast(`Saved "${placeDoc.name}" to your map!`, 'success');
-    })
-    .catch(err => {
-      placeDoc.id = 'loc_' + Date.now();
-      savedPlaces.unshift(placeDoc);
-      savePlacesToStorage();
-      renderDashboardPlaces();
-      renderDashboardPlacesMarkers();
-      showToast(`Saved "${placeDoc.name}" locally`, 'success');
-    });
-}
-
-function saveCurrentGpsLocation() {
-  if (!navigator.geolocation) {
-    showToast('Geolocation is not supported by your browser', 'error');
-    return;
-  }
-
-  showToast('Acquiring high-precision GPS fix...', 'info');
-
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    const alt = pos.coords.altitude ? Math.round(pos.coords.altitude) : null;
-
-    // Real Reverse Geocode via OpenStreetMap Nominatim
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-      .then(r => r.json())
-      .then(geo => {
-        let detectedName = 'Rider Waypoint';
-        if (geo && geo.address) {
-          detectedName = geo.address.road || geo.address.suburb || geo.address.city || geo.address.town || 'Rider Waypoint';
-        }
-        const customName = prompt(`GPS Fix Acquired! Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}\nEnter name to save this place:`, detectedName);
-        if (!customName || !customName.trim()) return;
-
-        const newPlace = {
-          name: customName.trim(),
-          category: 'garage',
-          lat: lat,
-          lng: lng,
-          altitude: alt,
-          notes: geo && geo.display_name ? geo.display_name.substring(0, 100) : 'Current GPS location fix'
-        };
-
-        saveNewPlaceToBackend(newPlace);
-        if (dashboardMapInstance) {
-          dashboardMapInstance.flyTo([lat, lng], 14);
-        }
-      })
-      .catch(() => {
-        const customName = prompt(`GPS Fix Acquired! Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}\nEnter name to save this place:`, 'Current Garage / Spot');
-        if (!customName || !customName.trim()) return;
-
-        saveNewPlaceToBackend({
-          name: customName.trim(),
-          category: 'garage',
-          lat: lat,
-          lng: lng,
-          altitude: alt,
-          notes: 'Current GPS location fix'
-        });
-      });
-  }, function(err) {
-    showToast('Failed to acquire GPS fix: ' + err.message, 'error');
-  }, { enableHighAccuracy: true, timeout: 10000 });
-}
-
-function deletePlace(placeId) {
-  if (!confirm('Are you sure you want to remove this saved place from your map?')) return;
-
-  savedPlaces = savedPlaces.filter(p => (p._id || p.id) !== placeId);
-  savePlacesToStorage();
-  renderDashboardPlaces();
-  renderDashboardPlacesMarkers();
-  renderYoutubeDynamicHub();
-
-  fetch(`/api/user/places/${placeId}`, { method: 'DELETE' }).catch(() => {});
-  showToast('Place removed from map', 'info');
-}
-
-function setDashboardMapLayer(type) {
-  if (!dashboardMapInstance) return;
-  dashboardMapInstance.eachLayer(function(l) {
-    if (l instanceof L.TileLayer) dashboardMapInstance.removeLayer(l);
-  });
-
-  let url = esriDarkLayerUrl;
-  if (type === 'osm') url = osmLayerUrl;
-  if (type === 'sat') url = satLayerUrl;
-
-  L.tileLayer(url, { maxZoom: 19 }).addTo(dashboardMapInstance);
-
-  const btnDark = document.getElementById('btnDashDark');
-  const btnOsm = document.getElementById('btnDashOsm');
-  const btnSat = document.getElementById('btnDashSat');
-  [btnDark, btnOsm, btnSat].forEach(b => {
-    if (b) b.className = 'px-3 py-1 rounded-lg text-xs text-slate-400 hover:text-white transition';
-  });
-  if (type === 'dark' && btnDark) btnDark.className = 'px-3 py-1 rounded-lg text-xs bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold transition';
-  if (type === 'osm' && btnOsm) btnOsm.className = 'px-3 py-1 rounded-lg text-xs bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold transition';
-  if (type === 'sat' && btnSat) btnSat.className = 'px-3 py-1 rounded-lg text-xs bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold transition';
-}
-
-function renderDashboardPlacesMarkers() {
-  if (!dashboardMapInstance || !dashboardPlacesLayer) return;
-  dashboardPlacesLayer.clearLayers();
-
-  if (savedPlaces.length === 0) return;
-
-  const bounds = L.latLngBounds();
-
-  savedPlaces.forEach(place => {
-    let pinColor = '#FFB703'; // Amber for pass
-    let iconChar = '⛰️';
-    if (place.category === 'track') { pinColor = '#FF3366'; iconChar = '🏁'; }
-    if (place.category === 'garage') { pinColor = '#00F0FF'; iconChar = '🏠'; }
-    if (place.category === 'fuel') { pinColor = '#10B981'; iconChar = '⛽'; }
-
-    const svgIcon = L.divIcon({
-      className: 'custom-place-pin',
-      html: `
-        <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-          <div style="position: absolute; inset: -4px; border-radius: 9999px; background: ${pinColor}25; animation: pulseGlow 2.5s infinite;"></div>
-          <div style="width: 30px; height: 30px; border-radius: 9999px; background: #0E131F; border: 2px solid ${pinColor}; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,0.7);">
-            ${iconChar}
-          </div>
-        </div>
-      `,
-      iconSize: [34, 34],
-      iconAnchor: [17, 17]
-    });
-
-    const marker = L.marker([place.lat, place.lng], { icon: svgIcon }).addTo(dashboardPlacesLayer);
-    bounds.extend([place.lat, place.lng]);
-
-    marker.bindPopup(`
-      <div style="background: #0E131F; color: #E2E8F0; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); font-family: Inter, sans-serif; min-width: 230px; box-shadow: 0 10px 25px rgba(0,0,0,0.8);">
-        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 8px;">
-          <strong style="color: #FFFFFF; font-size: 13px;">${place.name}</strong>
-          <span style="font-size: 10px; font-weight: bold; color: ${pinColor}; text-transform: uppercase;">${place.category}</span>
-        </div>
-        <p style="font-size: 11px; color: #94A3B8; margin: 4px 0 8px 0; line-height: 1.4;">${place.notes || 'Real waypoint stored in Rhody database.'}</p>
-        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-          <button onclick="routeToPlace(${place.lat}, ${place.lng}, '${place.name.replace(/'/g, "\\'")}')" style="flex: 1; background: #00F0FF; color: #07090E; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">Route</button>
-          <button onclick="openGoogleMapsRoute(${place.lat}, ${place.lng})" style="background: rgba(16,185,129,0.2); color: #10B981; border: 1px solid rgba(16,185,129,0.4); padding: 6px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;" title="Open in Google Maps">🗺️ Maps</button>
-          <button onclick="searchYoutubeForPlace('${place.name.replace(/'/g, "\\'")}')" style="background: rgba(239,68,68,0.2); color: #FF4D4D; border: 1px solid rgba(239,68,68,0.4); padding: 6px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;">▶ Vlogs</button>
-          <button onclick="deletePlace('${place._id || place.id}')" style="background: rgba(255,255,255,0.06); color: #94A3B8; border: 1px solid rgba(255,255,255,0.1); padding: 6px 8px; border-radius: 8px; font-size: 11px; cursor: pointer;" title="Delete">🗑️</button>
-        </div>
-      </div>
-    `);
-  });
-
-  if (savedPlaces.length > 0 && dashboardMapInstance && bounds.isValid()) {
-    dashboardMapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
-  }
-}
-
-function renderDashboardPlaces() {
-  const container = document.getElementById('dashPlacesGrid');
-  const countBadge = document.getElementById('dashPlacesBadge');
-  if (!container) return;
-
-  if (countBadge) countBadge.textContent = `${savedPlaces.length} Saved On Map`;
-
-  // Real Empty State if user has zero saved places
-  if (savedPlaces.length === 0) {
-    container.innerHTML = `
-      <div class="col-span-full p-8 rounded-2xl bg-[#0E131F]/90 border border-white/[0.08] backdrop-blur-xl text-center flex flex-col items-center justify-center space-y-4">
-        <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center text-cyan-300">
-          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        </div>
-        <div class="max-w-md">
-          <h4 class="text-sm font-bold text-white tracking-wide">Zero Stored Waypoints Yet</h4>
-          <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-            Your real motorcycle destinations, garage basecamp, and mountain roads will appear here. Pin your current GPS fix or click anywhere on the radar map to store locations.
-          </p>
-        </div>
-        <div class="flex items-center space-x-3 pt-1">
-          <button onclick="openAddPlaceModal()" class="px-4 py-2 text-xs font-bold rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/50 shadow-[0_0_15px_rgba(0,240,255,0.2)] flex items-center space-x-1.5 transition">
-            <span>+ Add Saved Place</span>
-          </button>
-          <button onclick="saveCurrentGpsLocation()" class="px-4 py-2 text-xs font-medium rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border border-white/10 transition">
-            <span>📍 Pin Current Location</span>
-          </button>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  const filtered = savedPlaces.filter(p => {
-    if (currentDashCategoryFilter === 'all') return true;
-    return p.category === currentDashCategoryFilter;
-  });
-
-  if (filtered.length === 0) {
-    container.innerHTML = `
-      <div class="col-span-full py-6 text-center text-xs text-slate-400">
-        No places saved under the "${currentDashCategoryFilter}" category.
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML = filtered.map(place => {
-    let catBadgeColor = 'bg-amber-500/15 text-amber-300 border-amber-400/30';
-    let iconChar = '⛰️';
-    if (place.category === 'track') { catBadgeColor = 'bg-rose-500/15 text-rose-300 border-rose-400/30'; iconChar = '🏁'; }
-    if (place.category === 'garage') { catBadgeColor = 'bg-cyan-500/15 text-cyan-300 border-cyan-400/30'; iconChar = '🏠'; }
-    if (place.category === 'fuel') { catBadgeColor = 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30'; iconChar = '⛽'; }
-
-    const safeName = place.name.replace(/'/g, "\\'");
-    let distStr = '';
-    if (lastKnownGpsFix && place.lat && place.lng) {
-      const d = haversineDistance(lastKnownGpsFix.lat, lastKnownGpsFix.lng, place.lat, place.lng) / 1000;
-      distStr = `${d.toFixed(1)} km away`;
     }
+  }
 
+  if (docs.pucExpiry) {
+    const daysPuc = calculateDaysRemaining(docs.pucExpiry);
+    const badge = document.getElementById('docPucBadge');
+    if (badge) {
+      if (daysPuc > 15) {
+        badge.textContent = `Valid till ${docs.pucExpiry} (${daysPuc} days)`;
+        badge.className = 'text-[10px] text-emerald-400 font-bold block';
+      } else if (daysPuc > 0) {
+        badge.textContent = `Expires in ${daysPuc} days (${docs.pucExpiry})`;
+        badge.className = 'text-[10px] text-amber-400 font-bold block';
+      } else {
+        badge.textContent = `EXPIRED on ${docs.pucExpiry}`;
+        badge.className = 'text-[10px] text-rose-400 font-bold block';
+      }
+    }
+  }
+
+  // 4. Service History Ledger
+  renderServiceHistoryTable();
+
+  // 5. Fuel Economy & Mileage Calculator
+  renderFuelEconomyStats();
+}
+
+function updateComponentHealthBar(compKey, compObj, curOdo) {
+  if (!compObj) return;
+  const lastOdo = compObj.lastServiceOdo || 0;
+  const interval = compObj.intervalKm || 4000;
+  const kmSince = Math.max(0, curOdo - lastOdo);
+  const remaining = Math.max(0, interval - kmSince);
+  const pct = Math.max(0, Math.min(100, Math.round((remaining / interval) * 100)));
+
+  const textEl = document.getElementById(`status${compKey}Text`);
+  const barEl = document.getElementById(`status${compKey}Bar`);
+  const kmEl = document.getElementById(`status${compKey}Km`);
+
+  if (kmEl) kmEl.textContent = `${remaining} KM remaining`;
+
+  let colorClass = 'bg-cyan-400';
+  let badgeColor = 'text-cyan-300';
+  let statusLabel = 'GOOD';
+
+  if (pct > 50) {
+    colorClass = 'bg-emerald-400';
+    badgeColor = 'text-emerald-400';
+    statusLabel = 'OPTIMAL';
+  } else if (pct > 20) {
+    colorClass = 'bg-amber-400';
+    badgeColor = 'text-amber-400';
+    statusLabel = 'SERVICE SOON';
+  } else {
+    colorClass = 'bg-rose-500';
+    badgeColor = 'text-rose-400';
+    statusLabel = 'DUE NOW';
+  }
+
+  if (textEl) {
+    textEl.textContent = `${statusLabel} (${pct}%)`;
+    textEl.className = `text-[10px] font-bold ${badgeColor}`;
+  }
+
+  if (barEl) {
+    barEl.style.width = `${pct}%`;
+    barEl.className = `h-1.5 rounded-full transition-all duration-500 ${colorClass}`;
+  }
+}
+
+function calculateDaysRemaining(dateString) {
+  try {
+    const target = new Date(dateString);
+    const today = new Date();
+    const diffTime = target - today;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  } catch (e) {
+    return 0;
+  }
+}
+
+function renderServiceHistoryTable() {
+  const tbody = document.getElementById('serviceHistoryTableBody');
+  if (!tbody) return;
+
+  const list = bikeManagementData.serviceHistory || [];
+  if (list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="py-6 text-center text-xs text-slate-500">
+          No past service records logged. Tap "+ Add Record" to log maintenance invoice.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = list.map(item => {
     return `
-      <div class="p-4 rounded-2xl bg-[#0E131F]/90 border border-white/[0.08] backdrop-blur-xl hover:border-cyan-400/40 transition-all flex flex-col justify-between shadow-lg group">
-        <div>
-          <div class="flex items-center justify-between">
-            <span class="px-2.5 py-0.5 text-[9px] font-bold uppercase rounded-full border ${catBadgeColor}">${iconChar} ${place.category}</span>
-            <span class="text-[10px] text-cyan-400 font-mono tracking-wider">${distStr || (place.altitude ? place.altitude + ' m' : '')}</span>
-          </div>
-          <h4 class="text-sm font-bold text-white mt-2 group-hover:text-cyan-300 transition truncate">${place.name}</h4>
-          <p class="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">${place.notes || 'Waypoint pinned on telemetry map'}</p>
-        </div>
-        
-        <div class="pt-3 flex flex-wrap items-center gap-1.5 border-t border-white/[0.06] mt-3">
-          <button onclick="flyToDashboardPlace(${place.lat}, ${place.lng}, '${safeName}')" class="flex-1 min-w-[65px] py-1.5 px-2 text-xs font-semibold rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-400/30 transition text-center">
-            Map
-          </button>
-          <button onclick="routeToPlace(${place.lat}, ${place.lng}, '${safeName}')" class="py-1.5 px-2.5 text-xs font-medium rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border border-white/10 transition">
-            Route
-          </button>
-          <button onclick="openGoogleMapsRoute(${place.lat}, ${place.lng})" title="Open directly in Google Maps navigation" class="py-1.5 px-2.5 text-xs font-bold rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-400/30 transition flex items-center space-x-1">
-            <span>🗺️ Maps</span>
-          </button>
-          <button onclick="searchYoutubeForPlace('${safeName}')" title="Watch YouTube vlogs for this place" class="py-1.5 px-2 text-xs font-bold rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 transition">
-            ▶ Vlogs
-          </button>
-          <button onclick="deletePlace('${place._id || place.id}')" title="Delete waypoint" class="p-1.5 text-slate-500 hover:text-rose-400 transition ml-auto">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-          </button>
-        </div>
-      </div>
+      <tr class="hover:bg-white/[0.02] transition">
+        <td class="py-2.5 px-3 text-white font-mono font-medium">${item.date}</td>
+        <td class="py-2.5 px-3 text-slate-300">${item.center}</td>
+        <td class="py-2.5 px-3 text-cyan-400 font-mono font-bold">${(item.odo || 0).toLocaleString()} KM</td>
+        <td class="py-2.5 px-3 text-slate-400 max-w-xs truncate" title="${item.workDone || ''}">${item.workDone || '-'}</td>
+        <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">₹${(item.cost || 0).toLocaleString()}</td>
+      </tr>
     `;
   }).join('');
 }
 
-function filterDashboardPlacesCategory(cat) {
-  currentDashCategoryFilter = cat;
-  const cats = ['all', 'pass', 'track', 'garage'];
-  cats.forEach(c => {
-    const btn = document.getElementById('dashCat_' + c);
-    if (btn) {
-      if (c === cat) {
-        btn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 transition';
-      } else {
-        btn.className = 'px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-white/[0.04] border border-white/10 transition';
-      }
-    }
+function renderFuelEconomyStats() {
+  const logs = bikeManagementData.fuelLogs || [];
+  const avgMileageEl = document.getElementById('fuelAvgMileage');
+  const costPerKmEl = document.getElementById('fuelCostPerKm');
+  const totalLitersEl = document.getElementById('fuelTotalLiters');
+  const totalExpenseEl = document.getElementById('fuelTotalExpense');
+
+  if (logs.length === 0) return;
+
+  let totalLiters = 0;
+  let totalCost = 0;
+  let totalMileage = 0;
+  let count = logs.length;
+
+  logs.forEach(l => {
+    totalLiters += parseFloat(l.liters || 0);
+    totalCost += parseFloat(l.totalCost || 0);
+    totalMileage += parseFloat(l.mileageKmPerL || 45);
   });
-  renderDashboardPlaces();
-}
 
-function flyToDashboardPlace(lat, lng, name) {
-  if (!dashboardMapInstance) return;
-  dashboardMapInstance.flyTo([lat, lng], 14, { duration: 1.2 });
-  fetchRoadWeather(lat, lng, name);
-}
+  const avgMileage = (totalMileage / count).toFixed(1);
+  const costPerKm = (totalCost / (totalLiters * parseFloat(avgMileage))).toFixed(2);
 
-function routeToPlace(lat, lng, name) {
-  if (!dashboardMapInstance) return;
-
-  // Real route origin: user's current GPS location, or fallback
-  let startLat = 11.0168;
-  let startLng = 76.9558;
-
-  if (lastKnownGpsFix) {
-    startLat = lastKnownGpsFix.lat;
-    startLng = lastKnownGpsFix.lng;
-  }
-
-  showToast(`Calculating motorcycle route to ${name}...`, 'info');
-
-  const url = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${lng},${lat}?overview=full&geometries=geojson`;
-
-  fetch(url)
-    .then(r => r.json())
-    .then(data => {
-      if (!data.routes || data.routes.length === 0) {
-        showToast('No road trajectory found to this waypoint', 'error');
-        return;
-      }
-
-      if (dashboardActiveRoute) {
-        dashboardMapInstance.removeLayer(dashboardActiveRoute);
-      }
-
-      const routeGeo = data.routes[0].geometry;
-      const distKm = (data.routes[0].distance / 1000).toFixed(1);
-      const durationMins = Math.round(data.routes[0].duration / 60);
-
-      dashboardActiveRoute = L.geoJSON(routeGeo, {
-        style: {
-          color: '#00F0FF',
-          weight: 4,
-          opacity: 0.9,
-          dashArray: '8, 6'
-        }
-      }).addTo(dashboardMapInstance);
-
-      dashboardMapInstance.fitBounds(dashboardActiveRoute.getBounds(), { padding: [50, 50] });
-      showToast(`Motorcycle Route to ${name}: ${distKm} km • ${durationMins} mins ride time`, 'success');
-      fetchRoadWeather(lat, lng, name);
-    })
-    .catch(err => {
-      showToast('Routing engine temporarily unreachable', 'error');
-    });
-}
-
-function searchDashboardPlaces() {
-  const input = document.getElementById('dashPlaceSearchInput');
-  if (!input || !input.value.trim()) return;
-
-  const query = input.value.trim();
-  showToast(`Searching worldwide locations for "${query}"...`, 'info');
-
-  fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`)
-    .then(r => r.json())
-    .then(results => {
-      if (!results || results.length === 0) {
-        showToast(`No locations found for "${query}"`, 'error');
-        return;
-      }
-
-      const top = results[0];
-      const lat = parseFloat(top.lat);
-      const lng = parseFloat(top.lon);
-
-      if (dashboardMapInstance) {
-        dashboardMapInstance.flyTo([lat, lng], 13);
-        const searchMarker = L.marker([lat, lng])
-          .bindPopup(`
-            <div style="background: #0E131F; color: #FFFFFF; padding: 10px; border-radius: 10px; font-family: Inter, sans-serif;">
-              <strong>${top.display_name.split(',')[0]}</strong><br>
-              <span style="font-size: 11px; color: #94A3B8;">${top.display_name.substring(0, 80)}</span><br><br>
-              <button onclick="saveNewPlaceToBackend({ name: '${top.display_name.split(',')[0].replace(/'/g, "\\'")}', category: 'pass', lat: ${lat}, lng: ${lng}, notes: '${top.display_name.substring(0, 100).replace(/'/g, "\\'")}' })" style="background: #00F0FF; color: #07090E; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">
-                Save This Place to Map
-              </button>
-            </div>
-          `)
-          .addTo(dashboardMapInstance);
-        searchMarker.openPopup();
-      }
-      showToast(`Found: ${top.display_name.split(',')[0]}`, 'success');
-    })
-    .catch(() => {
-      showToast('Search service unavailable. Please check internet connection.', 'error');
-    });
+  if (avgMileageEl) avgMileageEl.textContent = `${avgMileage} KM/L`;
+  if (costPerKmEl) costPerKmEl.textContent = `₹${costPerKm} / KM`;
+  if (totalLitersEl) totalLitersEl.textContent = `${totalLiters.toFixed(1)} L`;
+  if (totalExpenseEl) totalExpenseEl.textContent = `₹${Math.round(totalCost).toLocaleString()}`;
 }
 
 // ----------------------------------------------------
-// DASHBOARD: REAL DYNAMIC YOUTUBE GUIDES & STREAMING
+// SERVICE & FUEL LOG MODAL HANDLERS
+// ----------------------------------------------------
+function openServiceLogModal() {
+  const modal = document.getElementById('serviceLogModal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+
+  const odoInput = document.getElementById('srvOdometer');
+  if (odoInput && bikeManagementData.specs) {
+    odoInput.value = bikeManagementData.specs.currentOdometer || 14850;
+  }
+  const dateInput = document.getElementById('srvDate');
+  if (dateInput) {
+    dateInput.value = new Date().toISOString().split('T')[0];
+  }
+}
+
+function closeServiceLogModal() {
+  const modal = document.getElementById('serviceLogModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function submitServiceRecord(e) {
+  e.preventDefault();
+  const date = document.getElementById('srvDate')?.value;
+  const odo = parseInt(document.getElementById('srvOdometer')?.value) || 0;
+  const center = document.getElementById('srvCenter')?.value?.trim();
+  const work = document.getElementById('srvWork')?.value?.trim();
+  const cost = parseFloat(document.getElementById('srvCost')?.value) || 0;
+
+  if (!date || !center || !work) {
+    showToast('Please fill all service details', 'error');
+    return;
+  }
+
+  const record = {
+    id: 'srv_' + Date.now(),
+    date,
+    odo,
+    center,
+    workDone: work,
+    cost
+  };
+
+  if (!bikeManagementData.serviceHistory) bikeManagementData.serviceHistory = [];
+  bikeManagementData.serviceHistory.unshift(record);
+
+  // If service odometer is higher than current, advance the motorcycle odometer
+  if (odo > (bikeManagementData.specs.currentOdometer || 0)) {
+    bikeManagementData.specs.currentOdometer = odo;
+  }
+
+  saveBikeManagementToStorage(true);
+  renderBikeManagement();
+  closeServiceLogModal();
+  document.getElementById('serviceLogForm')?.reset();
+  showToast('Service record recorded in maintenance ledger!', 'success');
+}
+
+function openFuelLogModal() {
+  const modal = document.getElementById('fuelLogModal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+
+  const odoInput = document.getElementById('fuelOdoInput');
+  if (odoInput && bikeManagementData.specs) {
+    odoInput.value = bikeManagementData.specs.currentOdometer || 14850;
+  }
+}
+
+function closeFuelLogModal() {
+  const modal = document.getElementById('fuelLogModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function submitFuelRecord(e) {
+  e.preventDefault();
+  const liters = parseFloat(document.getElementById('fuelLitersInput')?.value) || 0;
+  const odo = parseInt(document.getElementById('fuelOdoInput')?.value) || (bikeManagementData.specs.currentOdometer || 14850);
+  const grade = document.getElementById('fuelGradeInput')?.value || 'XP95 Octane';
+  const totalCost = parseFloat(document.getElementById('fuelTotalCostInput')?.value) || 0;
+
+  if (liters <= 0 || totalCost <= 0) {
+    showToast('Please enter valid fuel liters and invoice amount', 'error');
+    return;
+  }
+
+  // Calculate mileage based on distance from last fuel fill
+  let mileage = 47.5;
+  if (bikeManagementData.fuelLogs && bikeManagementData.fuelLogs.length > 0) {
+    const lastFill = bikeManagementData.fuelLogs[0];
+    const distRun = odo - (lastFill.odo || 0);
+    if (distRun > 20 && liters > 0) {
+      mileage = parseFloat((distRun / liters).toFixed(1));
+    }
+  }
+
+  const newLog = {
+    id: 'fuel_' + Date.now(),
+    date: new Date().toISOString().split('T')[0],
+    odo,
+    liters,
+    costPerLiter: parseFloat((totalCost / liters).toFixed(1)),
+    totalCost,
+    fuelGrade: grade,
+    mileageKmPerL: mileage
+  };
+
+  if (!bikeManagementData.fuelLogs) bikeManagementData.fuelLogs = [];
+  bikeManagementData.fuelLogs.unshift(newLog);
+
+  if (odo > (bikeManagementData.specs.currentOdometer || 0)) {
+    bikeManagementData.specs.currentOdometer = odo;
+  }
+
+  saveBikeManagementToStorage(true);
+  renderBikeManagement();
+  closeFuelLogModal();
+  document.getElementById('fuelLogForm')?.reset();
+  showToast(`Logged ${liters}L of ${grade} • Calculated ${mileage} KM/L!`, 'success');
+}
+
+function logComponentService(type) {
+  const curOdo = bikeManagementData.specs.currentOdometer || 14850;
+  if (!bikeManagementData.components) bikeManagementData.components = {};
+
+  if (type === 'oil' && bikeManagementData.components.engineOil) {
+    bikeManagementData.components.engineOil.lastServiceOdo = curOdo;
+    showToast('Engine Oil & Filter service logged at ' + curOdo + ' KM', 'success');
+  } else if (type === 'chain' && bikeManagementData.components.driveChain) {
+    bikeManagementData.components.driveChain.lastServiceOdo = curOdo;
+    showToast('Drive Chain degrease, lube & slack adjust logged at ' + curOdo + ' KM', 'success');
+  }
+
+  saveBikeManagementToStorage(true);
+  renderBikeManagement();
+}
+
+// ----------------------------------------------------
+// PILLAR 3: BIKE PARENTING & GUARDIAN SAFETY ENGINE
+// ----------------------------------------------------
+function renderParentingView() {
+  const liveUrl = getParentLiveBeaconUrl();
+  const linkDisplay = document.getElementById('parentLiveLinkDisplay');
+  const speedLimitDisplay = document.getElementById('parentSpeedLimitDisplay');
+  const guardianNameDisplay = document.getElementById('parentContactNameDisplay');
+  const guardianPhoneDisplay = document.getElementById('parentContactPhoneDisplay');
+  const callBtn = document.getElementById('btnCallGuardian');
+  const motionStatus = document.getElementById('parentMotionStatus');
+  const liveSpeed = document.getElementById('parentLiveSpeed');
+
+  if (linkDisplay) linkDisplay.value = liveUrl;
+  if (speedLimitDisplay) speedLimitDisplay.textContent = `${guardianParentConfig.speedLimitKmh} km/h`;
+  if (guardianNameDisplay) guardianNameDisplay.textContent = guardianParentConfig.guardianName;
+  if (guardianPhoneDisplay) guardianPhoneDisplay.textContent = guardianParentConfig.guardianPhone;
+  if (callBtn) callBtn.onclick = function() { window.location.href = `tel:${guardianParentConfig.guardianPhone}`; };
+
+  if (liveSpeed) {
+    liveSpeed.textContent = (currentTripSpeedKmh || 0).toFixed(1);
+  }
+
+  if (motionStatus) {
+    if (isTripRecording && !isTripPaused && currentTripSpeedKmh > 2) {
+      motionStatus.textContent = `BIKE IS MOVING — ${currentTripSpeedKmh.toFixed(1)} KM/H`;
+      motionStatus.className = 'text-xs text-emerald-400 font-mono font-bold block mt-1 tracking-wider';
+    } else if (isTripRecording) {
+      motionStatus.textContent = 'BIKE IS STATIONARY (IDLE ENGINE)';
+      motionStatus.className = 'text-xs text-amber-400 font-mono font-bold block mt-1 tracking-wider';
+    } else {
+      motionStatus.textContent = 'PARKED AT BASECAMP (ENGINE OFF)';
+      motionStatus.className = 'text-xs text-slate-400 font-mono font-bold block mt-1 tracking-wider';
+    }
+  }
+
+  // Check parent speed alert limit
+  const alertBox = document.getElementById('parentSpeedAlertBox');
+  if (alertBox) {
+    if (isTripRecording && currentTripSpeedKmh > guardianParentConfig.speedLimitKmh) {
+      alertBox.classList.remove('hidden');
+      alertBox.textContent = `⚠️ PARENT SPEED WARNING: Current speed (${currentTripSpeedKmh.toFixed(1)} km/h) exceeds safe threshold (${guardianParentConfig.speedLimitKmh} km/h)!`;
+    } else {
+      alertBox.classList.add('hidden');
+    }
+  }
+}
+
+function getParentLiveBeaconUrl() {
+  const baseUrl = window.location.origin;
+  const tripParam = activeTripDoc ? (activeTripDoc._id || activeTripDoc.id) : 'live-safety-beacon';
+  return `${baseUrl}/?live=${tripParam}`;
+}
+
+function copyParentTrackingLink() {
+  const url = getParentLiveBeaconUrl();
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('Guardian live tracking link copied to clipboard!', 'success');
+  }).catch(() => {
+    prompt('Copy guardian tracking link:', url);
+  });
+}
+
+function openParentViewNewTab() {
+  const url = getParentLiveBeaconUrl();
+  window.open(url, '_blank');
+}
+
+function shareTripWithParents() {
+  const url = getParentLiveBeaconUrl();
+  const text = encodeURIComponent(
+    `🏍️ Rhody Live Ride Beacon:\nI am riding my bike right now!\nTrack my live speed, location, and safety status here:\n${url}`
+  );
+  const waUrl = `https://wa.me/?text=${text}`;
+  window.open(waUrl, '_blank');
+  showToast('Opening WhatsApp to share live beacon with family...', 'info');
+}
+
+// ----------------------------------------------------
+// DASHBOARD: REAL DYNAMIC YOUTUBE MOTORCYCLE GUIDES
 // ----------------------------------------------------
 function renderYoutubeDynamicHub() {
   const pillsContainer = document.getElementById('youtubePillsContainer');
   const cardsContainer = document.getElementById('youtubeVideoGrid');
   if (!pillsContainer || !cardsContainer) return;
 
-  const bike = riderProfile.bikeModel || 'Yamaha MT-09 SP';
+  const bike = (bikeManagementData.specs && bikeManagementData.specs.makeModel) || riderProfile.bikeModel || 'Yamaha MT-15 V2';
 
-  // Dynamic search topics based on rider's actual machine & places
+  // Dynamic high-adrenaline and mechanical mastery topics
   const dynamicTopics = [
-    { label: `${bike} Review`, query: `${bike} motorcycle in-depth review pure sound` },
-    { label: `${bike} Exhaust & Dyno`, query: `${bike} exhaust sound acceleration top speed` },
-    { label: `Apex Cornering Guide`, query: `motorcycle apex cornering body position trail braking technique` },
-    { label: `Rain Grip & Lean Angle`, query: `motorcycle wet weather riding grip tire lean angle safety` }
+    { label: `${bike} Pure Sound`, query: `${bike} motorcycle exhaust pure sound acceleration` },
+    { label: `Drive Chain Maintenance`, query: `motorcycle drive chain clean lube slack adjustment tutorial` },
+    { label: `Engine Oil & Filter Change`, query: `${bike} motorcycle engine oil change tutorial Yamalube` },
+    { label: `Apex Cornering Masterclass`, query: `motorcycle apex cornering body position trail braking technique` },
+    { label: `Rain Grip & Lean Angle`, query: `motorcycle wet weather riding grip tire lean angle safety` },
+    { label: `Western Ghats Twisties Vlog`, query: `Kolli Hills Agumbe Ghat motorcycle ride vlog 4K` }
   ];
 
-  // Add rider's saved places dynamically
-  savedPlaces.slice(0, 3).forEach(place => {
-    dynamicTopics.push({
-      label: `${place.name} Ride`,
-      query: `${place.name} motorcycle ride vlog onboard 4K`
-    });
-  });
+  pillsContainer.innerHTML = dynamicTopics.map((topic, i) => {
+    const isFirst = i === 0;
+    const activeClass = isFirst
+      ? 'bg-red-600 text-white border-red-500 shadow-[0_0_12px_rgba(239,68,68,0.4)]'
+      : 'bg-white/[0.04] text-slate-400 hover:text-white border-white/10 hover:border-white/20';
+
+    return `
+      <button onclick="executeYoutubeSearch('${topic.query.replace(/'/g, "\\'")}')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition flex items-center space-x-1.5 ${activeClass}">
+        <svg class="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/></svg>
+        <span>${topic.label}</span>
+      </button>
+    `;
+  }).join('');
 
   pillsContainer.innerHTML = dynamicTopics.map((topic, i) => {
     const isFirst = i === 0;
@@ -2121,18 +1987,24 @@ function populateSettingsForm() {
   const specsInput = document.getElementById('settingBikeSpecs');
   const plateInput = document.getElementById('settingBikePlate');
   const tiresInput = document.getElementById('settingTires');
-  const parentName = document.getElementById('settingParentName');
-  const parentPhone = document.getElementById('settingParentPhone');
+  const odoInput = document.getElementById('settingCurrentOdo');
+  const insInput = document.getElementById('settingInsuranceExpiry');
+  const pucInput = document.getElementById('settingPucExpiry');
+  const speedLimitInput = document.getElementById('settingSpeedLimitAlert');
 
   if (nameInput) nameInput.value = riderProfile.name || 'Natesh';
   if (handleInput) handleInput.value = riderProfile.handle || '@natesh_pilot';
   if (bioInput) bioInput.value = riderProfile.bio || '';
-  if (bikeInput) bikeInput.value = riderProfile.bikeModel || 'Yamaha MT-09 SP';
-  if (specsInput) specsInput.value = riderProfile.bikeSpecs || '890cc Triple • 119 BHP • 93 Nm';
-  if (plateInput) plateInput.value = riderProfile.bikePlate || 'TN-38-RH-0909';
-  if (tiresInput) tiresInput.value = riderProfile.tireSetup || 'Pirelli Diablo Rosso IV';
-  if (parentName) parentName.value = riderProfile.emergencyContactName || 'Family Guardian';
-  if (parentPhone) parentPhone.value = riderProfile.emergencyContactPhone || '+91 98765 43210';
+  if (bikeInput) bikeInput.value = riderProfile.bikeModel || (bikeManagementData.specs && bikeManagementData.specs.makeModel) || 'Yamaha MT-15 V2';
+  if (specsInput) specsInput.value = riderProfile.bikeSpecs || (bikeManagementData.specs && bikeManagementData.specs.engine) || '155cc Liquid-Cooled 4V SOHC VVA';
+  if (plateInput) plateInput.value = riderProfile.bikePlate || (bikeManagementData.documents && bikeManagementData.documents.rcNumber) || 'TN-38-BZ-4242';
+  if (tiresInput) tiresInput.value = riderProfile.tireSetup || 'MRF Zapper FX1 / Revz Radial';
+  if (parentName) parentName.value = guardianParentConfig.guardianName || riderProfile.emergencyContactName || 'Family Guardian (Dad & Mom)';
+  if (parentPhone) parentPhone.value = guardianParentConfig.guardianPhone || riderProfile.emergencyContactPhone || '+91 98765 43210';
+  if (odoInput) odoInput.value = (bikeManagementData.specs && bikeManagementData.specs.currentOdometer) || 14850;
+  if (insInput && bikeManagementData.documents) insInput.value = bikeManagementData.documents.insuranceExpiry || '2026-11-28';
+  if (pucInput && bikeManagementData.documents) pucInput.value = bikeManagementData.documents.pucExpiry || '2026-12-14';
+  if (speedLimitInput) speedLimitInput.value = guardianParentConfig.speedLimitKmh || 95;
 }
 
 function saveSettingsFromForm() {
@@ -2145,22 +2017,63 @@ function saveSettingsFromForm() {
   const tiresInput = document.getElementById('settingTires');
   const parentName = document.getElementById('settingParentName');
   const parentPhone = document.getElementById('settingParentPhone');
+  const odoInput = document.getElementById('settingCurrentOdo');
+  const insInput = document.getElementById('settingInsuranceExpiry');
+  const pucInput = document.getElementById('settingPucExpiry');
+  const speedLimitInput = document.getElementById('settingSpeedLimitAlert');
 
   if (nameInput) riderProfile.name = nameInput.value.trim();
   if (handleInput) riderProfile.handle = handleInput.value.trim();
   if (bioInput) riderProfile.bio = bioInput.value.trim();
-  if (bikeInput) riderProfile.bikeModel = bikeInput.value.trim();
-  if (specsInput) riderProfile.bikeSpecs = specsInput.value.trim();
-  if (plateInput) riderProfile.bikePlate = plateInput.value.trim();
+  if (bikeInput) {
+    riderProfile.bikeModel = bikeInput.value.trim();
+    if (!bikeManagementData.specs) bikeManagementData.specs = {};
+    bikeManagementData.specs.makeModel = bikeInput.value.trim();
+  }
+  if (specsInput) {
+    riderProfile.bikeSpecs = specsInput.value.trim();
+    if (!bikeManagementData.specs) bikeManagementData.specs = {};
+    bikeManagementData.specs.engine = specsInput.value.trim();
+  }
+  if (plateInput) {
+    riderProfile.bikePlate = plateInput.value.trim();
+    if (!bikeManagementData.documents) bikeManagementData.documents = {};
+    bikeManagementData.documents.rcNumber = plateInput.value.trim();
+  }
   if (tiresInput) riderProfile.tireSetup = tiresInput.value.trim();
-  if (parentName) riderProfile.emergencyContactName = parentName.value.trim();
-  if (parentPhone) riderProfile.emergencyContactPhone = parentPhone.value.trim();
+  if (parentName) {
+    riderProfile.emergencyContactName = parentName.value.trim();
+    guardianParentConfig.guardianName = parentName.value.trim();
+  }
+  if (parentPhone) {
+    riderProfile.emergencyContactPhone = parentPhone.value.trim();
+    guardianParentConfig.guardianPhone = parentPhone.value.trim();
+  }
+  if (odoInput && odoInput.value) {
+    const o = parseInt(odoInput.value) || 0;
+    if (o > 0) {
+      if (!bikeManagementData.specs) bikeManagementData.specs = {};
+      bikeManagementData.specs.currentOdometer = o;
+    }
+  }
+  if (insInput && insInput.value && bikeManagementData.documents) {
+    bikeManagementData.documents.insuranceExpiry = insInput.value;
+  }
+  if (pucInput && pucInput.value && bikeManagementData.documents) {
+    bikeManagementData.documents.pucExpiry = pucInput.value;
+  }
+  if (speedLimitInput && speedLimitInput.value) {
+    guardianParentConfig.speedLimitKmh = parseInt(speedLimitInput.value) || 95;
+  }
 
   saveProfile();
+  saveBikeManagementToStorage(true);
   renderDashboardProfile();
   renderDashboardBike();
+  renderBikeManagement();
+  renderParentingView();
   renderYoutubeDynamicHub();
-  showToast('Settings & Motorcycle specifications saved!', 'success');
+  showToast('Settings & Motorcycle specifications saved and synced!', 'success');
 }
 
 function exportAnalysisGpx() {
@@ -2181,9 +2094,9 @@ function exportAnalysisCsv() {
 
 function clearLocalDataCache() {
   if (!confirm('Clear local telemetry cache and re-sync from MongoDB Atlas?')) return;
+  localStorage.removeItem('rhody_bike_management');
   localStorage.removeItem('rhody_saved_places');
-  savedPlaces = [];
-  loadPlacesFromBackend();
+  loadBikeManagementFromStorage();
   refreshRealTrips();
   showToast('Cache cleared and re-synced with cloud', 'success');
 }
@@ -2200,7 +2113,7 @@ function backupTripsJson() {
 
 function refreshData() {
   refreshRealTrips();
-  loadPlacesFromBackend();
+  loadBikeManagementFromStorage();
   showToast('Telemetry re-synced with MongoDB Atlas', 'success');
 }
 
