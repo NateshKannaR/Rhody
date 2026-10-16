@@ -887,29 +887,103 @@ function searchYoutubeForPlace(placeName) {
   executeYoutubeSearch(`${placeName} motorcycle ride vlog onboard 4K`);
 }
 
-function openYoutubePlayerSearch(query) {
-  const modal = document.getElementById('youtubePlayerModal');
+// Fallback curated high-res motorcycle videos when offline or search fails
+const YOUTUBE_BIKE_FALLBACKS = {
+  'mt-09': 'NHEPDiR4618',
+  'yamaha': 'NHEPDiR4618',
+  'mt-15': 'p3MHXPSNNUo',
+  'cornering': 'JOe2MkwL4yE',
+  'apex': 'JOe2MkwL4yE',
+  'exhaust': 'eKlr9YnxDcI',
+  'rain': 'PpyK_NB3j-s',
+  'default': 'NHEPDiR4618'
+};
+
+function getFallbackVideoId(query) {
+  const q = (query || '').toLowerCase();
+  for (const [key, id] of Object.entries(YOUTUBE_BIKE_FALLBACKS)) {
+    if (q.includes(key)) return id;
+  }
+  return YOUTUBE_BIKE_FALLBACKS.default;
+}
+
+function playSpecificYoutubeVideo(videoId, title) {
   const iframe = document.getElementById('youtubeIframe');
   const titleEl = document.getElementById('youtubePlayerTitle');
   const externalLink = document.getElementById('youtubeExternalLink');
 
-  if (modal && iframe) {
-    if (titleEl) titleEl.textContent = `YouTube Stream: "${query}"`;
-    if (externalLink) externalLink.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  if (iframe) {
+    iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+  }
+  if (titleEl && title) {
+    titleEl.textContent = title;
+  }
+  if (externalLink) {
+    externalLink.href = `https://www.youtube.com/watch?v=${videoId}`;
+  }
+}
 
-    // Real Native YouTube Embed Playlist Search Stream
-    iframe.src = `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(query)}&autoplay=1`;
-    modal.classList.remove('hidden');
-    showToast(`Streaming real YouTube results for "${query}"`, 'info');
+async function openYoutubePlayerSearch(query) {
+  const modal = document.getElementById('youtubePlayerModal');
+  const iframe = document.getElementById('youtubeIframe');
+  const titleEl = document.getElementById('youtubePlayerTitle');
+  const externalLink = document.getElementById('youtubeExternalLink');
+  const resultsContainer = document.getElementById('youtubeModalResultsContainer');
+  const resultsGrid = document.getElementById('youtubeModalResultsGrid');
+
+  if (!modal || !iframe) return;
+
+  if (titleEl) titleEl.textContent = `Loading stream for "${query}"...`;
+  if (externalLink) externalLink.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  
+  modal.classList.remove('hidden');
+
+  // Load a fast instant fallback immediately so user gets playback right away
+  const fallbackId = getFallbackVideoId(query);
+  playSpecificYoutubeVideo(fallbackId, `YouTube Stream: "${query}"`);
+
+  // Now query our real backend search proxy for exact matches
+  try {
+    const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.videos && data.videos.length > 0) {
+        const first = data.videos[0];
+        playSpecificYoutubeVideo(first.id, first.title);
+
+        // Render alternative streams grid
+        if (resultsGrid && resultsContainer) {
+          resultsContainer.classList.remove('hidden');
+          resultsGrid.innerHTML = data.videos.map((v, idx) => {
+            return `
+              <div onclick="playSpecificYoutubeVideo('${v.id}', '${v.title.replace(/'/g, "\\'")}')" class="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-red-500/50 cursor-pointer transition flex flex-col justify-between group">
+                <div class="relative w-full aspect-video rounded-lg overflow-hidden bg-black mb-1.5">
+                  <img src="${v.thumbnail}" alt="${v.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-200" onerror="this.src='https://i.ytimg.com/vi/${v.id}/hqdefault.jpg'" />
+                  <span class="absolute bottom-1 right-1 px-1 py-0.5 rounded bg-black/80 font-mono text-[9px] text-white">${v.duration || 'Video'}</span>
+                </div>
+                <h5 class="text-[11px] font-bold text-slate-200 line-clamp-2 leading-tight group-hover:text-red-400 transition">${v.title}</h5>
+                <span class="text-[9px] text-slate-500 truncate mt-1">${v.channel}</span>
+              </div>
+            `;
+          }).join('');
+        }
+        showToast(`Streaming real YouTube video for "${query}"`, 'info');
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('Backend YouTube search fetch error, keeping fallback:', err.message);
   }
 }
 
 function closeYoutubePlayerModal() {
   const modal = document.getElementById('youtubePlayerModal');
   const iframe = document.getElementById('youtubeIframe');
+  const resultsContainer = document.getElementById('youtubeModalResultsContainer');
   if (modal && iframe) {
     iframe.src = '';
     modal.classList.add('hidden');
+    if (resultsContainer) resultsContainer.classList.add('hidden');
   }
 }
 

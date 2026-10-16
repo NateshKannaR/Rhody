@@ -763,6 +763,62 @@ function escapeXml(str) {
   });
 }
 
+// Real YouTube Search API (Resolves real playable video IDs, titles, thumbnails)
+app.get('/api/youtube/search', async (req, res) => {
+  const query = req.query.q || 'Yamaha MT-09 review';
+  try {
+    const response = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
+    const html = await response.text();
+    const jsonMatch = html.match(/var ytInitialData = ({.*?});<\/script>/s) || html.match(/ytInitialData = ({.*?});/s);
+    const videos = [];
+    if (jsonMatch) {
+      try {
+        const data = JSON.parse(jsonMatch[1]);
+        const contents = data.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents || [];
+        for (const item of contents) {
+          const v = item.videoRenderer;
+          if (v && v.videoId) {
+            videos.push({
+              id: v.videoId,
+              title: v.title?.runs?.[0]?.text || `${query} Video`,
+              duration: v.lengthText?.simpleText || '',
+              thumbnail: v.thumbnail?.thumbnails?.slice(-1)[0]?.url || `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`,
+              channel: v.ownerText?.runs?.[0]?.text || 'Motorcycle Channel'
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('JSON parse error in ytInitialData:', e.message);
+      }
+    }
+    
+    // Fallback if parsing initialData was empty: regex match video IDs
+    if (videos.length === 0) {
+      const idMatches = [...html.matchAll(/\/watch\?v=([a-zA-Z0-9_-]{11})/g)];
+      const uniqueIds = [...new Set(idMatches.map(m => m[1]))].slice(0, 8);
+      uniqueIds.forEach(id => {
+        videos.push({
+          id,
+          title: `${query} Onboard Video`,
+          duration: 'Onboard',
+          thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+          channel: 'Motorcycle Onboard'
+        });
+      });
+    }
+
+    res.json({ query, videos: videos.slice(0, 10) });
+  } catch (err) {
+    console.error('YouTube search error:', err.message);
+    res.status(500).json({ error: err.message, videos: [] });
+  }
+});
+
 // App APK & Release Download Redirects
 app.get('/download', (req, res) => {
   res.redirect('https://github.com/NateshKannaR/Rhody/releases/latest');
