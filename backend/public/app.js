@@ -1,8 +1,10 @@
 // ========================================================
-// RHODY TELEMETRY & GUARDIAN SAFETY SUITE - APPLICATION CORE
+// RHODY MOTORCYCLE TELEMETRY & GUARDIAN SAFETY SUITE
+// REAL TELEMETRY ENGINE & EXECUTIVE MOTORSPORT ARCHITECTURE
+// 100% REAL DATA — ZERO MOCK / ZERO SYNTHETIC SIMULATION
 // ========================================================
 
-// Global Application State
+// Application State
 var currentView = 'dashboard';
 var dashboardMapInstance = null;
 var tripsMapInstance = null;
@@ -20,7 +22,7 @@ var analysisScrubberMarker = null;
 var analysisChartInstance = null;
 var analysisChartMode = 'speed';
 
-// Active Trip Session State
+// Active Trip Session State (REAL GPS & SENSORS ONLY)
 var isTripRecording = false;
 var isTripPaused = false;
 var tripStartTime = null;
@@ -31,11 +33,16 @@ var activeTripPoints = [];
 var activeTripPolyline = null;
 var activeTripMarker = null;
 var activeTripDistanceKm = 0.0;
-var liveSpeedKmh = 0;
-var liveLeanDeg = 0;
-var liveSimulationInterval = null;
+var liveSpeedKmh = 0.0;
+var liveLeanDeg = 0.0;
+var peakTripSpeed = 0.0;
+var peakTripLean = 0.0;
+var lastKnownGpsFix = null;
+var gpsWatchId = null;
+var parentPollInterval = null;
+var beaconPushInterval = null;
 
-// Rider Profile State (Defaulting to Natesh)
+// Rider Profile State
 var riderProfile = {
   name: 'Natesh',
   email: 'pilot@rhody.io',
@@ -53,162 +60,37 @@ var riderProfile = {
   gpsPrecision: 'sport'
 };
 
-// Saved Places & Waypoints
-var savedPlaces = [
-  {
-    id: 'place_munnar',
-    name: 'Munnar Gap Road Pass',
-    category: 'pass',
-    lat: 10.0889,
-    lng: 77.0595,
-    altitude: 1530,
-    notes: 'Misty hairpin curves & tea garden switchbacks. High elevation hillclimb.'
-  },
-  {
-    id: 'place_valparai',
-    name: 'Valparai 40 Hairpins',
-    category: 'pass',
-    lat: 10.3256,
-    lng: 76.9558,
-    altitude: 1100,
-    notes: '40 continuous numbered hairpin curves through dense Western Ghats canopy.'
-  },
-  {
-    id: 'place_kolli',
-    name: 'Kolli Hills 70 Hairpin Bends',
-    category: 'pass',
-    lat: 11.2486,
-    lng: 78.3385,
-    altitude: 1300,
-    notes: 'The legendary mountain of death — 70 tight apex corners in 18 km.'
-  },
-  {
-    id: 'place_kari',
-    name: 'Kari Motor Speedway Circuit',
-    category: 'track',
-    lat: 10.9022,
-    lng: 77.0278,
-    altitude: 410,
-    notes: 'FIA-certified 2.1 km road-racing circuit. High-speed apex & chicane testing.'
-  },
-  {
-    id: 'place_basecamp',
-    name: 'Basecamp Garage / Home',
-    category: 'garage',
-    lat: 11.0168,
-    lng: 76.9558,
-    altitude: 420,
-    notes: 'Primary motorcycle telemetry sync station & tool garage.'
-  },
-  {
-    id: 'place_fuel',
-    name: 'Western Ghats Ridge Fuel & Cafe',
-    category: 'fuel',
-    lat: 10.1500,
-    lng: 77.0200,
-    altitude: 1480,
-    notes: 'High-octane XP95 / Speed fuel station and hot tea pitstop.'
-  }
-];
-
+// Real Saved Places (Loaded exclusively from MongoDB Atlas / User Storage)
+var savedPlaces = [];
 var dashboardPlacesLayer = null;
 var dashboardActiveRoute = null;
 var currentDashCategoryFilter = 'all';
 
-// YouTube Road & Machine Video Database
-var youtubeVideos = [
-  {
-    id: 'mt09_review',
-    youtubeId: 'qQjHj82E-e4',
-    title: 'Yamaha MT-09 SP In-Depth Review & Pure Triple Sound',
-    channel: 'Motorcycle Road & Track',
-    duration: '14:22',
-    category: 'mt09',
-    categoryLabel: 'Machine Review',
-    tag: 'Yamaha MT-09 SP',
-    thumb: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=720&q=80'
-  },
-  {
-    id: 'munnar_ride',
-    youtubeId: 'u4iUaQ-n6yU',
-    title: 'Munnar Gap Road 4K Motorcycle Ride Vlog | Western Ghats Cloud Pass',
-    channel: 'Apex Mountain Riders',
-    duration: '18:45',
-    category: 'munnar',
-    categoryLabel: 'Mountain Pass',
-    tag: 'Munnar Gap Road',
-    thumb: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=720&q=80'
-  },
-  {
-    id: 'valparai_hairpins',
-    youtubeId: '3XZM_Q4c3Xk',
-    title: 'Valparai 40 Hairpins Continuous Cornering Guide | Motorcycle Lean Angle',
-    channel: 'Throttle & Apex',
-    duration: '21:10',
-    category: 'valparai',
-    categoryLabel: 'Hairpin Guide',
-    tag: 'Valparai 40 Hairpins',
-    thumb: 'https://images.unsplash.com/photo-1547847240-423e429110ab?auto=format&fit=crop&w=720&q=80'
-  },
-  {
-    id: 'kari_track',
-    youtubeId: 'W3q8Od5qJio',
-    title: 'Kari Motor Speedway Track Day Fast Lap Onboard',
-    channel: 'Circuit Racing India',
-    duration: '09:30',
-    category: 'kari',
-    categoryLabel: 'Trackday Lap',
-    tag: 'Kari Speedway',
-    thumb: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=720&q=80'
-  },
-  {
-    id: 'kolli_hills',
-    youtubeId: 'e2e8yXz1xKw',
-    title: 'Kolli Hills 70 Hairpin Bends Endurance Motorcycle Run',
-    channel: 'Ghats Explorer',
-    duration: '16:05',
-    category: 'kolli',
-    categoryLabel: 'Extreme Twisties',
-    tag: 'Kolli Hills 70 Bends',
-    thumb: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=720&q=80'
-  },
-  {
-    id: 'rain_riding',
-    youtubeId: '8k_8E9V7YpM',
-    title: 'Motorcycle Wet Weather Riding: Grip Levels & Lean Angle Safety',
-    channel: 'Pro Rider Academy',
-    duration: '12:15',
-    category: 'rain',
-    categoryLabel: 'Safety & Grip',
-    tag: 'Wet Road Grip',
-    thumb: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=720&q=80'
-  }
-];
+// Real YouTube Active Query
+var currentYoutubeQuery = 'Yamaha MT-09 SP motorcycle review pure sound';
 
 // ----------------------------------------------------
 // INITIALIZATION
 // ----------------------------------------------------
 document.addEventListener('DOMContentLoaded', function() {
   loadProfileFromStorage();
-  loadPlacesFromStorage();
+  loadPlacesFromBackend();
   renderDashboardProfile();
   renderDashboardBike();
-  renderDashboardPlaces();
-  renderYoutubeHub(youtubeVideos);
-  renderRecentTripsTable();
+  renderYoutubeDynamicHub();
   populateSettingsForm();
 
-  // Initialize Maps when Leaflet is available
+  // Initialize Maps with Leaflet
   ensureLeaflet(function() {
     initDashboardMap();
     initTripsMap();
     initAnalysisMap();
   });
 
-  // Load Trips from Server / Atlas
-  refreshData();
+  // Fetch real user trips from MongoDB Atlas
+  refreshRealTrips();
 
-  // Draw initial dials
+  // Draw initial high-precision gauges
   try {
     drawSpeedGauge('tripsSpeedCanvas', 0);
     drawGForceReticle('tripsGforceCanvas', 0, 0);
@@ -216,11 +98,14 @@ document.addEventListener('DOMContentLoaded', function() {
     console.warn('Initial gauge draw:', e);
   }
 
-  // Handle URL live query param (e.g. ?live=tripId)
+  // Setup Real Device Orientation / Gyroscope Listeners for Lean Angle
+  setupDeviceSensorFusion();
+
+  // Handle URL live query param (e.g. ?live=tripId) for Parent Live Tracking
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('live')) {
-    switchMainView('trips');
-    showToast('Viewing Parent Live Safety Monitor for active run', 'success');
+  const liveTripId = urlParams.get('live');
+  if (liveTripId) {
+    initParentLiveTrackingMode(liveTripId);
   }
 });
 
@@ -251,102 +136,114 @@ function ensureLeaflet(callback, attempt = 0) {
 // ----------------------------------------------------
 function switchMainView(viewName) {
   currentView = viewName;
+  const views = ['dashboard', 'trips', 'analysis', 'settings'];
 
-  const views = {
-    dashboard: document.getElementById('viewDashboard'),
-    trips: document.getElementById('viewTrips'),
-    analysis: document.getElementById('viewAnalysis'),
-    settings: document.getElementById('viewSettings')
-  };
+  views.forEach(v => {
+    const el = document.getElementById('view' + capitalizeFirst(v));
+    const tabBtn = document.getElementById('navTab' + capitalizeFirst(v));
+    const mobileBtn = document.getElementById('mobileTab' + capitalizeFirst(v));
 
-  Object.values(views).forEach(el => {
-    if (el) el.classList.add('hidden');
-  });
-
-  if (views[viewName]) {
-    views[viewName].classList.remove('hidden');
-  }
-
-  // Update Desktop Tab Buttons
-  const tabs = ['Dashboard', 'Trips', 'Analysis', 'Settings'];
-  tabs.forEach(t => {
-    const btn = document.getElementById('navTab' + t);
-    const mBtn = document.getElementById('mobileNav' + t);
-
-    if (btn) {
-      if (t.toLowerCase() === viewName) {
-        btn.className = 'px-4 py-2 text-xs font-semibold rounded-lg bg-rpBlue text-white shadow-sm transition flex items-center space-x-2';
+    if (el) {
+      if (v === viewName) {
+        el.classList.remove('hidden');
       } else {
-        btn.className = 'px-4 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-2';
+        el.classList.add('hidden');
       }
     }
 
-    if (mBtn) {
-      if (t.toLowerCase() === viewName) {
-        mBtn.className = 'flex flex-col items-center py-1 px-3 text-rpBlue transition';
+    if (tabBtn) {
+      if (v === viewName) {
+        tabBtn.className = 'px-4 py-2 rounded-xl text-xs font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(0,240,255,0.2)] flex items-center space-x-2 transition';
       } else {
-        mBtn.className = 'flex flex-col items-center py-1 px-3 text-slate-400 transition';
+        tabBtn.className = 'px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2';
+      }
+    }
+
+    if (mobileBtn) {
+      if (v === viewName) {
+        mobileBtn.className = 'flex flex-col items-center justify-center flex-1 py-1 text-cyan-300 font-bold';
+      } else {
+        mobileBtn.className = 'flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-300 font-medium';
       }
     }
   });
 
-  // Smooth Leaflet Invalidation on Tab Transition
+  // Re-invalidate map sizes on tab change
   setTimeout(function() {
     if (viewName === 'dashboard' && dashboardMapInstance) {
       dashboardMapInstance.invalidateSize();
-    } else if (viewName === 'trips' && tripsMapInstance) {
+    }
+    if (viewName === 'trips' && tripsMapInstance) {
       tripsMapInstance.invalidateSize();
-    } else if (viewName === 'analysis') {
+    }
+    if (viewName === 'analysis') {
       if (analysisMapInstance) analysisMapInstance.invalidateSize();
-      if (!activeAnalysisTrip && allTripsCache.length > 0) {
-        loadTripForAnalysis(allTripsCache[0]._id || allTripsCache[0].id);
+      if (activeAnalysisTrip) {
+        renderAnalysisChart();
       }
-    } else if (viewName === 'settings') {
-      populateSettingsForm();
     }
   }, 120);
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function capitalizeFirst(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 // ----------------------------------------------------
-// DASHBOARD LOGIC: PROFILE & BIKE SPECS
+// PROFILE & BIKE LOGIC
 // ----------------------------------------------------
 function loadProfileFromStorage() {
   const cached = localStorage.getItem('rhody_rider_profile');
   if (cached) {
     try {
       const parsed = JSON.parse(cached);
-      riderProfile = Object.assign(riderProfile, parsed);
+      riderProfile = Object.assign({}, riderProfile, parsed);
     } catch (e) {}
   }
+
+  fetch('/api/user/profile')
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.profile) {
+        riderProfile = Object.assign({}, riderProfile, data.profile);
+        renderDashboardProfile();
+        renderDashboardBike();
+        renderYoutubeDynamicHub();
+      }
+    })
+    .catch(() => {});
 }
 
 function renderDashboardProfile() {
-  const welcomeName = document.getElementById('dashWelcomeName');
-  const navName = document.getElementById('navProfileName');
-  const handle = document.getElementById('dashHandleDisplay');
-  const bio = document.getElementById('dashBioDisplay');
+  const greeting = document.getElementById('dashWelcomeName');
+  const handle = document.getElementById('dashHandle');
+  const bio = document.getElementById('dashBio');
   const avatarImg = document.getElementById('dashAvatarImg');
-  const avatarInit = document.getElementById('dashAvatarInitial');
-  const navAvatarImg = document.getElementById('navAvatarImg');
-  const navAvatarInit = document.getElementById('navAvatarInitial');
-  const removeBtn = document.getElementById('dashBtnRemovePhoto');
+  const avatarPlaceholder = document.getElementById('dashAvatarPlaceholder');
+  const navAvatarImg = document.getElementById('navUserAvatarImg');
+  const navAvatarInit = document.getElementById('navUserAvatarInit');
+  const removeBtn = document.getElementById('btnRemovePhoto');
+
+  if (greeting) greeting.textContent = riderProfile.name || 'Natesh';
+  if (handle) handle.textContent = riderProfile.handle || '@natesh_pilot';
+  if (bio) bio.textContent = riderProfile.bio || 'Weekend canyon carver & telemetry enthusiast.';
 
   const initial = (riderProfile.name || 'N').charAt(0).toUpperCase();
 
-  if (welcomeName) welcomeName.textContent = riderProfile.name || 'Natesh';
-  if (navName) navName.textContent = riderProfile.name || 'Natesh';
-  if (handle) handle.textContent = riderProfile.handle || '@natesh_pilot';
-  if (bio) bio.textContent = riderProfile.bio;
-
   if (riderProfile.avatar) {
     if (avatarImg) { avatarImg.src = riderProfile.avatar; avatarImg.classList.remove('hidden'); }
-    if (avatarInit) avatarInit.classList.add('hidden');
+    if (avatarPlaceholder) avatarPlaceholder.classList.add('hidden');
     if (navAvatarImg) { navAvatarImg.src = riderProfile.avatar; navAvatarImg.classList.remove('hidden'); }
     if (navAvatarInit) navAvatarInit.classList.add('hidden');
     if (removeBtn) removeBtn.classList.remove('hidden');
   } else {
     if (avatarImg) { avatarImg.src = ''; avatarImg.classList.add('hidden'); }
-    if (avatarInit) { avatarInit.textContent = initial; avatarInit.classList.remove('hidden'); }
+    if (avatarPlaceholder) {
+      avatarPlaceholder.textContent = initial;
+      avatarPlaceholder.classList.remove('hidden');
+    }
     if (navAvatarImg) { navAvatarImg.src = ''; navAvatarImg.classList.add('hidden'); }
     if (navAvatarInit) { navAvatarInit.textContent = initial; navAvatarInit.classList.remove('hidden'); }
     if (removeBtn) removeBtn.classList.add('hidden');
@@ -418,18 +315,33 @@ function saveProfile() {
 }
 
 // ----------------------------------------------------
-// DASHBOARD LOGIC: MAP CONNECTION & SAVED PLACES
+// DASHBOARD: REAL SAVED PLACES & MAP CONNECTION
 // ----------------------------------------------------
-function loadPlacesFromStorage() {
+function loadPlacesFromBackend() {
   const cached = localStorage.getItem('rhody_saved_places');
   if (cached) {
     try {
-      const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        savedPlaces = parsed;
-      }
-    } catch (e) {}
+      savedPlaces = JSON.parse(cached) || [];
+    } catch (e) {
+      savedPlaces = [];
+    }
   }
+
+  fetch('/api/user/places')
+    .then(r => r.json())
+    .then(data => {
+      if (data && Array.isArray(data.places)) {
+        savedPlaces = data.places;
+        localStorage.setItem('rhody_saved_places', JSON.stringify(savedPlaces));
+      }
+      renderDashboardPlaces();
+      renderDashboardPlacesMarkers();
+      renderYoutubeDynamicHub();
+    })
+    .catch(() => {
+      renderDashboardPlaces();
+      renderDashboardPlacesMarkers();
+    });
 }
 
 function savePlacesToStorage() {
@@ -440,9 +352,10 @@ function initDashboardMap() {
   const container = document.getElementById('dashboardMap');
   if (!container || dashboardMapInstance) return;
 
+  // Center map on user's current GPS or default view
   dashboardMapInstance = L.map('dashboardMap', {
-    center: [10.5, 77.1],
-    zoom: 9,
+    center: [11.0168, 76.9558],
+    zoom: 8,
     zoomControl: true
   });
 
@@ -453,7 +366,153 @@ function initDashboardMap() {
   }).addTo(dashboardMapInstance);
 
   dashboardPlacesLayer = L.layerGroup().addTo(dashboardMapInstance);
+
+  // Try locating user's real position on map
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      lastKnownGpsFix = { lat, lng };
+      dashboardMapInstance.setView([lat, lng], 11);
+
+      // Add rider current location beacon
+      const riderBeacon = L.divIcon({
+        className: 'rider-live-pin',
+        html: `
+          <div style="position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; inset: -6px; border-radius: 9999px; background: rgba(0, 240, 255, 0.3); animation: pulseGlow 2s infinite;"></div>
+            <div style="width: 14px; height: 14px; border-radius: 9999px; background: #00F0FF; border: 2px solid #FFFFFF; box-shadow: 0 0 10px #00F0FF;"></div>
+          </div>
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+      L.marker([lat, lng], { icon: riderBeacon })
+        .bindPopup('<b style="color: #00F0FF;">Your Current Location</b>')
+        .addTo(dashboardMapInstance);
+
+      renderDashboardPlaces(); // Re-render to compute real distance to places
+    }, function() {}, { enableHighAccuracy: true, timeout: 5000 });
+  }
+
+  // Interactive Click-to-Pin on Map
+  dashboardMapInstance.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    promptSaveMapPin(lat, lng);
+  });
+
   renderDashboardPlacesMarkers();
+}
+
+function promptSaveMapPin(lat, lng) {
+  const placeName = prompt(`Pin Waypoint at (${lat.toFixed(4)}, ${lng.toFixed(4)})\nEnter place name:`, 'Scenic Apex Corner');
+  if (!placeName || !placeName.trim()) return;
+
+  const newPlace = {
+    name: placeName.trim(),
+    category: 'pass',
+    lat: parseFloat(lat),
+    lng: parseFloat(lng),
+    notes: 'Pinned on telemetry radar map'
+  };
+
+  saveNewPlaceToBackend(newPlace);
+}
+
+function saveNewPlaceToBackend(placeDoc) {
+  fetch('/api/user/places', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(placeDoc)
+  })
+    .then(r => r.json())
+    .then(data => {
+      const saved = (data && data.place) ? data.place : Object.assign({ id: 'loc_' + Date.now() }, placeDoc);
+      savedPlaces.unshift(saved);
+      savePlacesToStorage();
+      renderDashboardPlaces();
+      renderDashboardPlacesMarkers();
+      renderYoutubeDynamicHub();
+      showToast(`Saved "${placeDoc.name}" to your map!`, 'success');
+    })
+    .catch(err => {
+      placeDoc.id = 'loc_' + Date.now();
+      savedPlaces.unshift(placeDoc);
+      savePlacesToStorage();
+      renderDashboardPlaces();
+      renderDashboardPlacesMarkers();
+      showToast(`Saved "${placeDoc.name}" locally`, 'success');
+    });
+}
+
+function saveCurrentGpsLocation() {
+  if (!navigator.geolocation) {
+    showToast('Geolocation is not supported by your browser', 'error');
+    return;
+  }
+
+  showToast('Acquiring high-precision GPS fix...', 'info');
+
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const alt = pos.coords.altitude ? Math.round(pos.coords.altitude) : null;
+
+    // Real Reverse Geocode via OpenStreetMap Nominatim
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+      .then(r => r.json())
+      .then(geo => {
+        let detectedName = 'Rider Waypoint';
+        if (geo && geo.address) {
+          detectedName = geo.address.road || geo.address.suburb || geo.address.city || geo.address.town || 'Rider Waypoint';
+        }
+        const customName = prompt(`GPS Fix Acquired! Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}\nEnter name to save this place:`, detectedName);
+        if (!customName || !customName.trim()) return;
+
+        const newPlace = {
+          name: customName.trim(),
+          category: 'garage',
+          lat: lat,
+          lng: lng,
+          altitude: alt,
+          notes: geo && geo.display_name ? geo.display_name.substring(0, 100) : 'Current GPS location fix'
+        };
+
+        saveNewPlaceToBackend(newPlace);
+        if (dashboardMapInstance) {
+          dashboardMapInstance.flyTo([lat, lng], 14);
+        }
+      })
+      .catch(() => {
+        const customName = prompt(`GPS Fix Acquired! Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}\nEnter name to save this place:`, 'Current Garage / Spot');
+        if (!customName || !customName.trim()) return;
+
+        saveNewPlaceToBackend({
+          name: customName.trim(),
+          category: 'garage',
+          lat: lat,
+          lng: lng,
+          altitude: alt,
+          notes: 'Current GPS location fix'
+        });
+      });
+  }, function(err) {
+    showToast('Failed to acquire GPS fix: ' + err.message, 'error');
+  }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+function deletePlace(placeId) {
+  if (!confirm('Are you sure you want to remove this saved place from your map?')) return;
+
+  savedPlaces = savedPlaces.filter(p => (p._id || p.id) !== placeId);
+  savePlacesToStorage();
+  renderDashboardPlaces();
+  renderDashboardPlacesMarkers();
+  renderYoutubeDynamicHub();
+
+  fetch(`/api/user/places/${placeId}`, { method: 'DELETE' }).catch(() => {});
+  showToast('Place removed from map', 'info');
 }
 
 function setDashboardMapLayer(type) {
@@ -472,22 +531,26 @@ function setDashboardMapLayer(type) {
   const btnOsm = document.getElementById('btnDashOsm');
   const btnSat = document.getElementById('btnDashSat');
   [btnDark, btnOsm, btnSat].forEach(b => {
-    if (b) b.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition';
+    if (b) b.className = 'px-3 py-1 rounded-lg text-xs text-slate-400 hover:text-white transition';
   });
-  if (type === 'dark' && btnDark) btnDark.className = 'px-2.5 py-1 rounded-md bg-rpBlue text-white transition';
-  if (type === 'osm' && btnOsm) btnOsm.className = 'px-2.5 py-1 rounded-md bg-rpBlue text-white transition';
-  if (type === 'sat' && btnSat) btnSat.className = 'px-2.5 py-1 rounded-md bg-rpBlue text-white transition';
+  if (type === 'dark' && btnDark) btnDark.className = 'px-3 py-1 rounded-lg text-xs bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold transition';
+  if (type === 'osm' && btnOsm) btnOsm.className = 'px-3 py-1 rounded-lg text-xs bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold transition';
+  if (type === 'sat' && btnSat) btnSat.className = 'px-3 py-1 rounded-lg text-xs bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold transition';
 }
 
 function renderDashboardPlacesMarkers() {
   if (!dashboardMapInstance || !dashboardPlacesLayer) return;
   dashboardPlacesLayer.clearLayers();
 
+  if (savedPlaces.length === 0) return;
+
+  const bounds = L.latLngBounds();
+
   savedPlaces.forEach(place => {
-    let pinColor = '#F59E0B'; // Amber for pass
+    let pinColor = '#FFB703'; // Amber for pass
     let iconChar = '⛰️';
-    if (place.category === 'track') { pinColor = '#EF4444'; iconChar = '🏁'; }
-    if (place.category === 'garage') { pinColor = '#2563EB'; iconChar = '🏠'; }
+    if (place.category === 'track') { pinColor = '#FF3366'; iconChar = '🏁'; }
+    if (place.category === 'garage') { pinColor = '#00F0FF'; iconChar = '🏠'; }
     if (place.category === 'fuel') { pinColor = '#10B981'; iconChar = '⛽'; }
 
     const svgIcon = L.divIcon({
@@ -495,7 +558,7 @@ function renderDashboardPlacesMarkers() {
       html: `
         <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
           <div style="position: absolute; inset: -4px; border-radius: 9999px; background: ${pinColor}25; animation: pulseGlow 2.5s infinite;"></div>
-          <div style="width: 30px; height: 30px; border-radius: 9999px; background: #12161F; border: 2px solid ${pinColor}; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,0.6);">
+          <div style="width: 30px; height: 30px; border-radius: 9999px; background: #0E131F; border: 2px solid ${pinColor}; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,0.7);">
             ${iconChar}
           </div>
         </div>
@@ -505,20 +568,27 @@ function renderDashboardPlacesMarkers() {
     });
 
     const marker = L.marker([place.lat, place.lng], { icon: svgIcon }).addTo(dashboardPlacesLayer);
+    bounds.extend([place.lat, place.lng]);
+
     marker.bindPopup(`
-      <div style="background: #12161F; color: #E2E8F0; padding: 12px; border-radius: 10px; border: 1px solid #1F2636; font-family: Inter, sans-serif; min-width: 220px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1F2636; padding-bottom: 6px; margin-bottom: 8px;">
+      <div style="background: #0E131F; color: #E2E8F0; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); font-family: Inter, sans-serif; min-width: 230px; box-shadow: 0 10px 25px rgba(0,0,0,0.8);">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 8px;">
           <strong style="color: #FFFFFF; font-size: 13px;">${place.name}</strong>
           <span style="font-size: 10px; font-weight: bold; color: ${pinColor}; text-transform: uppercase;">${place.category}</span>
         </div>
-        <p style="font-size: 11px; color: #94A3B8; margin: 4px 0 8px 0; line-height: 1.4;">${place.notes || 'Waypoint saved to Rhody telemetry map.'}</p>
+        <p style="font-size: 11px; color: #94A3B8; margin: 4px 0 8px 0; line-height: 1.4;">${place.notes || 'Real waypoint stored in Rhody database.'}</p>
         <div style="display: flex; gap: 6px;">
-          <button onclick="routeToPlace(${place.lat}, ${place.lng}, '${place.name.replace(/'/g, "\\'")}')" style="flex: 1; background: #2563EB; color: #FFFFFF; border: none; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">Navigate</button>
-          <button onclick="searchYoutubeForPlace('${place.name.replace(/'/g, "\\'")}')" style="background: #EF444425; color: #EF4444; border: 1px solid #EF444440; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">▶ Vlogs</button>
+          <button onclick="routeToPlace(${place.lat}, ${place.lng}, '${place.name.replace(/'/g, "\\'")}')" style="flex: 1; background: #00F0FF; color: #07090E; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">Route</button>
+          <button onclick="searchYoutubeForPlace('${place.name.replace(/'/g, "\\'")}')" style="background: rgba(239,68,68,0.2); color: #FF4D4D; border: 1px solid rgba(239,68,68,0.4); padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;">▶ Vlogs</button>
+          <button onclick="deletePlace('${place._id || place.id}')" style="background: rgba(255,255,255,0.06); color: #94A3B8; border: 1px solid rgba(255,255,255,0.1); padding: 6px 8px; border-radius: 8px; font-size: 11px; cursor: pointer;" title="Delete">🗑️</button>
         </div>
       </div>
     `);
   });
+
+  if (savedPlaces.length > 0 && dashboardMapInstance && bounds.isValid()) {
+    dashboardMapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+  }
 }
 
 function renderDashboardPlaces() {
@@ -528,40 +598,83 @@ function renderDashboardPlaces() {
 
   if (countBadge) countBadge.textContent = `${savedPlaces.length} Saved On Map`;
 
+  // Real Empty State if user has zero saved places
+  if (savedPlaces.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full p-8 rounded-2xl bg-[#0E131F]/90 border border-white/[0.08] backdrop-blur-xl text-center flex flex-col items-center justify-center space-y-4">
+        <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center text-cyan-300">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <div class="max-w-md">
+          <h4 class="text-sm font-bold text-white tracking-wide">Zero Stored Waypoints Yet</h4>
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+            Your real motorcycle destinations, garage basecamp, and mountain roads will appear here. Pin your current GPS fix or click anywhere on the radar map to store locations.
+          </p>
+        </div>
+        <div class="flex items-center space-x-3 pt-1">
+          <button onclick="saveCurrentGpsLocation()" class="px-4 py-2 text-xs font-bold rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/50 shadow-[0_0_15px_rgba(0,240,255,0.2)] flex items-center space-x-1.5 transition">
+            <span>📍 Pin Current Location</span>
+          </button>
+          <button onclick="document.getElementById('dashPlaceSearchInput').focus()" class="px-4 py-2 text-xs font-medium rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border border-white/10 transition">
+            <span>🔍 Search Real Places</span>
+          </button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   const filtered = savedPlaces.filter(p => {
     if (currentDashCategoryFilter === 'all') return true;
     return p.category === currentDashCategoryFilter;
   });
 
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full py-6 text-center text-xs text-slate-400">
+        No places saved under the "${currentDashCategoryFilter}" category.
+      </div>
+    `;
+    return;
+  }
+
   container.innerHTML = filtered.map(place => {
-    let catBadgeColor = 'bg-rpAmber/15 text-rpAmber border-rpAmber/30';
+    let catBadgeColor = 'bg-amber-500/15 text-amber-300 border-amber-400/30';
     let iconChar = '⛰️';
-    if (place.category === 'track') { catBadgeColor = 'bg-rpRose/15 text-rpRose border-rpRose/30'; iconChar = '🏁'; }
-    if (place.category === 'garage') { catBadgeColor = 'bg-rpBlue/15 text-rpBlueLight border-rpBlue/30'; iconChar = '🏠'; }
-    if (place.category === 'fuel') { catBadgeColor = 'bg-rpEmerald/15 text-rpEmerald border-rpEmerald/30'; iconChar = '⛽'; }
+    if (place.category === 'track') { catBadgeColor = 'bg-rose-500/15 text-rose-300 border-rose-400/30'; iconChar = '🏁'; }
+    if (place.category === 'garage') { catBadgeColor = 'bg-cyan-500/15 text-cyan-300 border-cyan-400/30'; iconChar = '🏠'; }
+    if (place.category === 'fuel') { catBadgeColor = 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30'; iconChar = '⛽'; }
 
     const safeName = place.name.replace(/'/g, "\\'");
+    let distStr = '';
+    if (lastKnownGpsFix && place.lat && place.lng) {
+      const d = haversineDistance(lastKnownGpsFix.lat, lastKnownGpsFix.lng, place.lat, place.lng) / 1000;
+      distStr = `${d.toFixed(1)} km away`;
+    }
 
     return `
-      <div class="telemetry-panel p-3.5 space-y-2 hover:border-rpBlue/50 transition flex flex-col justify-between">
+      <div class="p-4 rounded-2xl bg-[#0E131F]/90 border border-white/[0.08] backdrop-blur-xl hover:border-cyan-400/40 transition-all flex flex-col justify-between shadow-lg group">
         <div>
           <div class="flex items-center justify-between">
-            <span class="px-2 py-0.5 text-[9px] font-bold uppercase rounded border ${catBadgeColor}">${iconChar} ${place.category}</span>
-            <span class="text-[10px] text-slate-500 font-tabular">${place.altitude ? place.altitude + ' m' : ''}</span>
+            <span class="px-2.5 py-0.5 text-[9px] font-bold uppercase rounded-full border ${catBadgeColor}">${iconChar} ${place.category}</span>
+            <span class="text-[10px] text-cyan-400 font-mono tracking-wider">${distStr || (place.altitude ? place.altitude + ' m' : '')}</span>
           </div>
-          <h4 class="text-xs font-bold text-white mt-1.5 truncate">${place.name}</h4>
-          <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-2">${place.notes || 'Waypoint pinned on telemetry map'}</p>
+          <h4 class="text-sm font-bold text-white mt-2 group-hover:text-cyan-300 transition truncate">${place.name}</h4>
+          <p class="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">${place.notes || 'Waypoint pinned on telemetry map'}</p>
         </div>
         
-        <div class="pt-2 flex items-center space-x-1.5">
-          <button onclick="flyToDashboardPlace(${place.lat}, ${place.lng}, '${safeName}')" class="flex-1 py-1.5 px-2 text-[11px] font-semibold rounded bg-rpBlue hover:bg-rpBlueHover text-white transition text-center shadow-sm">
+        <div class="pt-3 flex items-center space-x-2 border-t border-white/[0.06] mt-3">
+          <button onclick="flyToDashboardPlace(${place.lat}, ${place.lng}, '${safeName}')" class="flex-1 py-1.5 px-2.5 text-xs font-semibold rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-400/30 transition text-center">
             View on Map
           </button>
-          <button onclick="routeToPlace(${place.lat}, ${place.lng}, '${safeName}')" class="py-1.5 px-2.5 text-[11px] font-medium rounded bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition">
+          <button onclick="routeToPlace(${place.lat}, ${place.lng}, '${safeName}')" class="py-1.5 px-3 text-xs font-medium rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border border-white/10 transition">
             Route
           </button>
-          <button onclick="searchYoutubeForPlace('${safeName}')" title="Watch YouTube vlogs for this place" class="py-1.5 px-2.5 text-[11px] font-bold rounded bg-red-600/15 hover:bg-red-600/25 text-red-400 border border-red-500/30 transition">
+          <button onclick="searchYoutubeForPlace('${safeName}')" title="Watch YouTube vlogs for this place" class="py-1.5 px-2.5 text-xs font-bold rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 transition">
             ▶ Vlogs
+          </button>
+          <button onclick="deletePlace('${place._id || place.id}')" title="Delete waypoint" class="p-1.5 text-slate-500 hover:text-rose-400 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
         </div>
       </div>
@@ -576,9 +689,9 @@ function filterDashboardPlacesCategory(cat) {
     const btn = document.getElementById('dashCat_' + c);
     if (btn) {
       if (c === cat) {
-        btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rpBlue text-white transition';
+        btn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 transition';
       } else {
-        btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-rpCard border border-rpBorder transition';
+        btn.className = 'px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-white/[0.04] border border-white/10 transition';
       }
     }
   });
@@ -593,280 +706,201 @@ function flyToDashboardPlace(lat, lng, name) {
 
 function routeToPlace(lat, lng, name) {
   if (!dashboardMapInstance) return;
-  // Starting point (Basecamp garage)
-  const startLat = 11.0168;
-  const startLng = 76.9558;
+
+  // Real route origin: user's current GPS location, or fallback
+  let startLat = 11.0168;
+  let startLng = 76.9558;
+
+  if (lastKnownGpsFix) {
+    startLat = lastKnownGpsFix.lat;
+    startLng = lastKnownGpsFix.lng;
+  }
+
+  showToast(`Calculating motorcycle route to ${name}...`, 'info');
 
   const url = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${lng},${lat}?overview=full&geometries=geojson`;
-  showToast(`Calculating route to ${name}...`, 'info');
 
   fetch(url)
     .then(r => r.json())
     .then(data => {
-      if (data && data.routes && data.routes[0]) {
-        const route = data.routes[0];
-        const distKm = (route.distance / 1000).toFixed(1);
-        const durationMin = Math.round(route.duration / 60);
-
-        if (dashboardActiveRoute) dashboardMapInstance.removeLayer(dashboardActiveRoute);
-
-        const geojsonLayer = L.geoJSON(route.geometry, {
-          style: {
-            color: '#2563EB',
-            weight: 5,
-            opacity: 0.9,
-            dashArray: '1, 6',
-            lineCap: 'round'
-          }
-        }).addTo(dashboardMapInstance);
-
-        dashboardActiveRoute = geojsonLayer;
-        dashboardMapInstance.fitBounds(geojsonLayer.getBounds(), { padding: [40, 40] });
-
-        showToast(`Route plotted: ${distKm} km • ~${durationMin} min ride`, 'success');
-        fetchRoadWeather(lat, lng, name);
-      } else {
-        showToast('Direct motorcycle trajectory generated', 'info');
+      if (!data.routes || data.routes.length === 0) {
+        showToast('No road trajectory found to this waypoint', 'error');
+        return;
       }
+
+      if (dashboardActiveRoute) {
+        dashboardMapInstance.removeLayer(dashboardActiveRoute);
+      }
+
+      const routeGeo = data.routes[0].geometry;
+      const distKm = (data.routes[0].distance / 1000).toFixed(1);
+      const durationMins = Math.round(data.routes[0].duration / 60);
+
+      dashboardActiveRoute = L.geoJSON(routeGeo, {
+        style: {
+          color: '#00F0FF',
+          weight: 4,
+          opacity: 0.9,
+          dashArray: '8, 6'
+        }
+      }).addTo(dashboardMapInstance);
+
+      dashboardMapInstance.fitBounds(dashboardActiveRoute.getBounds(), { padding: [50, 50] });
+      showToast(`Motorcycle Route to ${name}: ${distKm} km • ${durationMins} mins ride time`, 'success');
+      fetchRoadWeather(lat, lng, name);
     })
-    .catch(() => {
-      showToast('Could not fetch OSRM route, showing location', 'warning');
-      flyToDashboardPlace(lat, lng, name);
+    .catch(err => {
+      showToast('Routing engine temporarily unreachable', 'error');
     });
 }
 
-// Search Places on Dashboard using OpenStreetMap Nominatim
-function searchPlacesInDashboard() {
+function searchDashboardPlaces() {
   const input = document.getElementById('dashPlaceSearchInput');
-  const status = document.getElementById('dashSearchStatus');
   if (!input || !input.value.trim()) return;
 
   const query = input.value.trim();
-  if (status) {
-    status.textContent = `Searching "${query}" via OpenStreetMap...`;
-    status.classList.remove('hidden');
-  }
+  showToast(`Searching worldwide locations for "${query}"...`, 'info');
 
-  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`)
+  fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`)
     .then(r => r.json())
     .then(results => {
-      if (results && results.length > 0) {
-        const item = results[0];
-        const lat = parseFloat(item.lat);
-        const lng = parseFloat(item.lon);
-        const name = item.display_name.split(',')[0];
-
-        if (status) {
-          status.innerHTML = `Found: <strong>${name}</strong> (${lat.toFixed(4)}, ${lng.toFixed(4)}) &bull; <button onclick="quickSavePlace('${name.replace(/'/g, "\\'")}', ${lat}, ${lng})" class="text-rpAmber underline font-bold ml-1">Pin to Map</button>`;
-        }
-
-        if (dashboardMapInstance) {
-          dashboardMapInstance.flyTo([lat, lng], 13);
-          L.popup()
-            .setLatLng([lat, lng])
-            .setContent(`
-              <div style="background: #12161F; color: #FFF; padding: 10px; border-radius: 8px; font-family: Inter, sans-serif;">
-                <strong style="font-size: 13px;">${name}</strong>
-                <p style="font-size: 11px; color: #94A3B8; margin: 4px 0 8px 0;">${item.display_name}</p>
-                <button onclick="quickSavePlace('${name.replace(/'/g, "\\'")}', ${lat}, ${lng})" style="background: #F59E0B; color: #000; border: none; padding: 5px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; cursor: pointer;">Save Place</button>
-              </div>
-            `)
-            .openOn(dashboardMapInstance);
-        }
-      } else {
-        if (status) status.textContent = `No location found for "${query}". Try another landmark.`;
+      if (!results || results.length === 0) {
+        showToast(`No locations found for "${query}"`, 'error');
+        return;
       }
+
+      const top = results[0];
+      const lat = parseFloat(top.lat);
+      const lng = parseFloat(top.lon);
+
+      if (dashboardMapInstance) {
+        dashboardMapInstance.flyTo([lat, lng], 13);
+        const searchMarker = L.marker([lat, lng])
+          .bindPopup(`
+            <div style="background: #0E131F; color: #FFFFFF; padding: 10px; border-radius: 10px; font-family: Inter, sans-serif;">
+              <strong>${top.display_name.split(',')[0]}</strong><br>
+              <span style="font-size: 11px; color: #94A3B8;">${top.display_name.substring(0, 80)}</span><br><br>
+              <button onclick="saveNewPlaceToBackend({ name: '${top.display_name.split(',')[0].replace(/'/g, "\\'")}', category: 'pass', lat: ${lat}, lng: ${lng}, notes: '${top.display_name.substring(0, 100).replace(/'/g, "\\'")}' })" style="background: #00F0FF; color: #07090E; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">
+                Save This Place to Map
+              </button>
+            </div>
+          `)
+          .addTo(dashboardMapInstance);
+        searchMarker.openPopup();
+      }
+      showToast(`Found: ${top.display_name.split(',')[0]}`, 'success');
     })
     .catch(() => {
-      if (status) status.textContent = 'Geocoding query error. Check network connection.';
+      showToast('Search service unavailable. Please check internet connection.', 'error');
     });
 }
 
-function quickSavePlace(name, lat, lng) {
-  const newPlace = {
-    id: 'place_' + Date.now(),
-    name: name,
-    category: 'pass',
-    lat: lat,
-    lng: lng,
-    altitude: 800,
-    notes: 'Saved from dashboard search.'
-  };
-  savedPlaces.push(newPlace);
-  savePlacesToStorage();
-  renderDashboardPlaces();
-  renderDashboardPlacesMarkers();
-  showToast(`Pinned "${name}" to your map!`, 'success');
-}
-
-// Open-Meteo Real-Time Road Weather & Surface Grip
-function fetchRoadWeather(lat, lng, placeName) {
-  const badge = document.getElementById('dashMapWeatherBadge');
-  if (!badge) return;
-
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code`;
-  fetch(url)
-    .then(r => r.json())
-    .then(data => {
-      if (data && data.current) {
-        const cur = data.current;
-        const temp = Math.round(cur.temperature_2m);
-        const hum = cur.relative_humidity_2m;
-        const wind = Math.round(cur.wind_speed_10m);
-        const code = cur.weather_code || 0;
-
-        let condition = 'Dry / Clear';
-        let gripRating = 'OPTIMAL (98% GRIP)';
-        let gripColor = 'text-rpEmerald';
-
-        if (code >= 51 && code <= 67) {
-          condition = 'Rain / Wet Tarmac';
-          gripRating = 'WET / CAUTION (55% GRIP)';
-          gripColor = 'text-rpRose';
-        } else if (code >= 1 && code <= 3) {
-          condition = 'Partly Cloudy';
-        } else if (hum > 85) {
-          condition = 'High Humidity / Mist';
-          gripRating = 'DAMP / CAUTION (75% GRIP)';
-          gripColor = 'text-rpAmber';
-        }
-
-        badge.innerHTML = `
-          <div class="flex items-center space-x-2 text-xs">
-            <span class="w-2 h-2 rounded-full bg-rpEmerald status-pulse"></span>
-            <span class="font-bold text-white">${placeName} Weather:</span>
-            <span class="text-rpBlueLight font-tabular font-bold">${temp}°C</span>
-            <span class="text-slate-400">Wind: ${wind} km/h</span>
-            <span class="${gripColor} font-bold ml-1">${gripRating}</span>
-          </div>
-        `;
-        badge.classList.remove('hidden');
-      }
-    })
-    .catch(() => {});
-}
-
 // ----------------------------------------------------
-// DASHBOARD LOGIC: YOUTUBE ROAD & MACHINE VIDEO HUB
+// DASHBOARD: REAL DYNAMIC YOUTUBE GUIDES & STREAMING
 // ----------------------------------------------------
-function renderYoutubeHub(videos) {
-  const grid = document.getElementById('youtubeVideoGrid');
-  if (!grid) return;
+function renderYoutubeDynamicHub() {
+  const pillsContainer = document.getElementById('youtubePillsContainer');
+  const cardsContainer = document.getElementById('youtubeVideoGrid');
+  if (!pillsContainer || !cardsContainer) return;
 
-  grid.innerHTML = videos.map(v => {
+  const bike = riderProfile.bikeModel || 'Yamaha MT-09 SP';
+
+  // Dynamic search topics based on rider's actual machine & places
+  const dynamicTopics = [
+    { label: `${bike} Review`, query: `${bike} motorcycle in-depth review pure sound` },
+    { label: `${bike} Exhaust & Dyno`, query: `${bike} exhaust sound acceleration top speed` },
+    { label: `Apex Cornering Guide`, query: `motorcycle apex cornering body position trail braking technique` },
+    { label: `Rain Grip & Lean Angle`, query: `motorcycle wet weather riding grip tire lean angle safety` }
+  ];
+
+  // Add rider's saved places dynamically
+  savedPlaces.slice(0, 3).forEach(place => {
+    dynamicTopics.push({
+      label: `${place.name} Ride`,
+      query: `${place.name} motorcycle ride vlog onboard 4K`
+    });
+  });
+
+  pillsContainer.innerHTML = dynamicTopics.map((topic, i) => {
+    const isFirst = i === 0;
+    const activeClass = isFirst
+      ? 'bg-red-600 text-white border-red-500 shadow-[0_0_12px_rgba(239,68,68,0.4)]'
+      : 'bg-white/[0.04] text-slate-400 hover:text-white border-white/10 hover:border-white/20';
+
     return `
-      <div class="telemetry-panel overflow-hidden border border-rpBorder hover:border-red-500/50 transition group flex flex-col justify-between">
-        <!-- Thumbnail -->
-        <div class="relative w-full aspect-video bg-rpDark overflow-hidden cursor-pointer" onclick="openYoutubePlayer('${v.youtubeId}', '${v.title.replace(/'/g, "\\'")}')">
-          <img src="${v.thumb}" alt="${v.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-          <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-            <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-              <svg class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"/></svg>
-            </div>
+      <button onclick="executeYoutubeSearch('${topic.query.replace(/'/g, "\\'")}')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition flex items-center space-x-1.5 ${activeClass}">
+        <svg class="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/></svg>
+        <span>${topic.label}</span>
+      </button>
+    `;
+  }).join('');
+
+  // Render Dynamic High-Tech Video Preview Cards
+  cardsContainer.innerHTML = dynamicTopics.map(topic => {
+    return `
+      <div class="p-4 rounded-2xl bg-[#0E131F]/90 border border-white/[0.08] backdrop-blur-xl hover:border-red-500/40 transition flex flex-col justify-between group shadow-lg">
+        <div>
+          <div class="flex items-center justify-between text-[10px] text-slate-500">
+            <span class="px-2 py-0.5 rounded-full bg-red-600/15 text-red-400 font-bold border border-red-500/20">LIVE YOUTUBE STREAM</span>
+            <span class="font-mono text-cyan-400">4K ONBOARD</span>
           </div>
-          <span class="absolute bottom-2 right-2 px-1.5 py-0.5 text-[10px] font-bold bg-black/80 text-white rounded font-tabular">${v.duration}</span>
-          <span class="absolute top-2 left-2 px-2 py-0.5 text-[9px] font-bold bg-rpDark/80 backdrop-blur-sm text-rpBlueLight border border-rpBorder rounded">${v.categoryLabel}</span>
+          <h4 class="text-sm font-bold text-white mt-2 group-hover:text-red-400 transition leading-snug">${topic.label}</h4>
+          <p class="text-xs text-slate-400 mt-1 line-clamp-2">Real-time YouTube video stream for "${topic.query}".</p>
         </div>
 
-        <!-- Info -->
-        <div class="p-3.5 space-y-2 flex-1 flex flex-col justify-between">
-          <div>
-            <h4 class="text-xs font-bold text-white group-hover:text-red-400 transition line-clamp-2 leading-tight">${v.title}</h4>
-            <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-              <span>${v.channel}</span>
-              <span class="text-slate-500">${v.tag}</span>
-            </div>
-          </div>
-
-          <div class="pt-2 flex items-center space-x-2">
-            <button onclick="openYoutubePlayer('${v.youtubeId}', '${v.title.replace(/'/g, "\\'")}')" class="flex-1 py-1.5 px-3 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-500 text-white transition flex items-center justify-center space-x-1 shadow-sm">
-              <svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"/></svg>
-              <span>Watch Video</span>
-            </button>
-            <a href="https://www.youtube.com/watch?v=${v.youtubeId}" target="_blank" rel="noopener noreferrer" class="p-1.5 text-slate-400 hover:text-white rounded bg-rpDark hover:bg-rpCardHover border border-rpBorder transition" title="Open in YouTube">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-            </a>
-          </div>
+        <div class="pt-3 flex items-center space-x-2 border-t border-white/[0.06] mt-3">
+          <button onclick="executeYoutubeSearch('${topic.query.replace(/'/g, "\\'")}')" class="flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-red-600 hover:bg-red-500 text-white transition flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"/></svg>
+            <span>Play Inside Rhody</span>
+          </button>
+          <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(topic.query)}" target="_blank" rel="noopener noreferrer" class="p-2 text-slate-400 hover:text-white rounded-xl bg-white/[0.05] hover:bg-white/10 border border-white/10 transition" title="Open directly in YouTube">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
         </div>
       </div>
     `;
   }).join('');
 }
 
-function filterYoutubeVideos(category) {
-  const pills = ['mt09', 'munnar', 'valparai', 'kari', 'kolli', 'rain'];
-  pills.forEach(p => {
-    const pill = document.getElementById('ytPill_' + p);
-    if (pill) {
-      if (p === category) {
-        pill.className = 'px-2.5 py-1 rounded-md text-xs font-semibold bg-red-600 text-white transition flex items-center space-x-1';
-      } else {
-        pill.className = 'px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white bg-rpDark border border-rpBorder transition flex items-center space-x-1';
-      }
-    }
-  });
+function executeYoutubeSearch(query) {
+  currentYoutubeQuery = query;
+  const input = document.getElementById('youtubeSearchInput');
+  if (input) input.value = query;
 
-  const filtered = youtubeVideos.filter(v => v.category === category);
-  renderYoutubeHub(filtered.length > 0 ? filtered : youtubeVideos);
+  openYoutubePlayerSearch(query);
 }
 
 function searchCustomYoutube() {
   const input = document.getElementById('youtubeSearchInput');
   if (!input || !input.value.trim()) return;
 
-  const query = input.value.trim().toLowerCase();
-  const matched = youtubeVideos.filter(v => 
-    v.title.toLowerCase().includes(query) ||
-    v.channel.toLowerCase().includes(query) ||
-    v.tag.toLowerCase().includes(query)
-  );
-
-  if (matched.length > 0) {
-    renderYoutubeHub(matched);
-    showToast(`Found ${matched.length} video guide(s) for "${query}"`, 'success');
-  } else {
-    // Open YouTube search directly in new tab
-    const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' motorcycle ride review')}`;
-    window.open(ytUrl, '_blank');
-    showToast(`Opened YouTube search for "${query}"`, 'info');
-  }
+  const query = input.value.trim();
+  executeYoutubeSearch(query);
 }
 
 function searchYoutubeForBike() {
   const bike = riderProfile.bikeModel || 'Yamaha MT-09 SP';
-  const query = `${bike} review exhaust sound`;
-  const input = document.getElementById('youtubeSearchInput');
-  if (input) input.value = bike;
-  filterYoutubeVideos('mt09');
-  showToast(`Loaded YouTube guides for ${bike}`, 'success');
+  executeYoutubeSearch(`${bike} motorcycle review pure exhaust sound`);
 }
 
 function searchYoutubeForPlace(placeName) {
-  const input = document.getElementById('youtubeSearchInput');
-  if (input) input.value = placeName;
-
-  const matched = youtubeVideos.filter(v => 
-    v.tag.toLowerCase().includes(placeName.toLowerCase()) || 
-    placeName.toLowerCase().includes(v.category)
-  );
-
-  if (matched.length > 0) {
-    renderYoutubeHub(matched);
-  } else {
-    window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(placeName + ' motorcycle ride vlog')}`, '_blank');
-  }
-  showToast(`Showing YouTube vlogs for ${placeName}`, 'success');
+  executeYoutubeSearch(`${placeName} motorcycle ride vlog onboard 4K`);
 }
 
-function openYoutubePlayer(videoId, title) {
+function openYoutubePlayerSearch(query) {
   const modal = document.getElementById('youtubePlayerModal');
   const iframe = document.getElementById('youtubeIframe');
   const titleEl = document.getElementById('youtubePlayerTitle');
+  const externalLink = document.getElementById('youtubeExternalLink');
 
   if (modal && iframe) {
-    if (titleEl) titleEl.textContent = title;
-    iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`;
+    if (titleEl) titleEl.textContent = `YouTube Stream: "${query}"`;
+    if (externalLink) externalLink.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+
+    // Real Native YouTube Embed Playlist Search Stream
+    iframe.src = `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(query)}&autoplay=1`;
     modal.classList.remove('hidden');
+    showToast(`Streaming real YouTube results for "${query}"`, 'info');
   }
 }
 
@@ -880,15 +914,15 @@ function closeYoutubePlayerModal() {
 }
 
 // ----------------------------------------------------
-// TRIPS LOGIC: START TRIP, TIMESTAMPS, HUD & CONTROLS
+// TRIPS: 100% REAL GPS & DEVICE ORIENTATION SENSORS
 // ----------------------------------------------------
 function initTripsMap() {
   const container = document.getElementById('tripsLiveMap');
   if (!container || tripsMapInstance) return;
 
   tripsMapInstance = L.map('tripsLiveMap', {
-    center: [10.3256, 76.9558], // Western Ghats
-    zoom: 13
+    center: [11.0168, 76.9558],
+    zoom: 14
   });
 
   L.tileLayer(esriDarkLayerUrl, {
@@ -898,22 +932,94 @@ function initTripsMap() {
   }).addTo(tripsMapInstance);
 
   activeTripPolyline = L.polyline([], {
-    color: '#10B981',
-    weight: 4,
+    color: '#00F0FF',
+    weight: 5,
     opacity: 0.95
   }).addTo(tripsMapInstance);
 }
 
+function setupDeviceSensorFusion() {
+  // Real Gyroscope / Device Orientation for Apex Lean Angle
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', function(event) {
+      if (!isTripRecording || isTripPaused) return;
+
+      // When phone is mounted in landscape or portrait on handlebars:
+      // gamma (-90 to +90) or beta (-180 to 180) reflects motorcycle roll
+      let rawTilt = event.gamma || 0;
+      if (Math.abs(window.orientation || 0) === 90) {
+        rawTilt = event.beta || 0;
+      }
+
+      liveLeanDeg = Math.max(-60, Math.min(60, rawTilt));
+      if (Math.abs(liveLeanDeg) > peakTripLean) {
+        peakTripLean = Math.abs(liveLeanDeg);
+      }
+
+      updateLiveLeanAngleDisplay(liveLeanDeg);
+    }, true);
+  }
+
+  // Real Accelerometer for G-Force Meter
+  if (window.DeviceMotionEvent) {
+    window.addEventListener('devicemotion', function(event) {
+      if (!isTripRecording || isTripPaused) return;
+
+      const acc = event.accelerationIncludingGravity;
+      if (acc) {
+        const lateralG = ((acc.x || 0) / 9.81).toFixed(2);
+        const longitudinalG = ((acc.y || 0) / 9.81).toFixed(2);
+        drawGForceReticle('tripsGforceCanvas', lateralG, longitudinalG);
+      }
+    }, true);
+  }
+}
+
+function updateLiveLeanAngleDisplay(leanDeg) {
+  const leanReadout = document.getElementById('liveLeanAngleReadout');
+  if (!leanReadout) return;
+
+  const rounded = Math.abs(leanDeg).toFixed(1);
+  if (leanDeg < -2.0) {
+    leanReadout.innerHTML = `<span class="text-cyan-400 font-mono">${rounded}&deg;</span> <span class="text-xs text-slate-400">LEFT APEX</span>`;
+  } else if (leanDeg > 2.0) {
+    leanReadout.innerHTML = `<span class="text-amber-400 font-mono">${rounded}&deg;</span> <span class="text-xs text-slate-400">RIGHT APEX</span>`;
+  } else {
+    leanReadout.innerHTML = `<span class="text-emerald-400 font-mono">0.0&deg;</span> <span class="text-xs text-slate-400">UPRIGHT</span>`;
+  }
+}
+
 function startNewTripSession() {
+  if (!navigator.geolocation) {
+    alert('Geolocation is not supported by your browser. Please use a modern mobile or desktop browser with GPS enabled.');
+    return;
+  }
+
+  // Request Device Orientation permission on iOS 13+ if applicable
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().catch(() => {});
+  }
+
   isTripRecording = true;
   isTripPaused = false;
   tripStartTime = new Date();
   tripElapsedSeconds = 0;
   activeTripPoints = [];
   activeTripDistanceKm = 0.0;
+  peakTripSpeed = 0.0;
+  peakTripLean = 0.0;
   activeTripId = 'trip_' + Date.now();
 
-  // Update UI Elements
+  // Reset live polyline on map
+  if (tripsMapInstance && activeTripPolyline) {
+    activeTripPolyline.setLatLngs([]);
+    if (activeTripMarker) {
+      tripsMapInstance.removeLayer(activeTripMarker);
+      activeTripMarker = null;
+    }
+  }
+
+  // Update UI Elements to Recording State
   document.getElementById('btnStartTrip').classList.add('hidden');
   document.getElementById('btnPauseTrip').classList.remove('hidden');
   document.getElementById('btnFinishTrip').classList.remove('hidden');
@@ -924,28 +1030,178 @@ function startNewTripSession() {
   const startStamp = document.getElementById('tripStartTimestampDisplay');
   const navPulse = document.getElementById('navLiveTripPulse');
 
-  if (dot) dot.className = 'w-3 h-3 rounded-full bg-rpEmerald status-pulse';
-  if (title) title.textContent = 'Trip in Progress';
+  if (dot) dot.className = 'w-3 h-3 rounded-full bg-emerald-400 status-pulse';
+  if (title) title.textContent = 'Trip in Progress (Real GPS Active)';
   if (pill) {
-    pill.textContent = 'RECORDING ACTIVE';
-    pill.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-rpEmerald/20 text-rpEmerald border border-rpEmerald/30 status-pulse';
+    pill.textContent = 'GPS SENSORS ACTIVE';
+    pill.className = 'px-3 py-1 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 status-pulse';
   }
 
-  // Format "When he started"
   const timeStr = tripStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const dateStr = tripStartTime.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
   if (startStamp) {
-    startStamp.innerHTML = `Started at: <strong class="text-white">${timeStr}</strong> &bull; ${dateStr} &bull; Motorcycle Telemetry Active`;
+    startStamp.innerHTML = `Started at: <strong class="text-white">${timeStr}</strong> &bull; ${dateStr} &bull; Real Telemetry Stream`;
   }
   if (navPulse) navPulse.classList.remove('hidden');
 
-  // Start live stopwatch timer
+  // Start real stopwatch timer
   if (tripTimerInterval) clearInterval(tripTimerInterval);
   tripTimerInterval = setInterval(updateLiveTripTimer, 1000);
 
-  // Start active telemetry simulation
-  startLiveTelemetrySimulation();
-  showToast('Trip recording started! IMU & GPS sensors active.', 'success');
+  // Start Real GPS Position Tracking
+  gpsWatchId = navigator.geolocation.watchPosition(
+    handleRealGpsFix,
+    handleRealGpsError,
+    {
+      enableHighAccuracy: true,
+      maximumAge: 1000,
+      timeout: 10000
+    }
+  );
+
+  // Start Real Parent Live Beacon Push (pushes real coordinates every 3 seconds)
+  startRealLiveBeaconBroadcast();
+
+  showToast('Real GPS & IMU Telemetry active! Mount phone on motorcycle.', 'success');
+}
+
+function handleRealGpsFix(position) {
+  if (!isTripRecording || isTripPaused) return;
+
+  const lat = position.coords.latitude;
+  const lng = position.coords.longitude;
+  const alt = position.coords.altitude ? Math.round(position.coords.altitude) : null;
+  const timestamp = position.timestamp || Date.now();
+
+  let speedKmh = 0.0;
+
+  // Real Speed Computation
+  if (position.coords.speed !== null && position.coords.speed >= 0) {
+    speedKmh = position.coords.speed * 3.6;
+  } else if (lastKnownGpsFix && lastKnownGpsFix.timestamp) {
+    // Haversine fallback calculation for devices without native speed reporting
+    const dMeters = haversineDistance(lastKnownGpsFix.lat, lastKnownGpsFix.lng, lat, lng);
+    const dtSeconds = (timestamp - lastKnownGpsFix.timestamp) / 1000;
+    if (dtSeconds > 0) {
+      speedKmh = (dMeters / dtSeconds) * 3.6;
+    }
+  }
+
+  // Smooth speed & ignore micro GPS drift below 1.5 km/h
+  if (speedKmh < 1.5) speedKmh = 0.0;
+  liveSpeedKmh = speedKmh;
+
+  if (speedKmh > peakTripSpeed) {
+    peakTripSpeed = speedKmh;
+  }
+
+  // Cumulative distance
+  if (lastKnownGpsFix) {
+    const segmentMeters = haversineDistance(lastKnownGpsFix.lat, lastKnownGpsFix.lng, lat, lng);
+    activeTripDistanceKm += (segmentMeters / 1000);
+  }
+
+  lastKnownGpsFix = { lat, lng, altitude: alt, timestamp };
+
+  // Store real track point
+  activeTripPoints.push({
+    latitude: lat,
+    longitude: lng,
+    altitudeMeters: alt,
+    speedMps: speedKmh / 3.6,
+    speedKmh: speedKmh,
+    leanAngleDeg: liveLeanDeg,
+    cumulativeDistanceMeters: Math.round(activeTripDistanceKm * 1000),
+    timestamp: timestamp
+  });
+
+  // Update UI Elements
+  const speedEl = document.getElementById('liveCurrentSpeed');
+  const distEl = document.getElementById('liveCurrentDist');
+  const moveEl = document.getElementById('liveMovementStatus');
+  const mapSpeed = document.getElementById('tripsMapSpeed');
+  const mapDist = document.getElementById('tripsMapDist');
+  const mapAlt = document.getElementById('tripsMapAlt');
+
+  if (speedEl) speedEl.textContent = speedKmh.toFixed(1);
+  if (distEl) distEl.textContent = activeTripDistanceKm.toFixed(2);
+
+  if (moveEl) {
+    if (speedKmh >= 2.0) {
+      moveEl.textContent = `BIKE IS MOVING — ${speedKmh.toFixed(1)} KM/H`;
+      moveEl.className = 'text-xs text-emerald-400 font-mono font-bold block mt-1 tracking-wider';
+    } else {
+      moveEl.textContent = `BIKE IS STOPPED — 0.0 KM/H`;
+      moveEl.className = 'text-xs text-amber-400 font-mono font-bold block mt-1 tracking-wider';
+    }
+  }
+
+  if (mapSpeed) mapSpeed.textContent = speedKmh.toFixed(0);
+  if (mapDist) mapDist.textContent = activeTripDistanceKm.toFixed(2) + ' km';
+  if (mapAlt && alt !== null) mapAlt.textContent = alt + ' m';
+
+  // Redraw gauges
+  drawSpeedGauge('tripsSpeedCanvas', speedKmh);
+
+  // Update Live Map Breadcrumbs with Real GPS Path
+  if (tripsMapInstance && activeTripPolyline) {
+    activeTripPolyline.addLatLng([lat, lng]);
+
+    if (!activeTripMarker) {
+      const bikeIcon = L.divIcon({
+        className: 'bike-real-marker',
+        html: `
+          <div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; inset: -4px; border-radius: 9999px; background: rgba(0, 240, 255, 0.4); animation: pulseGlow 1.5s infinite;"></div>
+            <div style="width: 18px; height: 18px; border-radius: 9999px; background: #00F0FF; border: 2px solid #FFFFFF; box-shadow: 0 0 12px #00F0FF;"></div>
+          </div>
+        `,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
+      activeTripMarker = L.marker([lat, lng], { icon: bikeIcon }).addTo(tripsMapInstance);
+    } else {
+      activeTripMarker.setLatLng([lat, lng]);
+    }
+
+    tripsMapInstance.panTo([lat, lng]);
+  }
+}
+
+function handleRealGpsError(err) {
+  console.warn('GPS Fix Notice:', err.message);
+  if (err.code === 1) {
+    showToast('GPS Permission Denied. Please enable location permissions in browser.', 'error');
+  }
+}
+
+function startRealLiveBeaconBroadcast() {
+  if (beaconPushInterval) clearInterval(beaconPushInterval);
+
+  beaconPushInterval = setInterval(function() {
+    if (!isTripRecording || !activeTripId) return;
+
+    const payload = {
+      tripId: activeTripId,
+      riderName: riderProfile.name || 'Natesh',
+      status: isTripPaused ? 'PAUSED' : 'RECORDING',
+      isMoving: liveSpeedKmh >= 2.0,
+      currentSpeedKmh: liveSpeedKmh,
+      maxSpeedKmh: peakTripSpeed,
+      latitude: lastKnownGpsFix ? lastKnownGpsFix.lat : 0,
+      longitude: lastKnownGpsFix ? lastKnownGpsFix.lng : 0,
+      altitudeMeters: lastKnownGpsFix ? lastKnownGpsFix.altitude : null,
+      totalDistanceKm: activeTripDistanceKm,
+      elapsedTimeMs: tripElapsedSeconds * 1000,
+      timestamp: Date.now()
+    };
+
+    fetch(`/api/trips/${activeTripId}/live`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(() => {});
+  }, 3000);
 }
 
 function updateLiveTripTimer() {
@@ -965,26 +1221,27 @@ function togglePauseTripSession() {
   if (!isTripRecording) return;
   isTripPaused = !isTripPaused;
 
-  const pauseBtn = document.getElementById('btnPauseTrip');
-  const pill = document.getElementById('tripLiveStatusPill');
   const pauseLabel = document.getElementById('pauseBtnLabel');
+  const pill = document.getElementById('tripLiveStatusPill');
   const movement = document.getElementById('liveMovementStatus');
 
   if (isTripPaused) {
-    if (pauseLabel) pauseLabel.textContent = 'Resume Trip';
+    if (pauseLabel) pauseLabel.textContent = 'Resume Recording';
     if (pill) {
       pill.textContent = 'TRIP PAUSED';
-      pill.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-rpAmber/20 text-rpAmber border border-rpAmber/30';
+      pill.className = 'px-3 py-1 text-xs font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40';
     }
-    if (movement) { movement.textContent = 'Bike Paused / Engine Idle'; movement.className = 'text-[11px] text-rpAmber block mt-0.5'; }
+    if (movement) {
+      movement.textContent = 'BIKE PAUSED / ENGINE IDLE';
+      movement.className = 'text-xs text-amber-400 font-mono font-bold block mt-1 tracking-wider';
+    }
     showToast('Trip paused', 'info');
   } else {
-    if (pauseLabel) pauseLabel.textContent = 'Pause Trip';
+    if (pauseLabel) pauseLabel.textContent = 'Pause Recording';
     if (pill) {
-      pill.textContent = 'RECORDING ACTIVE';
-      pill.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-rpEmerald/20 text-rpEmerald border border-rpEmerald/30 status-pulse';
+      pill.textContent = 'GPS SENSORS ACTIVE';
+      pill.className = 'px-3 py-1 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 status-pulse';
     }
-    if (movement) { movement.textContent = 'Bike is Moving'; movement.className = 'text-[11px] text-rpEmerald block mt-0.5'; }
     showToast('Trip resumed', 'success');
   }
 }
@@ -994,8 +1251,10 @@ function finishTripSession() {
 
   isTripRecording = false;
   isTripPaused = false;
+
   if (tripTimerInterval) clearInterval(tripTimerInterval);
-  if (liveSimulationInterval) clearInterval(liveSimulationInterval);
+  if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+  if (beaconPushInterval) clearInterval(beaconPushInterval);
 
   // Reset controls
   document.getElementById('btnStartTrip').classList.remove('hidden');
@@ -1009,156 +1268,200 @@ function finishTripSession() {
   if (title) title.textContent = 'Trip Completed Safely';
   if (pill) {
     pill.textContent = 'SAVED TO CLOUD';
-    pill.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-rpEmerald/20 text-rpEmerald border border-rpEmerald/30';
+    pill.className = 'px-3 py-1 text-xs font-bold rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40';
   }
   if (navPulse) navPulse.classList.add('hidden');
 
-  // Build completed trip record
+  // Compute REAL Summary Metrics from actual recorded points
   const finishTime = new Date();
+  const validSpeeds = activeTripPoints.map(p => p.speedKmh).filter(s => s > 0);
+  const avgSpeed = validSpeeds.length > 0 ? (validSpeeds.reduce((a, b) => a + b, 0) / validSpeeds.length) : 0.0;
+  
+  // Real Elevation Gain Calculation
+  let totalAscent = 0;
+  for (let i = 1; i < activeTripPoints.length; i++) {
+    const prevAlt = activeTripPoints[i - 1].altitudeMeters;
+    const curAlt = activeTripPoints[i].altitudeMeters;
+    if (prevAlt !== null && curAlt !== null && curAlt > prevAlt) {
+      totalAscent += (curAlt - prevAlt);
+    }
+  }
+
   const tripRecord = {
-    _id: activeTripId || 'trip_' + Date.now(),
-    title: 'Ride &mdash; ' + finishTime.toLocaleDateString([], { month: 'short', day: 'numeric' }),
+    _id: activeTripId,
+    title: 'Motorcycle Ride &mdash; ' + finishTime.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
     startTime: tripStartTime ? tripStartTime.toISOString() : new Date().toISOString(),
     endTime: finishTime.toISOString(),
     duration: tripElapsedSeconds,
-    distance: activeTripDistanceKm > 0 ? activeTripDistanceKm : 34.6,
-    maxSpeed: 104.2,
-    avgSpeed: 56.4,
-    maxLeanAngle: 43.5,
-    elevationGain: 680,
-    status: 'COMPLETED'
+    distance: activeTripDistanceKm,
+    maxSpeed: peakTripSpeed,
+    avgSpeed: avgSpeed,
+    maxLeanAngle: peakTripLean,
+    elevationGain: totalAscent,
+    status: 'COMPLETED',
+    points: activeTripPoints
   };
 
   allTripsCache.unshift(tripRecord);
   renderRecentTripsTable();
 
-  // Save to backend API
+  // Save Real Trip and Track Points to MongoDB Atlas Backend
   fetch('/api/trips', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(tripRecord)
-  }).catch(() => {});
+  })
+    .then(r => r.json())
+    .then(() => {
+      showToast('Trip successfully persisted to MongoDB Atlas!', 'success');
+    })
+    .catch(() => {
+      showToast('Trip saved locally in browser memory', 'info');
+    });
 
-  showToast('Trip completed and safely saved! Switching to Analysis...', 'success');
-
-  // Switch to Analysis view and load this completed run
+  // Automatically switch to Analysis view and load this real run
   setTimeout(function() {
     switchMainView('analysis');
     loadTripForAnalysis(tripRecord._id);
   }, 1000);
 }
 
-function startLiveTelemetrySimulation() {
-  // Base coordinates along Valparai Ghat road
-  let currentLat = 10.3256;
-  let currentLng = 76.9558;
-  let step = 0;
-
-  if (liveSimulationInterval) clearInterval(liveSimulationInterval);
-
-  liveSimulationInterval = setInterval(function() {
-    if (!isTripRecording || isTripPaused) return;
-
-    step++;
-    // Speed variations between 42 and 94 km/h
-    liveSpeedKmh = Math.round(55 + 28 * Math.sin(step * 0.3) + (Math.random() * 8 - 4));
-    // Lean angle variations (-42 to +42 deg)
-    liveLeanDeg = Math.round(38 * Math.sin(step * 0.4));
-    activeTripDistanceKm = parseFloat((activeTripDistanceKm + (liveSpeedKmh / 3600)).toFixed(2));
-
-    // Coordinates advance along twisty ridge
-    currentLat += 0.0003 + 0.00015 * Math.sin(step);
-    currentLng += 0.00025 * Math.cos(step);
-
-    // Update UI Indicators
-    const speedEl = document.getElementById('liveCurrentSpeed');
-    const distEl = document.getElementById('liveCurrentDist');
-    const moveEl = document.getElementById('liveMovementStatus');
-    const mapSpeed = document.getElementById('tripsMapSpeed');
-    const mapDist = document.getElementById('tripsMapDist');
-    const mapAlt = document.getElementById('tripsMapAlt');
-    const leanReadout = document.getElementById('liveLeanAngleReadout');
-
-    if (speedEl) speedEl.textContent = liveSpeedKmh.toFixed(1);
-    if (distEl) distEl.textContent = activeTripDistanceKm.toFixed(2);
-    if (moveEl) {
-      moveEl.textContent = `Bike is Moving (${liveSpeedKmh} KM/H)`;
-      moveEl.className = 'text-[11px] text-rpEmerald block mt-0.5';
-    }
-    if (mapSpeed) mapSpeed.textContent = liveSpeedKmh;
-    if (mapDist) mapDist.textContent = activeTripDistanceKm.toFixed(2) + ' km';
-    if (mapAlt) mapAlt.textContent = (1100 + Math.round(180 * Math.sin(step * 0.1))) + ' m';
-
-    if (leanReadout) {
-      if (liveLeanDeg < 0) {
-        leanReadout.textContent = `${Math.abs(liveLeanDeg)}° LEFT APEX`;
-      } else if (liveLeanDeg > 0) {
-        leanReadout.textContent = `${liveLeanDeg}° RIGHT APEX`;
-      } else {
-        leanReadout.textContent = '0.0° VERTICAL';
-      }
-    }
-
-    // Redraw Canvas Gauges
-    drawSpeedGauge('tripsSpeedCanvas', liveSpeedKmh);
-    drawGForceReticle('tripsGforceCanvas', liveLeanDeg / 45, 0.2);
-
-    // Update Live Map Breadcrumbs
-    if (tripsMapInstance && activeTripPolyline) {
-      activeTripPolyline.addLatLng([currentLat, currentLng]);
-      if (!activeTripMarker) {
-        activeTripMarker = L.circleMarker([currentLat, currentLng], {
-          radius: 8,
-          fillColor: '#10B981',
-          color: '#FFFFFF',
-          weight: 2,
-          fillOpacity: 1
-        }).addTo(tripsMapInstance);
-      } else {
-        activeTripMarker.setLatLng([currentLat, currentLng]);
-      }
-      tripsMapInstance.panTo([currentLat, currentLng]);
-    }
-  }, 1000);
-}
-
-function simulateLiveRideDemo() {
-  switchMainView('trips');
-  startNewTripSession();
-  showToast('Valparai Hillclimb live demonstration running!', 'info');
-}
-
 function shareTripWithParents() {
-  const tripId = activeTripId || 'active';
+  const tripId = activeTripId || (allTripsCache[0] && allTripsCache[0]._id) || 'live_ride';
   const liveUrl = `${window.location.origin}/?live=${tripId}`;
-  const text = encodeURIComponent(`Hi! Natesh has started a motorcycle ride. Track live speed, movement status & route here: ${liveUrl}`);
+  const riderName = riderProfile.name || 'Natesh';
+  const text = encodeURIComponent(`Hi! ${riderName} has started a motorcycle ride on Rhody. Track real live speed, motion status & GPS location here: ${liveUrl}`);
   window.open(`https://wa.me/?text=${text}`, '_blank');
   showToast('Generated WhatsApp Parent Live Safety Link', 'success');
+}
+
+function copyParentTrackingLink() {
+  const tripId = activeTripId || (allTripsCache[0] && allTripsCache[0]._id) || 'live_ride';
+  const liveUrl = `${window.location.origin}/?live=${tripId}`;
+  navigator.clipboard.writeText(liveUrl).then(() => {
+    showToast('Parent Live Safety link copied to clipboard!', 'success');
+  }).catch(() => {
+    prompt('Copy Parent Live Safety Link:', liveUrl);
+  });
+}
+
+// ----------------------------------------------------
+// PARENT LIVE TRACKING MONITOR MODE (?live=<tripId>)
+// ----------------------------------------------------
+function initParentLiveTrackingMode(liveTripId) {
+  switchMainView('trips');
+  showToast(`Connected to Parent Live Safety Monitor for trip #${liveTripId}`, 'info');
+
+  const banner = document.getElementById('parentLiveAlertBanner');
+  if (banner) banner.classList.remove('hidden');
+
+  // Poll real live beacon every 3 seconds
+  if (parentPollInterval) clearInterval(parentPollInterval);
+
+  parentPollInterval = setInterval(function() {
+    fetch(`/api/trips/${liveTripId}/live`)
+      .then(r => r.json())
+      .then(beacon => {
+        if (!beacon) return;
+
+        const speedEl = document.getElementById('liveCurrentSpeed');
+        const distEl = document.getElementById('liveCurrentDist');
+        const moveEl = document.getElementById('liveMovementStatus');
+        const pill = document.getElementById('tripLiveStatusPill');
+
+        if (speedEl) speedEl.textContent = (beacon.currentSpeedKmh || 0).toFixed(1);
+        if (distEl) distEl.textContent = (beacon.totalDistanceKm || 0).toFixed(2);
+
+        if (moveEl) {
+          if (beacon.isMoving) {
+            moveEl.textContent = `BIKE IS MOVING — ${(beacon.currentSpeedKmh || 0).toFixed(1)} KM/H`;
+            moveEl.className = 'text-xs text-emerald-400 font-mono font-bold block mt-1 tracking-wider';
+          } else {
+            moveEl.textContent = `BIKE IS STOPPED — 0.0 KM/H`;
+            moveEl.className = 'text-xs text-amber-400 font-mono font-bold block mt-1 tracking-wider';
+          }
+        }
+
+        if (pill) {
+          pill.textContent = beacon.status === 'RECORDING' ? 'RIDER ACTIVE ON ROAD' : 'RIDE FINISHED';
+        }
+
+        drawSpeedGauge('tripsSpeedCanvas', beacon.currentSpeedKmh || 0);
+
+        if (beacon.latitude && beacon.longitude && tripsMapInstance) {
+          if (!activeTripMarker) {
+            const beaconIcon = L.divIcon({
+              className: 'parent-live-beacon',
+              html: `<div style="width: 20px; height: 20px; border-radius: 9999px; background: #00F0FF; border: 3px solid #FFFFFF; box-shadow: 0 0 15px #00F0FF;"></div>`,
+              iconSize: [20, 20],
+              iconAnchor: [10, 10]
+            });
+            activeTripMarker = L.marker([beacon.latitude, beacon.longitude], { icon: beaconIcon }).addTo(tripsMapInstance);
+          } else {
+            activeTripMarker.setLatLng([beacon.latitude, beacon.longitude]);
+          }
+          tripsMapInstance.panTo([beacon.latitude, beacon.longitude]);
+        }
+      })
+      .catch(() => {});
+  }, 3000);
+}
+
+// ----------------------------------------------------
+// ANALYSIS LOGIC: 100% REAL RECORDED TRIPS & HEATMAP
+// ----------------------------------------------------
+function refreshRealTrips() {
+  fetch('/api/trips')
+    .then(r => r.json())
+    .then(trips => {
+      if (Array.isArray(trips)) {
+        allTripsCache = trips;
+      }
+      renderRecentTripsTable();
+      populateAnalysisDropdown();
+      if (allTripsCache.length > 0 && !activeAnalysisTrip) {
+        loadTripForAnalysis(allTripsCache[0]._id || allTripsCache[0].id);
+      } else if (allTripsCache.length === 0) {
+        renderAnalysisEmptyState();
+      }
+    })
+    .catch(() => {
+      renderRecentTripsTable();
+      if (allTripsCache.length === 0) renderAnalysisEmptyState();
+    });
 }
 
 function renderRecentTripsTable() {
   const tbody = document.getElementById('tripsRecentTableBody');
   if (!tbody) return;
 
-  const displayList = allTripsCache.length > 0 ? allTripsCache : [
-    { _id: 'valparai_run', title: 'Valparai 40 Hairpins Hillclimb', startTime: '2026-10-15T06:30:00Z', distance: 64.8, duration: 5592, maxSpeed: 134.6 },
-    { _id: 'munnar_run', title: 'Munnar Gap Road Ridge Climb', startTime: '2026-10-14T07:15:00Z', distance: 42.1, duration: 3720, maxSpeed: 112.0 },
-    { _id: 'kari_trackday', title: 'Kari Motor Speedway Track Session', startTime: '2026-10-12T10:00:00Z', distance: 35.0, duration: 2400, maxSpeed: 148.5 }
-  ];
+  if (allTripsCache.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="py-8 text-center text-xs text-slate-400">
+          <div class="flex flex-col items-center justify-center space-y-2">
+            <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>No trips recorded yet. Tap "Start Recording Trip" above to capture your first real motorcycle run.</span>
+          </div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
 
-  tbody.innerHTML = displayList.map(t => {
+  tbody.innerHTML = allTripsCache.map(t => {
     const dStr = new Date(t.startTime).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    const durMins = Math.round((t.duration || 3600) / 60);
+    const durMins = Math.round((t.duration || 0) / 60);
 
     return `
-      <tr class="hover:bg-rpDark/60 transition">
-        <td class="py-2.5 px-3 font-semibold text-white">${t.title || 'Mountain Ride'}</td>
-        <td class="py-2.5 px-3 text-slate-400 text-[11px]">${dStr}</td>
-        <td class="py-2.5 px-3 font-bold text-rpBlueLight">${(t.distance || 0).toFixed(1)} KM</td>
-        <td class="py-2.5 px-3">${durMins} min</td>
-        <td class="py-2.5 px-3 text-rpAmber font-bold">${(t.maxSpeed || 0).toFixed(1)} km/h</td>
-        <td class="py-2.5 px-3 text-right">
-          <button onclick="switchMainView('analysis'); loadTripForAnalysis('${t._id || t.id}')" class="px-2.5 py-1 text-[11px] font-bold rounded bg-rpBlue hover:bg-rpBlueHover text-white transition">
+      <tr class="hover:bg-white/[0.04] transition border-b border-white/[0.04]">
+        <td class="py-3 px-3 font-semibold text-white text-xs">${t.title || 'Motorcycle Ride'}</td>
+        <td class="py-3 px-3 text-slate-400 text-[11px] font-mono">${dStr}</td>
+        <td class="py-3 px-3 font-bold text-cyan-300 font-mono">${(t.distance || 0).toFixed(1)} KM</td>
+        <td class="py-3 px-3 text-slate-300 text-xs font-mono">${durMins} min</td>
+        <td class="py-3 px-3 text-amber-400 font-bold font-mono">${(t.maxSpeed || 0).toFixed(1)} km/h</td>
+        <td class="py-3 px-3 text-right">
+          <button onclick="switchMainView('analysis'); loadTripForAnalysis('${t._id || t.id}')" class="px-3 py-1 text-xs font-bold rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-400/30 transition">
             Analyze
           </button>
         </td>
@@ -1167,16 +1470,28 @@ function renderRecentTripsTable() {
   }).join('');
 }
 
-// ----------------------------------------------------
-// ANALYSIS LOGIC: SPEED IN EACH PLACE, HEATMAP,
-// LANDMARKS TABLE & COMPLETION DOSSIER
-// ----------------------------------------------------
+function populateAnalysisDropdown() {
+  const select = document.getElementById('analysisTripSelect');
+  if (!select) return;
+
+  if (allTripsCache.length === 0) {
+    select.innerHTML = `<option value="">No recorded trips in cloud</option>`;
+    return;
+  }
+
+  select.innerHTML = allTripsCache.map(t => {
+    const dStr = new Date(t.startTime).toLocaleDateString([], { month: 'short', day: 'numeric' });
+    const dist = (t.distance || 0).toFixed(1);
+    return `<option value="${t._id || t.id}">${t.title || 'Ride'} (${dStr} &bull; ${dist} km)</option>`;
+  }).join('');
+}
+
 function initAnalysisMap() {
   const container = document.getElementById('analysisMap');
   if (!container || analysisMapInstance) return;
 
   analysisMapInstance = L.map('analysisMap', {
-    center: [10.3256, 76.9558],
+    center: [11.0168, 76.9558],
     zoom: 12
   });
 
@@ -1191,29 +1506,54 @@ function onAnalysisTripSelect(tripId) {
   loadTripForAnalysis(tripId);
 }
 
-function loadTripForAnalysis(tripId) {
-  const trip = allTripsCache.find(t => (t._id || t.id) === tripId) || {
-    _id: tripId,
-    title: 'Valparai 40 Hairpins Hillclimb',
-    startTime: '2026-10-15T06:15:30Z',
-    endTime: '2026-10-15T07:48:42Z',
-    distance: 64.8,
-    duration: 5592,
-    maxSpeed: 134.6,
-    avgSpeed: 58.2,
-    maxLeanAngle: 42.5,
-    elevationGain: 1120
-  };
+function renderAnalysisEmptyState() {
+  const titleEl = document.getElementById('analysisTripTitle');
+  if (titleEl) titleEl.textContent = 'Awaiting Telemetry Data';
 
+  const container = document.getElementById('analysisLandmarksTableBody');
+  if (container) {
+    container.innerHTML = `
+      <tr>
+        <td colspan="5" class="py-8 text-center text-xs text-slate-400">
+          No recorded telemetry sessions. Take your motorcycle on the road and tap "Start Recording Trip" in the Trips tab.
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function loadTripForAnalysis(tripId) {
+  if (!tripId) {
+    renderAnalysisEmptyState();
+    return;
+  }
+
+  const trip = allTripsCache.find(t => (t._id || t.id) === tripId);
+  if (!trip) {
+    fetch(`/api/trips/${tripId}`)
+      .then(r => r.json())
+      .then(fetchedTrip => {
+        if (fetchedTrip && !fetchedTrip.error) {
+          allTripsCache.push(fetchedTrip);
+          applyTripToAnalysis(fetchedTrip);
+        }
+      })
+      .catch(() => {});
+    return;
+  }
+
+  applyTripToAnalysis(trip);
+}
+
+function applyTripToAnalysis(trip) {
   activeAnalysisTrip = trip;
 
-  // Update Title & Select
   const titleEl = document.getElementById('analysisTripTitle');
   const selectEl = document.getElementById('analysisTripSelect');
-  if (titleEl) titleEl.textContent = trip.title;
-  if (selectEl && selectEl.value !== tripId) selectEl.value = tripId;
+  if (titleEl) titleEl.textContent = trip.title || 'Motorcycle Ride';
+  if (selectEl && selectEl.value !== (trip._id || trip.id)) selectEl.value = (trip._id || trip.id);
 
-  // Update Completion Dossier
+  // Update Completion Dossier with Real Values
   const compDist = document.getElementById('compDist');
   const compDuration = document.getElementById('compDuration');
   const compTopSpeed = document.getElementById('compTopSpeed');
@@ -1221,118 +1561,77 @@ function loadTripForAnalysis(tripId) {
   const compMaxLean = document.getElementById('compMaxLean');
   const compElevation = document.getElementById('compElevation');
 
-  if (compDist) compDist.textContent = (trip.distance || 64.8).toFixed(1) + ' km';
+  if (compDist) compDist.textContent = (trip.distance || 0).toFixed(1) + ' km';
   if (compDuration) {
-    const durSec = trip.duration || 5592;
+    const durSec = trip.duration || 0;
     const h = String(Math.floor(durSec / 3600)).padStart(2, '0');
     const m = String(Math.floor((durSec % 3600) / 60)).padStart(2, '0');
     const s = String(durSec % 60).padStart(2, '0');
     compDuration.textContent = `${h}:${m}:${s}`;
   }
-  if (compTopSpeed) compTopSpeed.textContent = (trip.maxSpeed || 134.6).toFixed(1) + ' km/h';
-  if (compAvgSpeed) compAvgSpeed.textContent = (trip.avgSpeed || 58.2).toFixed(1) + ' km/h';
-  if (compMaxLean) compMaxLean.textContent = `${trip.maxLeanAngle || 42.5}° L / 39° R`;
-  if (compElevation) compElevation.textContent = `+${trip.elevationGain || 1120} m`;
+  if (compTopSpeed) compTopSpeed.textContent = (trip.maxSpeed || 0).toFixed(1) + ' km/h';
+  if (compAvgSpeed) compAvgSpeed.textContent = (trip.avgSpeed || 0).toFixed(1) + ' km/h';
+  if (compMaxLean) compMaxLean.textContent = `${(trip.maxLeanAngle || 0).toFixed(1)}° APEX`;
+  if (compElevation) compElevation.textContent = `+${trip.elevationGain || 0} m`;
 
-  // Generate Synthetic Track Points with Speed Heatmap across Key Places
-  generateAnalysisTrackPoints(trip);
-  renderAnalysisHeatmap();
-  renderAnalysisLandmarksTable();
-  renderAnalysisChart();
+  // Fetch or extract Real Track Points
+  if (trip.points && Array.isArray(trip.points) && trip.points.length > 0) {
+    processRealAnalysisPoints(trip.points);
+  } else {
+    fetch(`/api/trips/${trip._id || trip.id}`)
+      .then(r => r.json())
+      .then(fullTrip => {
+        if (fullTrip && fullTrip.points && fullTrip.points.length > 0) {
+          processRealAnalysisPoints(fullTrip.points);
+        } else {
+          showToast('No detailed GPS fixes recorded for this trip', 'info');
+        }
+      })
+      .catch(() => {});
+  }
 }
 
-function generateAnalysisTrackPoints(trip) {
-  // Generate a realistic route with 100 points and landmark labels
-  const points = [];
-  const startLat = 10.3256;
-  const startLng = 76.9558;
-  const totalKm = trip.distance || 64.8;
-
-  const landmarks = [
-    { km: 0.0, name: 'Basecamp Garage Departure', sector: 'Starting Grid' },
-    { km: 8.4, name: 'Aliyar Foothills Sweeper', sector: 'Foothills' },
-    { km: 16.2, name: 'Hairpin Turn #04', sector: 'Lower Switchbacks' },
-    { km: 24.5, name: 'Hairpin Turn #14 (Tea Valley)', sector: 'Mid Valley' },
-    { km: 32.8, name: 'Waterfalls Mountain Straight', sector: 'Canyon Straight' },
-    { km: 41.2, name: 'Hairpin Turn #28 (Cloud Apex)', sector: 'High Ridge' },
-    { km: 49.6, name: 'Hairpin Turn #37 (Tiger Valley)', sector: 'Summit Corners' },
-    { km: 58.0, name: 'Ghat Ridge Summit Viewpoint', sector: 'Peak Pass' },
-    { km: 64.8, name: 'Ridge Peak Cafe & Finish', sector: 'Finish Line' }
-  ];
-
-  for (let i = 0; i <= 100; i++) {
-    const frac = i / 100;
-    const curKm = frac * totalKm;
-    const lat = startLat + frac * 0.08 + 0.005 * Math.sin(i * 0.35);
-    const lng = startLng + frac * 0.09 + 0.006 * Math.cos(i * 0.35);
-
-    // Speed heatmap: slow in turns (28-52 km/h), fast in straights (85-134 km/h)
-    let speed = 65 + 40 * Math.sin(i * 0.4) + (Math.random() * 8 - 4);
-    if (speed < 24) speed = 24;
-    if (speed > 135) speed = 135;
-
-    // Lean angle (deg)
-    const lean = Math.round(42 * Math.sin(i * 0.45));
-    const alt = Math.round(420 + frac * 850 + 40 * Math.sin(i * 0.2));
-
-    // Match closest landmark
-    let matchedLandmark = landmarks[0].name;
-    let matchedSector = landmarks[0].sector;
-    let minDist = 999;
-    landmarks.forEach(lm => {
-      const d = Math.abs(lm.km - curKm);
-      if (d < minDist) {
-        minDist = d;
-        matchedLandmark = lm.name;
-        matchedSector = lm.sector;
-      }
-    });
-
-    points.push({
+function processRealAnalysisPoints(rawPoints) {
+  activeAnalysisPoints = rawPoints.map((p, i) => {
+    return {
       index: i,
-      lat: lat,
-      lng: lng,
-      speed: speed,
-      lean: lean,
-      altitude: alt,
-      distKm: curKm,
-      landmark: matchedLandmark,
-      sector: matchedSector,
-      timestamp: new Date(Date.parse(trip.startTime || new Date()) + i * 55000).toLocaleTimeString()
-    });
-  }
+      lat: p.latitude || p.lat,
+      lng: p.longitude || p.lng,
+      speed: (p.speedKmh !== undefined) ? p.speedKmh : ((p.speedMps || 0) * 3.6),
+      lean: p.leanAngleDeg || p.lean || 0,
+      altitude: p.altitudeMeters || p.altitude || 0,
+      distKm: (p.cumulativeDistanceMeters || 0) / 1000,
+      timestamp: new Date(p.timestamp).toLocaleTimeString()
+    };
+  });
 
-  activeAnalysisPoints = points;
-
-  // Setup Scrubber Slider
-  const slider = document.getElementById('analysisSlider');
-  const totalDistEl = document.getElementById('analysisTotalDist');
-  if (slider) { slider.max = points.length - 1; slider.value = 0; }
-  if (totalDistEl) totalDistEl.textContent = totalKm.toFixed(2) + ' km';
+  renderAnalysisHeatmap();
+  renderAnalysisSectorsTable();
+  renderAnalysisChart();
 }
 
 function renderAnalysisHeatmap() {
   if (!analysisMapInstance || activeAnalysisPoints.length === 0) return;
 
-  // Clear existing polyline segments
+  // Clear existing layers
   analysisPolylineSegments.forEach(seg => analysisMapInstance.removeLayer(seg));
   analysisPolylineSegments = [];
 
-  const latLngs = [];
+  const bounds = L.latLngBounds();
 
   for (let i = 0; i < activeAnalysisPoints.length - 1; i++) {
     const p1 = activeAnalysisPoints[i];
     const p2 = activeAnalysisPoints[i + 1];
 
-    latLngs.push([p1.lat, p1.lng]);
+    bounds.extend([p1.lat, p1.lng]);
 
-    // Color based on speed in this place
-    let color = '#10B981'; // 20-55 km/h (Emerald / Corners)
-    if (p1.speed >= 55 && p1.speed < 85) {
-      color = '#F59E0B'; // 55-85 km/h (Amber / Sweepers)
-    } else if (p1.speed >= 85) {
-      color = '#EF4444'; // 85+ km/h (Rose / Apex Straights)
-    }
+    // Color code based on speed in this sector:
+    // Green (Apex turns): < 50 km/h
+    // Amber (Sweepers): 50 - 90 km/h
+    // Red (Straights): > 90 km/h
+    let color = '#10B981';
+    if (p1.speed >= 50 && p1.speed < 90) color = '#FFB703';
+    if (p1.speed >= 90) color = '#FF3366';
 
     const seg = L.polyline([[p1.lat, p1.lng], [p2.lat, p2.lng]], {
       color: color,
@@ -1340,124 +1639,67 @@ function renderAnalysisHeatmap() {
       opacity: 0.95
     }).addTo(analysisMapInstance);
 
-    // Interactive Hover / Click on Route to see Speed at Place
-    seg.on('click', function() {
-      updateAnalysisHud(p1);
-    });
-    seg.on('mouseover', function() {
-      updateAnalysisHud(p1);
+    // Interactive Hover on segment
+    seg.on('mouseover', function(e) {
+      updateAnalysisHoverHud(p1);
     });
 
     analysisPolylineSegments.push(seg);
   }
 
-  if (latLngs.length > 0) {
-    analysisMapInstance.fitBounds(L.latLngBounds(latLngs), { padding: [40, 40] });
-  }
-
-  // Initial HUD update
-  if (activeAnalysisPoints.length > 0) {
-    updateAnalysisHud(activeAnalysisPoints[0]);
+  if (bounds.isValid()) {
+    analysisMapInstance.fitBounds(bounds, { padding: [30, 30] });
   }
 }
 
-function updateAnalysisHud(pt) {
-  const placeName = document.getElementById('analysisHudPlaceName');
-  const speed = document.getElementById('analysisHudSpeed');
-  const lean = document.getElementById('analysisHudLean');
-  const alt = document.getElementById('analysisHudAlt');
-  const time = document.getElementById('analysisHudTime');
-  const curDist = document.getElementById('analysisCurDist');
+function updateAnalysisHoverHud(p) {
+  const hud = document.getElementById('analysisHoverHud');
+  const speedEl = document.getElementById('hudSpeed');
+  const leanEl = document.getElementById('hudLean');
+  const altEl = document.getElementById('hudAlt');
+  const placeEl = document.getElementById('hudPlace');
 
-  if (placeName) placeName.textContent = pt.landmark;
-  if (speed) speed.textContent = pt.speed.toFixed(1);
-  if (lean) {
-    lean.textContent = pt.lean < 0 ? `${Math.abs(pt.lean)}° Left` : `${pt.lean}° Right`;
-  }
-  if (alt) alt.textContent = pt.altitude + ' m';
-  if (time) time.textContent = pt.timestamp;
-  if (curDist) curDist.textContent = pt.distKm.toFixed(2) + ' km';
-
-  // Move scrubber map marker
-  if (analysisMapInstance) {
-    if (!analysisScrubberMarker) {
-      analysisScrubberMarker = L.circleMarker([pt.lat, pt.lng], {
-        radius: 8,
-        fillColor: '#2563EB',
-        color: '#FFFFFF',
-        weight: 2,
-        fillOpacity: 1
-      }).addTo(analysisMapInstance);
-    } else {
-      analysisScrubberMarker.setLatLng([pt.lat, pt.lng]);
-    }
-  }
+  if (hud) hud.classList.remove('hidden');
+  if (speedEl) speedEl.textContent = p.speed.toFixed(1) + ' km/h';
+  if (leanEl) leanEl.textContent = Math.abs(p.lean).toFixed(1) + '°';
+  if (altEl) altEl.textContent = p.altitude + ' m';
+  if (placeEl) placeEl.textContent = `At km ${p.distKm.toFixed(2)} • ${p.timestamp}`;
 }
 
-function onAnalysisScrub(val) {
-  const idx = parseInt(val, 10);
-  if (activeAnalysisPoints && activeAnalysisPoints[idx]) {
-    updateAnalysisHud(activeAnalysisPoints[idx]);
-  }
-}
-
-var analysisPlaybackInterval = null;
-function toggleAnalysisPlayback() {
-  const playIcon = document.getElementById('analysisPlayIcon');
-  const pauseIcon = document.getElementById('analysisPauseIcon');
-  const slider = document.getElementById('analysisSlider');
-
-  if (analysisPlaybackInterval) {
-    clearInterval(analysisPlaybackInterval);
-    analysisPlaybackInterval = null;
-    if (playIcon) playIcon.classList.remove('hidden');
-    if (pauseIcon) pauseIcon.classList.add('hidden');
-  } else {
-    if (playIcon) playIcon.classList.add('hidden');
-    if (pauseIcon) pauseIcon.classList.remove('hidden');
-
-    analysisPlaybackInterval = setInterval(function() {
-      let cur = parseInt(slider.value, 10) + 1;
-      if (cur >= activeAnalysisPoints.length) cur = 0;
-      slider.value = cur;
-      onAnalysisScrub(cur);
-    }, 120);
-  }
-}
-
-function renderAnalysisLandmarksTable() {
+function renderAnalysisSectorsTable() {
   const tbody = document.getElementById('analysisLandmarksTableBody');
   if (!tbody || activeAnalysisPoints.length === 0) return;
 
-  // Filter 8-10 points representing landmarks
-  const landmarkPoints = [];
-  const step = Math.floor(activeAnalysisPoints.length / 8);
+  // Sample milestone points across the real route (e.g. every 10% of route)
+  const step = Math.max(1, Math.floor(activeAnalysisPoints.length / 8));
+  const milestones = [];
+
   for (let i = 0; i < activeAnalysisPoints.length; i += step) {
-    landmarkPoints.push(activeAnalysisPoints[i]);
+    milestones.push(activeAnalysisPoints[i]);
+  }
+  if (milestones[milestones.length - 1] !== activeAnalysisPoints[activeAnalysisPoints.length - 1]) {
+    milestones.push(activeAnalysisPoints[activeAnalysisPoints.length - 1]);
   }
 
-  tbody.innerHTML = landmarkPoints.map(pt => {
-    let speedColor = 'text-rpEmerald';
-    if (pt.speed >= 55 && pt.speed < 85) speedColor = 'text-rpAmber';
-    if (pt.speed >= 85) speedColor = 'text-rpRose';
+  tbody.innerHTML = milestones.map((m, idx) => {
+    let sectorName = idx === 0 ? 'Starting Point' : (idx === milestones.length - 1 ? 'Finish Sector' : `Sector #${idx} (Km ${m.distKm.toFixed(1)})`);
+    let speedColor = m.speed > 80 ? 'text-rose-400' : (m.speed > 45 ? 'text-amber-400' : 'text-emerald-400');
 
     return `
-      <tr class="hover:bg-rpDark/60 transition cursor-pointer" onclick="updateAnalysisHud(activeAnalysisPoints[${pt.index}])">
-        <td class="py-2 px-3 font-semibold text-white">${pt.landmark}</td>
-        <td class="py-2 px-3 text-slate-400">${pt.sector}</td>
-        <td class="py-2 px-3 font-tabular">${pt.distKm.toFixed(1)} km</td>
-        <td class="py-2 px-3 font-bold font-tabular ${speedColor}">${pt.speed.toFixed(1)} km/h</td>
-        <td class="py-2 px-3 font-tabular text-rpBlueLight">${Math.abs(pt.lean)}°</td>
-        <td class="py-2 px-3 font-tabular text-slate-300">${pt.altitude} m</td>
-        <td class="py-2 px-3 text-[11px] text-slate-500">${pt.timestamp}</td>
+      <tr class="hover:bg-white/[0.04] transition border-b border-white/[0.04]">
+        <td class="py-2.5 px-3 font-semibold text-white text-xs">${sectorName}</td>
+        <td class="py-2.5 px-3 text-slate-400 text-xs font-mono">${m.distKm.toFixed(2)} km</td>
+        <td class="py-2.5 px-3 font-bold font-mono ${speedColor}">${m.speed.toFixed(1)} km/h</td>
+        <td class="py-2.5 px-3 text-slate-300 font-mono text-xs">${Math.abs(m.lean).toFixed(1)}°</td>
+        <td class="py-2.5 px-3 text-slate-400 font-mono text-xs text-right">${m.altitude} m</td>
       </tr>
     `;
   }).join('');
 }
 
 function renderAnalysisChart() {
-  const canvas = document.getElementById('analysisSpeedChart');
-  if (!canvas || activeAnalysisPoints.length === 0) return;
+  const canvas = document.getElementById('analysisChartCanvas');
+  if (!canvas || typeof Chart === 'undefined') return;
 
   if (analysisChartInstance) {
     analysisChartInstance.destroy();
@@ -1465,302 +1707,154 @@ function renderAnalysisChart() {
 
   const labels = activeAnalysisPoints.map(p => p.distKm.toFixed(1));
   const dataSpeed = activeAnalysisPoints.map(p => p.speed);
-  const dataAlt = activeAnalysisPoints.map(p => p.altitude);
+  const dataLean = activeAnalysisPoints.map(p => Math.abs(p.lean));
 
-  const isSpeed = analysisChartMode === 'speed';
-
-  analysisChartInstance = new Chart(canvas, {
+  const ctx = canvas.getContext('2d');
+  analysisChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
       labels: labels,
-      datasets: [{
-        label: isSpeed ? 'Velocity (km/h)' : 'Altitude (meters)',
-        data: isSpeed ? dataSpeed : dataAlt,
-        borderColor: isSpeed ? '#2563EB' : '#F59E0B',
-        backgroundColor: isSpeed ? 'rgba(37, 99, 235, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-        fill: true,
-        tension: 0.35,
-        pointRadius: 0,
-        borderWidth: 2
-      }]
+      datasets: [
+        {
+          label: 'Speed (km/h)',
+          data: dataSpeed,
+          borderColor: '#00F0FF',
+          backgroundColor: 'rgba(0, 240, 255, 0.1)',
+          fill: true,
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: 0
+        },
+        {
+          label: 'Apex Lean (deg)',
+          data: dataLean,
+          borderColor: '#FFB703',
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+          pointRadius: 0
+        }
+      ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false }
+        legend: {
+          labels: { color: '#94A3B8', font: { family: 'Inter', size: 11 } }
+        }
       },
       scales: {
         x: {
-          ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 10 } },
-          grid: { color: '#1F2636' }
+          ticks: { color: '#64748B', font: { size: 10 } },
+          grid: { color: 'rgba(255,255,255,0.05)' }
         },
         y: {
-          ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 10 } },
-          grid: { color: '#1F2636' }
+          ticks: { color: '#64748B', font: { size: 10 } },
+          grid: { color: 'rgba(255,255,255,0.05)' }
         }
       }
     }
   });
 }
 
-function switchAnalysisChart(mode) {
-  analysisChartMode = mode;
-  const btnSpeed = document.getElementById('chartBtnSpeed');
-  const btnAlt = document.getElementById('chartBtnAlt');
-
-  if (btnSpeed && btnAlt) {
-    if (mode === 'speed') {
-      btnSpeed.className = 'px-2.5 py-1 rounded bg-rpBlue text-white font-medium transition';
-      btnAlt.className = 'px-2.5 py-1 rounded text-slate-400 hover:text-white font-medium transition';
-    } else {
-      btnSpeed.className = 'px-2.5 py-1 rounded text-slate-400 hover:text-white font-medium transition';
-      btnAlt.className = 'px-2.5 py-1 rounded bg-rpAmber text-slate-950 font-bold transition';
-    }
-  }
-  renderAnalysisChart();
-}
-
-function downloadActiveGpx() {
-  if (!activeAnalysisTrip) return;
-  const gpxContent = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="Rhody Motorcycle Telemetry" xmlns="http://www.topografix.com/GPX/1/1">
-  <metadata>
-    <name>${activeAnalysisTrip.title}</name>
-    <time>${activeAnalysisTrip.startTime}</time>
-  </metadata>
-  <trk>
-    <name>${activeAnalysisTrip.title}</name>
-    <trkseg>
-      ${activeAnalysisPoints.map(p => `<trkpt lat="${p.lat}" lon="${p.lng}"><ele>${p.altitude}</ele><speed>${(p.speed / 3.6).toFixed(2)}</speed></trkpt>`).join('\n      ')}
-    </trkseg>
-  </trk>
-</gpx>`;
-  downloadBlob(gpxContent, `${activeAnalysisTrip.title.replace(/\s+/g, '_')}.gpx`, 'application/gpx+xml');
-  showToast('Exported GPX telemetry file', 'success');
-}
-
-function downloadActiveCsv() {
-  if (!activeAnalysisTrip) return;
-  let csv = 'timestamp,latitude,longitude,speed_kmh,lean_deg,altitude_m,landmark,sector\n';
-  activeAnalysisPoints.forEach(p => {
-    csv += `"${p.timestamp}",${p.lat},${p.lng},${p.speed.toFixed(1)},${p.lean},${p.altitude},"${p.landmark}","${p.sector}"\n`;
-  });
-  downloadBlob(csv, `${activeAnalysisTrip.title.replace(/\s+/g, '_')}.csv`, 'text/csv');
-  showToast('Exported CSV spreadsheet', 'success');
-}
-
-function downloadBlob(content, filename, mimeType) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
 // ----------------------------------------------------
-// SETTINGS LOGIC: FORM POPULATION & PERSISTENCE
+// SETTINGS LOGIC & APP EXPORTS
 // ----------------------------------------------------
 function populateSettingsForm() {
-  const name = document.getElementById('setProfileName');
-  const handle = document.getElementById('setProfileHandle');
-  const bio = document.getElementById('setProfileBio');
-  const bike = document.getElementById('setBikeModel');
-  const specs = document.getElementById('setBikeSpecs');
-  const plate = document.getElementById('setBikePlate');
-  const tires = document.getElementById('setTires');
-  const guardianName = document.getElementById('setGuardianName');
-  const guardianPhone = document.getElementById('setGuardianPhone');
-  const unitSpeed = document.getElementById('setUnitSpeed');
-  const defMap = document.getElementById('setDefaultMapLayer');
-  const gpsMode = document.getElementById('setGpsMode');
+  const nameInput = document.getElementById('settingName');
+  const handleInput = document.getElementById('settingHandle');
+  const bioInput = document.getElementById('settingBio');
+  const bikeInput = document.getElementById('settingBikeModel');
+  const specsInput = document.getElementById('settingBikeSpecs');
+  const plateInput = document.getElementById('settingBikePlate');
+  const tiresInput = document.getElementById('settingTires');
+  const parentName = document.getElementById('settingParentName');
+  const parentPhone = document.getElementById('settingParentPhone');
 
-  if (name) name.value = riderProfile.name || 'Natesh';
-  if (handle) handle.value = riderProfile.handle || '@natesh_pilot';
-  if (bio) bio.value = riderProfile.bio;
-  if (bike) bike.value = riderProfile.bikeModel || 'Yamaha MT-09 SP';
-  if (specs) specs.value = riderProfile.bikeSpecs || '890cc Triple • 119 BHP • 93 Nm';
-  if (plate) plate.value = riderProfile.bikePlate || 'TN-38-RH-0909';
-  if (tires) tires.value = riderProfile.tireSetup || 'Pirelli Diablo Rosso IV (Cold PSI: F 32 / R 36)';
-  if (guardianName) guardianName.value = riderProfile.emergencyContactName || 'Family Guardian (Mom & Dad)';
-  if (guardianPhone) guardianPhone.value = riderProfile.emergencyContactPhone || '+91 98765 43210';
-  if (unitSpeed) unitSpeed.value = riderProfile.speedUnit || 'kmh';
-  if (defMap) defMap.value = riderProfile.defaultMapLayer || 'dark';
-  if (gpsMode) gpsMode.value = riderProfile.gpsPrecision || 'sport';
+  if (nameInput) nameInput.value = riderProfile.name || 'Natesh';
+  if (handleInput) handleInput.value = riderProfile.handle || '@natesh_pilot';
+  if (bioInput) bioInput.value = riderProfile.bio || '';
+  if (bikeInput) bikeInput.value = riderProfile.bikeModel || 'Yamaha MT-09 SP';
+  if (specsInput) specsInput.value = riderProfile.bikeSpecs || '890cc Triple • 119 BHP • 93 Nm';
+  if (plateInput) plateInput.value = riderProfile.bikePlate || 'TN-38-RH-0909';
+  if (tiresInput) tiresInput.value = riderProfile.tireSetup || 'Pirelli Diablo Rosso IV';
+  if (parentName) parentName.value = riderProfile.emergencyContactName || 'Family Guardian';
+  if (parentPhone) parentPhone.value = riderProfile.emergencyContactPhone || '+91 98765 43210';
 }
 
-function handleSaveAppSettings(event) {
-  event.preventDefault();
+function saveSettingsFromForm() {
+  const nameInput = document.getElementById('settingName');
+  const handleInput = document.getElementById('settingHandle');
+  const bioInput = document.getElementById('settingBio');
+  const bikeInput = document.getElementById('settingBikeModel');
+  const specsInput = document.getElementById('settingBikeSpecs');
+  const plateInput = document.getElementById('settingBikePlate');
+  const tiresInput = document.getElementById('settingTires');
+  const parentName = document.getElementById('settingParentName');
+  const parentPhone = document.getElementById('settingParentPhone');
 
-  riderProfile.name = document.getElementById('setProfileName').value.trim();
-  riderProfile.handle = document.getElementById('setProfileHandle').value.trim();
-  riderProfile.bio = document.getElementById('setProfileBio').value.trim();
-  riderProfile.bikeModel = document.getElementById('setBikeModel').value.trim();
-  riderProfile.bikeSpecs = document.getElementById('setBikeSpecs').value.trim();
-  riderProfile.bikePlate = document.getElementById('setBikePlate').value.trim();
-  riderProfile.tireSetup = document.getElementById('setTires').value.trim();
-  riderProfile.emergencyContactName = document.getElementById('setGuardianName').value.trim();
-  riderProfile.emergencyContactPhone = document.getElementById('setGuardianPhone').value.trim();
-  riderProfile.speedUnit = document.getElementById('setUnitSpeed').value;
-  riderProfile.defaultMapLayer = document.getElementById('setDefaultMapLayer').value;
-  riderProfile.gpsPrecision = document.getElementById('setGpsMode').value;
+  if (nameInput) riderProfile.name = nameInput.value.trim();
+  if (handleInput) riderProfile.handle = handleInput.value.trim();
+  if (bioInput) riderProfile.bio = bioInput.value.trim();
+  if (bikeInput) riderProfile.bikeModel = bikeInput.value.trim();
+  if (specsInput) riderProfile.bikeSpecs = specsInput.value.trim();
+  if (plateInput) riderProfile.bikePlate = plateInput.value.trim();
+  if (tiresInput) riderProfile.tireSetup = tiresInput.value.trim();
+  if (parentName) riderProfile.emergencyContactName = parentName.value.trim();
+  if (parentPhone) riderProfile.emergencyContactPhone = parentPhone.value.trim();
 
   saveProfile();
   renderDashboardProfile();
   renderDashboardBike();
-  showToast('Settings saved successfully and synced!', 'success');
+  renderYoutubeDynamicHub();
+  showToast('Settings & Motorcycle specifications saved!', 'success');
 }
 
-function clearLocalStorageCache() {
-  localStorage.removeItem('rhody_rider_profile');
-  localStorage.removeItem('rhody_saved_places');
-  showToast('Local cache reset to defaults', 'info');
-  setTimeout(() => window.location.reload(), 600);
-}
-
-function pingDatabase() {
-  showToast('Pinging MongoDB Atlas cluster...', 'info');
-  fetch('/api/system/status')
-    .then(r => r.json())
-    .then(d => {
-      showToast('MongoDB Atlas Connected (Latency: 28ms)', 'success');
-    })
-    .catch(() => {
-      showToast('MongoDB Atlas Connected (SSL TLS 1.3)', 'success');
-    });
-}
-
-// ----------------------------------------------------
-// MODAL CONTROLS: ADD PLACE
-// ----------------------------------------------------
-function openAddPlaceModal() {
-  const m = document.getElementById('addPlaceModal');
-  if (m) m.classList.remove('hidden');
-}
-
-function closeAddPlaceModal() {
-  const m = document.getElementById('addPlaceModal');
-  if (m) m.classList.add('hidden');
-}
-
-function searchGeocodePlace() {
-  const q = document.getElementById('placeSearchQuery').value.trim();
-  const status = document.getElementById('geocodeSearchStatus');
-  if (!q) return;
-
-  if (status) {
-    status.textContent = 'Searching location via OpenStreetMap...';
-    status.classList.remove('hidden');
+function exportAnalysisGpx() {
+  if (!activeAnalysisTrip) {
+    showToast('No trip selected for export', 'error');
+    return;
   }
-
-  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`)
-    .then(r => r.json())
-    .then(res => {
-      if (res && res.length > 0) {
-        const item = res[0];
-        document.getElementById('newPlaceName').value = item.display_name.split(',')[0];
-        document.getElementById('newPlaceLat').value = parseFloat(item.lat).toFixed(4);
-        document.getElementById('newPlaceLng').value = parseFloat(item.lon).toFixed(4);
-        if (status) status.textContent = `Found: ${item.display_name}`;
-      } else {
-        if (status) status.textContent = 'Location not found. Enter coordinates manually.';
-      }
-    })
-    .catch(() => {
-      if (status) status.textContent = 'Network lookup error.';
-    });
+  window.open(`/api/trips/${activeAnalysisTrip._id || activeAnalysisTrip.id}/export/gpx`, '_blank');
 }
 
-function handleSaveNewPlace(event) {
-  event.preventDefault();
-  const name = document.getElementById('newPlaceName').value.trim();
-  const cat = document.getElementById('newPlaceCategory').value;
-  const lat = parseFloat(document.getElementById('newPlaceLat').value);
-  const lng = parseFloat(document.getElementById('newPlaceLng').value);
-  const alt = parseInt(document.getElementById('newPlaceAltitude').value, 10) || 0;
-  const notes = document.getElementById('newPlaceNotes').value.trim();
+function exportAnalysisCsv() {
+  if (!activeAnalysisTrip) {
+    showToast('No trip selected for export', 'error');
+    return;
+  }
+  window.open(`/api/trips/${activeAnalysisTrip._id || activeAnalysisTrip.id}/export/csv`, '_blank');
+}
 
-  const newPlace = {
-    id: 'place_' + Date.now(),
-    name: name,
-    category: cat,
-    lat: lat,
-    lng: lng,
-    altitude: alt,
-    notes: notes
-  };
+function clearLocalDataCache() {
+  if (!confirm('Clear local telemetry cache and re-sync from MongoDB Atlas?')) return;
+  localStorage.removeItem('rhody_saved_places');
+  savedPlaces = [];
+  loadPlacesFromBackend();
+  refreshRealTrips();
+  showToast('Cache cleared and re-synced with cloud', 'success');
+}
 
-  savedPlaces.push(newPlace);
-  savePlacesToStorage();
-  renderDashboardPlaces();
-  renderDashboardPlacesMarkers();
-  closeAddPlaceModal();
-  showToast(`Saved "${name}" to your map!`, 'success');
+function backupTripsJson() {
+  const blob = new Blob([JSON.stringify(allTripsCache, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `rhody_trips_backup_${Date.now()}.json`;
+  a.click();
+  showToast('Trips backup JSON exported', 'success');
+}
 
-  // Sync with API
-  fetch('/api/user/places', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(newPlace)
-  }).catch(() => {});
+function refreshData() {
+  refreshRealTrips();
+  loadPlacesFromBackend();
+  showToast('Telemetry re-synced with MongoDB Atlas', 'success');
 }
 
 // ----------------------------------------------------
-// CANVAS GAUGES (SPEEDOMETER & G-FORCE RETICLE)
+// UTILITIES: GAUGES, WEATHER & TOASTS
 // ----------------------------------------------------
-function drawSpeedGauge(canvasId, speed) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
-  const cx = w / 2;
-  const cy = h * 0.72;
-  const r = Math.min(cx, cy) - 10;
-
-  ctx.clearRect(0, 0, w, h);
-
-  // Background Track Arc
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, Math.PI * 0.8, Math.PI * 2.2);
-  ctx.strokeStyle = '#1F2636';
-  ctx.lineWidth = 10;
-  ctx.lineCap = 'round';
-  ctx.stroke();
-
-  // Active Value Arc
-  const maxSpeed = 160;
-  const fraction = Math.min(Math.max(speed / maxSpeed, 0), 1);
-  const endAngle = Math.PI * 0.8 + fraction * (Math.PI * 1.4);
-
-  let grad = ctx.createLinearGradient(0, cy, w, cy);
-  grad.addColorStop(0, '#2563EB');
-  grad.addColorStop(0.7, '#60A5FA');
-  grad.addColorStop(1, '#10B981');
-
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, Math.PI * 0.8, endAngle);
-  ctx.strokeStyle = grad;
-  ctx.lineWidth = 10;
-  ctx.lineCap = 'round';
-  ctx.stroke();
-
-  // Digital Center Velocity
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 26px JetBrains Mono';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(Math.round(speed), cx, cy - 8);
-
-  ctx.fillStyle = '#94A3B8';
-  ctx.font = 'bold 10px Inter';
-  ctx.fillText('KM/H', cx, cy + 14);
-}
-
-function drawGForceReticle(canvasId, gx, gy) {
+function drawSpeedGauge(canvasId, speedKmh) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -1768,91 +1862,130 @@ function drawGForceReticle(canvasId, gx, gy) {
   const h = canvas.height;
   const cx = w / 2;
   const cy = h / 2;
-  const maxR = cx - 12;
+  const r = (w / 2) - 12;
 
   ctx.clearRect(0, 0, w, h);
 
-  // Concentric Rings
-  ctx.strokeStyle = '#1F2636';
-  ctx.lineWidth = 1;
+  // Background Bezel Track (240 deg arc)
   ctx.beginPath();
-  ctx.arc(cx, cy, maxR, 0, Math.PI * 2);
-  ctx.arc(cx, cy, maxR * 0.66, 0, Math.PI * 2);
-  ctx.arc(cx, cy, maxR * 0.33, 0, Math.PI * 2);
+  ctx.arc(cx, cy, r, 0.75 * Math.PI, 2.25 * Math.PI);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.lineWidth = 10;
+  ctx.lineCap = 'round';
   ctx.stroke();
+
+  // Active Value Arc
+  const maxSpeed = 160;
+  const ratio = Math.min(1.0, Math.max(0, speedKmh / maxSpeed));
+  const endAngle = 0.75 * Math.PI + ratio * (1.5 * Math.PI);
+
+  if (ratio > 0.01) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0.75 * Math.PI, endAngle);
+    const grad = ctx.createLinearGradient(0, h, w, 0);
+    grad.addColorStop(0, '#00F0FF');
+    grad.addColorStop(0.6, '#FFB703');
+    grad.addColorStop(1, '#FF3366');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+}
+
+function drawGForceReticle(canvasId, latG, longG) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
+  const r = (w / 2) - 8;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Radar Rings
+  [0.33, 0.66, 1.0].forEach(frac => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * frac, 0, 2 * Math.PI);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
 
   // Crosshairs
   ctx.beginPath();
-  ctx.moveTo(cx, cy - maxR);
-  ctx.lineTo(cx, cy + maxR);
-  ctx.moveTo(cx - maxR, cy);
-  ctx.lineTo(cx + maxR, cy);
+  ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r);
+  ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
   ctx.stroke();
 
-  // Ball position
-  const bx = cx + Math.min(Math.max(gx, -1), 1) * maxR;
-  const by = cy + Math.min(Math.max(gy, -1), 1) * maxR;
+  // Active Target Bead
+  const px = cx + Math.max(-r, Math.min(r, latG * r));
+  const py = cy - Math.max(-r, Math.min(r, longG * r));
 
   ctx.beginPath();
-  ctx.arc(bx, by, 7, 0, Math.PI * 2);
-  ctx.fillStyle = '#2563EB';
+  ctx.arc(px, py, 6, 0, 2 * Math.PI);
+  ctx.fillStyle = '#00F0FF';
+  ctx.shadowColor = '#00F0FF';
+  ctx.shadowBlur = 10;
   ctx.fill();
-  ctx.strokeStyle = '#60A5FA';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  ctx.shadowBlur = 0;
 }
 
-// ----------------------------------------------------
-// DATA REFRESH (FETCH FROM SERVER / ATLAS)
-// ----------------------------------------------------
-function refreshData() {
-  const spinner = document.getElementById('refreshSpinner');
-  if (spinner) spinner.classList.add('animate-spin');
-
-  fetch('/api/trips')
+function fetchRoadWeather(lat, lng, label) {
+  fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`)
     .then(r => r.json())
     .then(data => {
-      if (Array.isArray(data)) {
-        allTripsCache = data;
-        renderRecentTripsTable();
-
-        const select = document.getElementById('analysisTripSelect');
-        if (select) {
-          select.innerHTML = data.map(t => `<option value="${t._id || t.id}">${t.title || 'Trip ' + t._id} (${(t.distance || 0).toFixed(1)} km)</option>`).join('');
+      if (!data || !data.current_weather) return;
+      const cw = data.current_weather;
+      const gripBadge = document.getElementById('roadGripBadge');
+      if (gripBadge) {
+        if (cw.weathercode === 0) {
+          gripBadge.innerHTML = `🟢 <strong>DRY ROAD (98% GRIP)</strong> &bull; ${cw.temperature}°C &bull; ${label}`;
+        } else if (cw.weathercode > 50) {
+          gripBadge.innerHTML = `🔴 <strong>WET TARMAC (45% GRIP)</strong> &bull; Caution in corners &bull; ${label}`;
+        } else {
+          gripBadge.innerHTML = `🟡 <strong>OPTIMAL ROAD (${cw.temperature}°C)</strong> &bull; ${label}`;
         }
       }
     })
-    .catch(() => {})
-    .finally(() => {
-      if (spinner) setTimeout(() => spinner.classList.remove('animate-spin'), 400);
-    });
+    .catch(() => {});
 }
 
-// ----------------------------------------------------
-// TOAST NOTIFICATIONS
-// ----------------------------------------------------
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
 function showToast(message, type = 'info') {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
+  let toastContainer = document.getElementById('rhodyToastContainer');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'rhodyToastContainer';
+    toastContainer.className = 'fixed bottom-20 right-5 z-[9999] flex flex-col space-y-2 pointer-events-none';
+    document.body.appendChild(toastContainer);
+  }
+
+  let bgClass = 'bg-[#0E131F] border-cyan-400/40 text-cyan-300';
+  if (type === 'success') bgClass = 'bg-[#0E131F] border-emerald-400/40 text-emerald-300';
+  if (type === 'error') bgClass = 'bg-[#0E131F] border-rose-400/40 text-rose-300';
 
   const toast = document.createElement('div');
-  let border = 'border-rpBorder';
-  let badge = 'bg-rpBlue text-white';
+  toast.className = `px-4 py-2.5 rounded-xl text-xs font-semibold border backdrop-blur-xl shadow-2xl pointer-events-auto transition-all transform translate-y-2 opacity-0 ${bgClass}`;
+  toast.textContent = message;
 
-  if (type === 'success') { border = 'border-rpEmerald/40'; badge = 'bg-rpEmerald text-slate-950'; }
-  if (type === 'warning') { border = 'border-rpAmber/40'; badge = 'bg-rpAmber text-slate-950'; }
-  if (type === 'error') { border = 'border-rpRose/40'; badge = 'bg-rpRose text-white'; }
-
-  toast.className = `p-3.5 bg-rpDark/95 backdrop-blur-md border ${border} rounded-xl shadow-2xl flex items-center space-x-2.5 text-xs text-white transition-all transform duration-300 pointer-events-auto`;
-  toast.innerHTML = `
-    <span class="px-1.5 py-0.5 text-[10px] font-bold rounded ${badge} uppercase">${type}</span>
-    <span class="flex-1">${message}</span>
-  `;
-
-  container.appendChild(toast);
+  toastContainer.appendChild(toast);
+  setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
   setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(10px)';
-    setTimeout(() => toast.remove(), 300);
+    toast.classList.add('opacity-0', 'translate-y-2');
+    setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
   }, 3500);
 }

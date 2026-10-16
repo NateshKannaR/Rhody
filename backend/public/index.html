@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rhody &mdash; Precision Motorcycle Telemetry & Guardian Live Safety</title>
+  <title>Rhody &mdash; Precision Motorcycle Telemetry &amp; Guardian Safety</title>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,21 +13,18 @@
       theme: {
         extend: {
           colors: {
-            rpDark: '#0A0C10',
-            rpCard: '#12161F',
-            rpCardHover: '#171C27',
-            rpBorder: '#1F2636',
-            rpBorderLight: '#2D374D',
-            rpBlue: '#2563EB',
-            rpBlueHover: '#1D4ED8',
-            rpBlueLight: '#60A5FA',
+            rpObsidian: '#07090E',
+            rpCard: '#0E131F',
+            rpCardElevated: '#141A29',
+            rpCyan: '#00F0FF',
+            rpAmber: '#FFB703',
+            rpCrimson: '#FF3366',
             rpEmerald: '#10B981',
-            rpAmber: '#F59E0B',
-            rpRose: '#EF4444',
+            rpAzure: '#38BDF8'
           },
           fontFamily: {
             sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-            mono: ['JetBrains Mono', 'SFMono-Regular', 'Consolas', 'monospace'],
+            mono: ['JetBrains Mono', 'SFMono-Regular', 'Consolas', 'monospace']
           }
         }
       }
@@ -37,7 +34,7 @@
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Leaflet CSS & JS for Zero-API Dark Map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -48,197 +45,178 @@
 
   <style>
     body {
-      background-color: #0A0C10;
+      background-color: #07090E;
       color: #E2E8F0;
       font-family: 'Inter', -apple-system, sans-serif;
     }
-    .font-tabular {
+    .font-mono-numbers {
       font-family: 'JetBrains Mono', monospace;
       font-variant-numeric: tabular-nums;
     }
-    .telemetry-panel {
-      background: #12161F;
-      border: 1px solid #1F2636;
-      border-radius: 14px;
-    }
-    .telemetry-panel-elevated {
-      background: #151B26;
-      border: 1px solid #283347;
-      border-radius: 14px;
+    .glass-panel {
+      background: rgba(14, 19, 31, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
     }
     .status-pulse {
       animation: pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
     @keyframes pulseGlow {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.45; transform: scale(1.15); }
+      50% { opacity: 0.4; transform: scale(1.15); }
     }
     #dashboardMap, #tripsLiveMap, #analysisMap {
-      height: 460px;
+      height: 480px;
       width: 100%;
-      border-radius: 12px;
-      background: #080A0E;
+      border-radius: 14px;
+      background: #07090E;
     }
     @media (max-width: 768px) {
       #dashboardMap, #tripsLiveMap, #analysisMap {
-        height: 320px;
+        height: 330px;
       }
     }
-    input[type=range] {
-      -webkit-appearance: none;
-      height: 6px;
-      border-radius: 3px;
-      background: #1F2636;
-      outline: none;
-    }
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #2563EB;
-      border: 2px solid #60A5FA;
-      cursor: pointer;
-      box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
-    }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0A0C10; }
-    ::-webkit-scrollbar-thumb { background: #1F2636; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #2D374D; }
+    ::-webkit-scrollbar-track { background: #07090E; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 240, 255, 0.4); }
   </style>
 </head>
-<body class="min-h-screen flex flex-col bg-rpDark text-slate-100 selection:bg-rpBlue selection:text-white pb-16 md:pb-0">
+<body class="min-h-screen flex flex-col bg-[#07090E] text-slate-100 selection:bg-cyan-500 selection:text-black pb-20 md:pb-0 relative overflow-x-hidden">
+
+  <!-- Subtle Executive Radial Ambient Glows -->
+  <div class="fixed top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-[140px] pointer-events-none"></div>
+  <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-rose-500/5 rounded-full blur-[140px] pointer-events-none"></div>
 
   <!-- ================= TOP HEADER NAVIGATION ================= -->
-  <header class="border-b border-rpBorder bg-rpCard/90 backdrop-blur-md sticky top-0 z-40">
+  <header class="border-b border-white/[0.08] bg-[#07090E]/90 backdrop-blur-xl sticky top-0 z-40">
     <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       
-      <!-- Brand Logo -->
+      <!-- Brand Identity -->
       <div class="flex items-center space-x-3.5 cursor-pointer" onclick="switchMainView('dashboard')">
-        <div class="w-9 h-9 rounded-xl bg-rpBlue flex items-center justify-center shadow-md shadow-blue-900/30">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.4)]">
+          <svg class="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
         <div>
           <div class="flex items-center space-x-2">
-            <span class="text-base font-extrabold tracking-tight text-white">RHODY</span>
-            <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-rpBlue/20 text-rpBlueLight border border-rpBlue/30">Motorcycle Telemetry</span>
+            <span class="text-base font-black tracking-widest text-white">RHODY</span>
+            <span class="px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">Motorcycle Telemetry</span>
           </div>
-          <span class="text-[11px] block text-slate-400 font-normal">Precision GPS & IMU Vehicle Analytics</span>
+          <span class="text-[10px] block text-slate-400 font-mono tracking-wider">PRECISION GPS &bull; IMU FUSION &bull; REAL DATA</span>
         </div>
       </div>
 
       <!-- EXACT 4 DESKTOP NAVIGATION TABS -->
-      <nav class="hidden md:flex items-center p-1 bg-rpDark/80 border border-rpBorder rounded-xl space-x-1 shadow-inner">
+      <nav class="hidden md:flex items-center p-1 bg-white/[0.03] border border-white/[0.08] rounded-2xl space-x-1 shadow-inner backdrop-blur-md">
         <!-- 1. DASHBOARD -->
-        <button id="navTabDashboard" onclick="switchMainView('dashboard')" class="px-4 py-2 text-xs font-semibold rounded-lg bg-rpBlue text-white shadow-sm transition flex items-center space-x-2">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <button id="navTabDashboard" onclick="switchMainView('dashboard')" class="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(0,240,255,0.2)] flex items-center space-x-2 transition">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
           <span>Dashboard</span>
         </button>
 
         <!-- 2. TRIPS -->
-        <button id="navTabTrips" onclick="switchMainView('trips')" class="px-4 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-2">
-          <svg class="w-3.5 h-3.5 text-rpEmerald" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+        <button id="navTabTrips" onclick="switchMainView('trips')" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
           <span>Trips</span>
-          <span id="navLiveTripPulse" class="hidden w-2 h-2 rounded-full bg-rpEmerald status-pulse"></span>
+          <span id="navLiveTripPulse" class="hidden w-2 h-2 rounded-full bg-emerald-400 status-pulse"></span>
         </button>
 
         <!-- 3. ANALYSIS -->
-        <button id="navTabAnalysis" onclick="switchMainView('analysis')" class="px-4 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-2">
-          <svg class="w-3.5 h-3.5 text-rpBlueLight" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+        <button id="navTabAnalysis" onclick="switchMainView('analysis')" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
           <span>Analysis</span>
         </button>
 
         <!-- 4. SETTINGS -->
-        <button id="navTabSettings" onclick="switchMainView('settings')" class="px-4 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition flex items-center space-x-2">
-          <svg class="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <button id="navTabSettings" onclick="switchMainView('settings')" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <span>Settings</span>
         </button>
       </nav>
 
-      <!-- Right Actions: Download APK, Rider Quick Profile, Refresh -->
+      <!-- Right Header Actions -->
       <div class="flex items-center space-x-2.5">
-        
-        <!-- Direct Download Mobile App APK Button -->
-        <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" download="Rhody-v1.0.0.apk" title="Download Rhody Android APK (v1.0.0 - 57MB)" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-rpEmerald/15 hover:bg-rpEmerald/25 text-rpEmerald border border-rpEmerald/40 transition flex items-center space-x-1.5 shadow-sm group">
-          <svg class="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-          <span>Download App</span>
-          <span class="px-1.5 py-0.2 text-[9px] font-extrabold rounded bg-rpEmerald/30 text-white">APK</span>
+        <!-- Direct Android APK Download -->
+        <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" download="Rhody-v1.0.0.apk" class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          <span class="hidden sm:inline">Download App</span>
+          <span class="px-1.5 py-0.2 text-[9px] font-black rounded bg-emerald-400/25 text-emerald-300">APK</span>
         </a>
 
-        <!-- Rider Profile Quick Pill (Clicks to Settings) -->
-        <button id="navProfileBtn" onclick="switchMainView('settings')" title="Rider Profile & Machine Specs" class="flex items-center space-x-2 px-2.5 py-1.5 rounded-lg bg-rpCard hover:bg-rpCardHover border border-rpBorder hover:border-rpBlue/40 text-xs transition group">
-          <div class="relative w-6 h-6 rounded-full overflow-hidden bg-rpBlue/20 border border-rpBlue/40 flex items-center justify-center shrink-0">
-            <img id="navAvatarImg" src="" alt="Avatar" class="w-full h-full object-cover hidden" />
-            <span id="navAvatarInitial" class="font-bold text-[11px] text-rpBlueLight">N</span>
+        <!-- Rider Profile Quick Pill -->
+        <button onclick="switchMainView('settings')" class="flex items-center space-x-2 px-2.5 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-cyan-400/40 text-xs transition group">
+          <div class="relative w-6 h-6 rounded-full overflow-hidden bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center shrink-0">
+            <img id="navUserAvatarImg" src="" alt="Avatar" class="w-full h-full object-cover hidden" />
+            <span id="navUserAvatarInit" class="font-bold text-[11px] text-cyan-300">N</span>
           </div>
-          <div class="text-left hidden sm:block">
-            <span class="text-[10px] text-slate-400 block leading-tight">Welcome,</span>
-            <span id="navProfileName" class="text-xs font-bold text-white group-hover:text-rpBlueLight transition block leading-tight">Natesh</span>
-          </div>
+          <span id="navProfileName" class="text-xs font-bold text-white group-hover:text-cyan-300 transition hidden sm:inline">Natesh</span>
         </button>
 
         <!-- Refresh Button -->
-        <button onclick="refreshData()" title="Reload telemetry records" class="p-2 text-xs font-medium rounded-lg bg-rpCard hover:bg-rpCardHover text-slate-300 border border-rpBorder transition">
-          <svg id="refreshSpinner" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        <button onclick="refreshData()" title="Reload telemetry records" class="p-2 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] transition">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
         </button>
       </div>
+
     </div>
   </header>
 
   <!-- ================= MOBILE STICKY BOTTOM NAV BAR (EXACT 4 TABS) ================= -->
-  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-rpDark/95 backdrop-blur-lg border-t border-rpBorder px-2 py-1.5 flex items-center justify-around shadow-2xl">
-    <button id="mobileNavDashboard" onclick="switchMainView('dashboard')" class="flex flex-col items-center py-1 px-3 text-rpBlue">
+  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#07090E]/95 backdrop-blur-xl border-t border-white/[0.08] px-2 py-1.5 flex items-center justify-around shadow-2xl">
+    <button id="mobileTabDashboard" onclick="switchMainView('dashboard')" class="flex flex-col items-center justify-center flex-1 py-1 text-cyan-300 font-bold">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-      <span class="text-[10px] font-bold mt-0.5">Dashboard</span>
+      <span class="text-[10px] mt-0.5">Dashboard</span>
     </button>
-    <button id="mobileNavTrips" onclick="switchMainView('trips')" class="flex flex-col items-center py-1 px-3 text-slate-400">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-      <span class="text-[10px] font-medium mt-0.5">Trips</span>
+    <button id="mobileTabTrips" onclick="switchMainView('trips')" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-300 font-medium">
+      <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+      <span class="text-[10px] mt-0.5">Trips</span>
     </button>
-    <button id="mobileNavAnalysis" onclick="switchMainView('analysis')" class="flex flex-col items-center py-1 px-3 text-slate-400">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-      <span class="text-[10px] font-medium mt-0.5">Analysis</span>
+    <button id="mobileTabAnalysis" onclick="switchMainView('analysis')" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-300 font-medium">
+      <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+      <span class="text-[10px] mt-0.5">Analysis</span>
     </button>
-    <button id="mobileNavSettings" onclick="switchMainView('settings')" class="flex flex-col items-center py-1 px-3 text-slate-400">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-      <span class="text-[10px] font-medium mt-0.5">Settings</span>
+    <button id="mobileTabSettings" onclick="switchMainView('settings')" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-300 font-medium">
+      <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <span class="text-[10px] mt-0.5">Settings</span>
     </button>
   </div>
 
   <!-- ================= MAIN BODY CONTAINER ================= -->
-  <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+  <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
     <!-- ======================================================== -->
     <!-- TAB 1: DASHBOARD                                         -->
     <!-- Welcome, Profile, Bike Specs, Map & Places, YouTube Hub -->
     <!-- ======================================================== -->
-    <div id="viewDashboard" class="space-y-5">
+    <div id="viewDashboard" class="space-y-6">
       
       <!-- Welcome Message & Rider Profile Hero Banner -->
-      <div class="telemetry-panel p-6 bg-gradient-to-r from-rpCard via-rpCard to-rpBlue/10 border border-rpBorder relative overflow-hidden">
+      <div class="glass-panel p-6 sm:p-8 bg-gradient-to-r from-[#0E131F]/90 via-[#0E131F]/95 to-cyan-500/10 relative overflow-hidden shadow-2xl">
         <div class="flex flex-col md:flex-row items-center md:items-start gap-6 relative z-10">
           
           <!-- Avatar with Instant Photo Upload -->
           <div class="relative group shrink-0">
-            <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-rpBlue shadow-xl shadow-blue-950/40 bg-rpDark flex items-center justify-center relative">
+            <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-cyan-400/50 shadow-[0_0_25px_rgba(0,240,255,0.3)] bg-[#07090E] flex items-center justify-center relative">
               <img id="dashAvatarImg" src="" alt="Rider Photo" class="w-full h-full object-cover hidden" />
-              <div id="dashAvatarInitial" class="w-full h-full bg-gradient-to-br from-rpBlue to-indigo-700 flex items-center justify-center text-3xl font-extrabold text-white">N</div>
+              <div id="dashAvatarPlaceholder" class="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-3xl font-black text-black">N</div>
               
               <!-- Hover / Tap Camera Overlay -->
-              <label for="dashPhotoFileInput" class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
-                <svg class="w-6 h-6 mb-1 text-rpBlueLight" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <label for="dashPhotoFileInput" class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
+                <svg class="w-6 h-6 mb-1 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 <span class="text-[10px] font-bold">Change Photo</span>
               </label>
             </div>
             
             <div class="flex items-center justify-center space-x-1.5 mt-2">
-              <label for="dashPhotoFileInput" class="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-rpBlue hover:bg-rpBlueHover text-white cursor-pointer transition flex items-center space-x-1">
+              <label for="dashPhotoFileInput" class="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 cursor-pointer transition flex items-center space-x-1">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                 <span>Upload</span>
               </label>
-              <button id="dashBtnRemovePhoto" onclick="removeRiderAvatar()" title="Remove photo" class="px-2 py-1 text-[11px] font-medium rounded-md bg-rpDark hover:bg-rpRose/20 text-slate-400 hover:text-rpRose border border-rpBorder transition hidden">
+              <button id="btnRemovePhoto" onclick="removeRiderAvatar()" title="Remove photo" class="px-2 py-1 text-[11px] font-medium rounded-lg bg-white/[0.05] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 transition hidden">
                 ✕
               </button>
             </div>
@@ -247,327 +225,272 @@
 
           <!-- Rider Identity Info -->
           <div class="flex-1 text-center md:text-left space-y-2">
-            <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
-              <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Welcome, <span id="dashWelcomeName">Natesh</span></h1>
-              <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-rpBlue/20 text-rpBlueLight border border-rpBlue/30 flex items-center space-x-1">
-                <svg class="w-3.5 h-3.5 text-rpBlueLight" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-                <span>VERIFIED PILOT</span>
+            <div class="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+              <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Welcome, <span id="dashWelcomeName">Natesh</span></h1>
+              <span class="px-3 py-1 text-xs font-black rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 flex items-center space-x-1.5 shadow-[0_0_12px_rgba(0,240,255,0.2)]">
+                <svg class="w-3.5 h-3.5 text-cyan-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                <span>VERIFIED TELEMETRY PILOT</span>
               </span>
-              <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rpEmerald/15 text-rpEmerald border border-rpEmerald/30">RHODY ACTIVE</span>
             </div>
 
-            <p class="text-xs font-tabular text-slate-400">
-              Pilot Handle: <span id="dashHandleDisplay" class="text-rpBlueLight font-semibold">@natesh_pilot</span> &bull; 
-              Garage Base: <span class="text-slate-300">Western Ghats Sector</span>
+            <p class="text-xs font-mono-numbers text-slate-400">
+              Call-Sign: <span id="dashHandle" class="text-cyan-300 font-bold">@natesh_pilot</span> &bull; 
+              System: <span class="text-emerald-400 font-bold">MongoDB Atlas Sync Connected</span>
             </p>
 
-            <p id="dashBioDisplay" class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+            <p id="dashBio" class="text-xs text-slate-300 max-w-2xl leading-relaxed">
               Weekend canyon carver & telemetry enthusiast. Western Ghats apex seeker pushing precision motorcycle telemetry.
             </p>
-
-            <!-- Quick Career Records Pill Strip -->
-            <div class="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-2.5">
-              <div class="px-3 py-1 rounded-lg bg-rpDark border border-rpBorder text-xs flex items-center space-x-1.5">
-                <span class="text-slate-500 font-medium">Career:</span>
-                <span id="dashCareerDist" class="font-bold text-white font-tabular">142.8 KM</span>
-              </div>
-              <div class="px-3 py-1 rounded-lg bg-rpDark border border-rpBorder text-xs flex items-center space-x-1.5">
-                <span class="text-slate-500 font-medium">Top Velocity:</span>
-                <span id="dashPeakSpeed" class="font-bold text-rpAmber font-tabular">108.4 KM/H</span>
-              </div>
-              <div class="px-3 py-1 rounded-lg bg-rpDark border border-rpBorder text-xs flex items-center space-x-1.5">
-                <span class="text-slate-500 font-medium">Max Apex Lean:</span>
-                <span id="dashMaxLean" class="font-bold text-rpBlueLight font-tabular">48.2° LEFT</span>
-              </div>
-              <button onclick="switchMainView('settings')" class="px-3 py-1 rounded-lg bg-rpDark hover:bg-rpCardHover border border-rpBorder text-xs text-slate-300 hover:text-white transition flex items-center space-x-1">
-                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                <span>Edit Profile</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>
 
       <!-- TELLS ABOUT HIS BIKE (Active Machine Garage Card) -->
-      <div class="telemetry-panel p-5 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-rpBorder pb-3 gap-2">
+      <div class="glass-panel p-6 space-y-4 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
           <div class="flex items-center space-x-3">
-            <div class="w-9 h-9 rounded-xl bg-rpBlue/15 text-rpBlueLight border border-rpBlue/30 flex items-center justify-center shrink-0">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 flex items-center justify-center shrink-0">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
             </div>
             <div>
               <div class="flex items-center space-x-2">
-                <h3 class="text-sm sm:text-base font-bold text-white">Active Machine & Garage</h3>
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-rpEmerald/15 text-rpEmerald border border-rpEmerald/30">DIAGNOSTICS OK</span>
+                <h3 class="text-sm sm:text-base font-bold text-white">Active Motorcycle Garage &amp; Diagnostics</h3>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">SYSTEMS READY</span>
               </div>
-              <p class="text-xs text-slate-400">Primary motorcycle telemetry configuration & garage specs</p>
+              <p class="text-xs text-slate-400">Precision motorcycle telemetry parameters & tire setup</p>
             </div>
           </div>
 
           <div class="flex items-center space-x-2">
             <!-- Search Bike on YouTube -->
-            <button onclick="searchYoutubeForBike()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 transition flex items-center space-x-1.5 shadow-sm">
+            <button onclick="searchYoutubeForBike()" class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
               <svg class="w-3.5 h-3.5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
-              <span>Watch MT-09 SP Videos</span>
+              <span>Watch Bike Videos</span>
             </button>
-            <button onclick="switchMainView('settings')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition">
+            <button onclick="switchMainView('settings')" class="px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/10 transition">
               Edit Specs
             </button>
           </div>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5 text-xs">
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
+          <div class="bg-[#07090E]/80 p-3.5 rounded-xl border border-white/[0.08]">
             <span class="text-[10px] uppercase font-bold text-slate-500 block">Machine Model</span>
-            <span id="dashBikeModel" class="text-sm font-bold text-white block mt-0.5 truncate">Yamaha MT-09 SP</span>
-            <span id="dashBikeSpecs" class="text-[11px] text-slate-400 block mt-0.5 truncate">890cc Triple • 119 BHP</span>
+            <span id="dashBikeModel" class="text-sm font-bold text-white block mt-1 truncate">Yamaha MT-09 SP</span>
+            <span id="dashBikeSpecs" class="text-[11px] text-slate-400 block mt-0.5 truncate">890cc Triple &bull; 119 BHP</span>
           </div>
 
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block">Registration / Plate</span>
-            <span id="dashBikePlate" class="text-sm font-bold text-rpAmber font-tabular block mt-0.5">TN-38-RH-0909</span>
+          <div class="bg-[#07090E]/80 p-3.5 rounded-xl border border-white/[0.08]">
+            <span class="text-[10px] uppercase font-bold text-slate-500 block">Registration Plate</span>
+            <span id="dashBikePlate" class="text-sm font-bold text-amber-400 font-mono-numbers block mt-1">TN-38-RH-0909</span>
             <span class="text-[11px] text-slate-400 block mt-0.5">Telemetry Registered</span>
           </div>
 
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block">Tire Setup & Pressures</span>
-            <span id="dashTires" class="text-xs font-bold text-white block mt-0.5 truncate">Pirelli Diablo Rosso IV</span>
-            <span class="text-[10px] text-slate-400 block mt-0.5">Cold PSI: Front 32 / Rear 36</span>
+          <div class="bg-[#07090E]/80 p-3.5 rounded-xl border border-white/[0.08]">
+            <span class="text-[10px] uppercase font-bold text-slate-500 block">Tire Specification</span>
+            <span id="dashTires" class="text-xs font-bold text-white block mt-1 truncate">Pirelli Diablo Rosso IV</span>
+            <span class="text-[10px] text-cyan-400 font-mono-numbers block mt-0.5">Cold: F 32 / R 36 PSI</span>
           </div>
 
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block">Chain & Service Health</span>
-            <span class="text-xs font-bold text-rpEmerald block mt-0.5">Optimal Tension</span>
-            <span class="text-[10px] text-slate-400 block mt-0.5">Motul 300V Factory Line</span>
+          <div class="bg-[#07090E]/80 p-3.5 rounded-xl border border-white/[0.08]">
+            <span class="text-[10px] uppercase font-bold text-slate-500 block">Road Weather Grip</span>
+            <span id="roadGripBadge" class="text-xs font-bold text-emerald-400 block mt-1">🟢 DRY (98% GRIP)</span>
+            <span class="text-[10px] text-slate-400 block mt-0.5">Open-Meteo Real-Time</span>
           </div>
         </div>
       </div>
 
-      <!-- MAP CONNECTION: SAVED PLACES & INSTANT PLACE SEARCH -->
-      <div class="telemetry-panel p-5 space-y-4">
-        
-        <div class="flex flex-col md:flex-row md:items-center justify-between pb-3 border-b border-rpBorder gap-3">
+      <!-- MAP CONNECTION: REAL SAVED PLACES & INSTANT GLOBAL SEARCH -->
+      <div class="glass-panel p-6 space-y-4 shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-white/[0.08] gap-3">
           <div>
             <div class="flex items-center space-x-2">
               <h2 class="text-base font-bold text-white flex items-center space-x-2">
-                <svg class="w-5 h-5 text-rpAmber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                <span>Saved Places & Waypoint Connection</span>
+                <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span>Real Saved Places &amp; Radar Connection</span>
               </h2>
-              <span id="dashPlacesBadge" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rpAmber/15 text-rpAmber border border-rpAmber/30">6 Saved On Map</span>
+              <span id="dashPlacesBadge" class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">0 Saved On Map</span>
             </div>
-            <p class="text-xs text-slate-400 mt-0.5">Stored mountain passes, circuits, basecamp garage & pitstops on zero-watermark Esri dark canvas</p>
+            <p class="text-xs text-slate-400 mt-0.5">Real destinations, basecamps, and mountain roads saved to your MongoDB Atlas cloud</p>
           </div>
 
           <div class="flex items-center space-x-2">
-            <button onclick="openAddPlaceModal()" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-rpAmber hover:bg-amber-400 text-slate-950 transition flex items-center space-x-1.5 shadow-sm">
-              <svg class="w-3.5 h-3.5 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4" /></svg>
-              <span>Add / Pin Place</span>
+            <button onclick="saveCurrentGpsLocation()" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4" /></svg>
+              <span>Pin Current GPS Fix</span>
             </button>
           </div>
         </div>
 
         <!-- SEARCH FOR PLACES IN DASHBOARD -->
-        <div class="p-3.5 rounded-xl bg-rpDark border border-rpBorder space-y-2">
+        <div class="p-3.5 rounded-2xl bg-[#07090E]/80 border border-white/[0.08] space-y-2">
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <div class="relative flex-1">
-              <input id="dashPlaceSearchInput" type="text" placeholder="🔍 Search any city, mountain pass, or destination (OpenStreetMap)..." onkeydown="if(event.key==='Enter'){event.preventDefault();searchPlacesInDashboard();}" class="w-full bg-rpCard border border-rpBorder rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rpBlue transition" />
-              <button onclick="searchPlacesInDashboard()" class="absolute right-2 top-2 px-2.5 py-0.5 text-[11px] font-bold rounded bg-rpBlue hover:bg-rpBlueHover text-white transition">Search</button>
+              <input id="dashPlaceSearchInput" type="text" placeholder="🔍 Search any city, mountain pass, or street worldwide (OpenStreetMap)..." onkeydown="if(event.key==='Enter'){event.preventDefault();searchDashboardPlaces();}" class="w-full bg-[#0E131F] border border-white/[0.08] rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400/60 transition" />
+              <button onclick="searchDashboardPlaces()" class="absolute right-2 top-1.5 px-3 py-1 text-xs font-bold rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-400/40 transition">Search</button>
             </div>
             <div class="flex items-center space-x-1.5 shrink-0">
-              <button onclick="filterDashboardPlacesCategory('all')" id="dashCat_all" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rpBlue text-white transition">All</button>
-              <button onclick="filterDashboardPlacesCategory('pass')" id="dashCat_pass" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-rpCard border border-rpBorder transition">⛰️ Passes</button>
-              <button onclick="filterDashboardPlacesCategory('track')" id="dashCat_track" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-rpCard border border-rpBorder transition">🏁 Tracks</button>
-              <button onclick="filterDashboardPlacesCategory('garage')" id="dashCat_garage" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-rpCard border border-rpBorder transition">🏠 Garage</button>
+              <button onclick="filterDashboardPlacesCategory('all')" id="dashCat_all" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 transition">All</button>
+              <button onclick="filterDashboardPlacesCategory('pass')" id="dashCat_pass" class="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-white/[0.04] border border-white/10 transition">⛰️ Passes</button>
+              <button onclick="filterDashboardPlacesCategory('track')" id="dashCat_track" class="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-white/[0.04] border border-white/10 transition">🏁 Tracks</button>
+              <button onclick="filterDashboardPlacesCategory('garage')" id="dashCat_garage" class="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-white/[0.04] border border-white/10 transition">🏠 Garage</button>
             </div>
           </div>
-          <div id="dashSearchStatus" class="text-xs text-rpBlueLight hidden"></div>
         </div>
 
         <!-- Interactive Map Container -->
-        <div class="relative rounded-xl overflow-hidden border border-rpBorder">
+        <div class="relative rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl">
           <div id="dashboardMap"></div>
 
           <!-- Map Controls (Bottom Left) -->
-          <div class="absolute bottom-4 left-4 z-[400] flex items-center bg-rpDark/90 backdrop-blur-md border border-rpBorder rounded-xl p-1 text-[11px] font-medium gap-1.5 shadow-xl">
-            <button id="btnDashDark" onclick="setDashboardMapLayer('dark')" class="px-2.5 py-1 rounded-md bg-rpBlue text-white transition">Dark</button>
-            <button id="btnDashOsm" onclick="setDashboardMapLayer('osm')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition">Street</button>
-            <button id="btnDashSat" onclick="setDashboardMapLayer('sat')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition">Satellite</button>
+          <div class="absolute bottom-4 left-4 z-[400] flex items-center bg-[#07090E]/90 backdrop-blur-md border border-white/10 rounded-xl p-1 text-[11px] font-medium gap-1.5 shadow-2xl">
+            <button id="btnDashDark" onclick="setDashboardMapLayer('dark')" class="px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold transition">Dark</button>
+            <button id="btnDashOsm" onclick="setDashboardMapLayer('osm')" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition">Street</button>
+            <button id="btnDashSat" onclick="setDashboardMapLayer('sat')" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition">Satellite</button>
           </div>
-
-          <!-- Live Weather & Grip Overlay (Top Right) -->
-          <div id="dashMapWeatherBadge" class="absolute top-4 right-4 z-[400] bg-rpDark/90 backdrop-blur-md border border-rpBorder rounded-xl px-3 py-2 shadow-lg hidden"></div>
         </div>
 
-        <!-- Saved Places Cards Directory -->
-        <div class="space-y-2 pt-2">
+        <!-- Saved Places Cards Directory (100% Real from MongoDB) -->
+        <div class="space-y-3 pt-2">
           <div class="flex items-center justify-between text-xs text-slate-400">
-            <span class="font-bold uppercase tracking-wider">Stored Locations on Your Map:</span>
-            <span class="text-[11px]">Click a card to navigate, calculate motorcycle route, or watch YouTube ride vlogs</span>
+            <span class="font-bold uppercase tracking-wider text-slate-300">Saved Waypoints on Your Map:</span>
+            <span class="text-[11px] text-cyan-400">Click any card to calculate real OSRM motorcycle route</span>
           </div>
-          <div id="dashPlacesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+          <div id="dashPlacesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
         </div>
       </div>
 
-      <!-- SEARCH YOUTUBE VIDEOS ABOUT THAT PLACE & BIKE -->
-      <div class="telemetry-panel p-5 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-rpBorder pb-3 gap-3">
+      <!-- SEARCH YOUTUBE VIDEOS (100% REAL YOUTUBE STREAMING) -->
+      <div class="glass-panel p-6 space-y-4 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
           <div class="flex items-center space-x-3">
-            <div class="w-9 h-9 rounded-xl bg-red-600/20 text-red-500 border border-red-500/30 flex items-center justify-center shrink-0">
+            <div class="w-10 h-10 rounded-xl bg-red-600/20 text-red-500 border border-red-500/30 flex items-center justify-center shrink-0">
               <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
             </div>
             <div>
               <div class="flex items-center space-x-2">
-                <h3 class="text-sm sm:text-base font-bold text-white">YouTube Machine & Road Video Guides</h3>
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-red-500/20 text-red-400 border border-red-500/30">EMBEDDED PLAYER</span>
+                <h3 class="text-sm sm:text-base font-bold text-white">YouTube Machine &amp; Road Video Guides</h3>
+                <span class="px-2.5 py-0.5 text-[9px] font-black rounded-full bg-red-600/20 text-red-400 border border-red-500/30">REAL YOUTUBE PLAYER</span>
               </div>
-              <p class="text-xs text-slate-400">Search motorcycle ride vlogs, cornering reviews & guides for your bike and saved destinations</p>
+              <p class="text-xs text-slate-400">Search and stream actual motorcycle ride vlogs, reviews, and route breakdowns inside Rhody</p>
             </div>
           </div>
 
-          <!-- YouTube Search Input -->
+          <!-- Real YouTube Search Input -->
           <div class="relative min-w-[280px]">
-            <input id="youtubeSearchInput" type="text" placeholder="Search YouTube ride vlogs or bike..." onkeydown="if(event.key==='Enter'){event.preventDefault();searchCustomYoutube();}" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition pr-8" />
-            <button onclick="searchCustomYoutube()" class="absolute right-2 top-2 text-slate-400 hover:text-red-500">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input id="youtubeSearchInput" type="text" placeholder="Search any bike, road, or ride vlog..." onkeydown="if(event.key==='Enter'){event.preventDefault();searchCustomYoutube();}" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500/60 transition pr-9" />
+            <button onclick="searchCustomYoutube()" class="absolute right-3 top-2.5 text-slate-400 hover:text-red-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </button>
           </div>
         </div>
 
-        <!-- Preset 1-Click Search Pills -->
-        <div class="flex flex-wrap items-center gap-1.5 text-xs">
-          <span class="text-slate-500 text-[11px] font-semibold mr-1">Quick Guides:</span>
-          <button onclick="filterYoutubeVideos('mt09')" id="ytPill_mt09" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-red-600 text-white transition flex items-center space-x-1">
-            <span>🏍️ MT-09 SP Review & Sound</span>
-          </button>
-          <button onclick="filterYoutubeVideos('munnar')" id="ytPill_munnar" class="px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white bg-rpDark border border-rpBorder transition flex items-center space-x-1">
-            <span>⛰️ Munnar Gap Road 4K</span>
-          </button>
-          <button onclick="filterYoutubeVideos('valparai')" id="ytPill_valparai" class="px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white bg-rpDark border border-rpBorder transition flex items-center space-x-1">
-            <span>🏁 Valparai 40 Hairpins</span>
-          </button>
-          <button onclick="filterYoutubeVideos('kari')" id="ytPill_kari" class="px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white bg-rpDark border border-rpBorder transition flex items-center space-x-1">
-            <span>🏎️ Kari Speedway Lap</span>
-          </button>
-          <button onclick="filterYoutubeVideos('kolli')" id="ytPill_kolli" class="px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white bg-rpDark border border-rpBorder transition flex items-center space-x-1">
-            <span>⛰️ Kolli Hills 70 Bends</span>
-          </button>
-          <button onclick="filterYoutubeVideos('rain')" id="ytPill_rain" class="px-2.5 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white bg-rpDark border border-rpBorder transition flex items-center space-x-1">
-            <span>🌧️ Wet Weather & Grip Tips</span>
-          </button>
-        </div>
+        <!-- Dynamic 1-Click Search Pills (Generated from user's bike & saved places) -->
+        <div id="youtubePillsContainer" class="flex flex-wrap items-center gap-2 text-xs"></div>
 
         <!-- Video Cards Grid -->
-        <div id="youtubeVideoGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2"></div>
+        <div id="youtubeVideoGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2"></div>
       </div>
 
     </div>
 
     <!-- ======================================================== -->
     <!-- TAB 2: TRIPS                                             -->
-    <!-- Start Trip, When Started Timestamp, Live Telemetry HUD, -->
-    <!-- Speedometer, Lean Angle, Parent Live Safety Share       -->
+    <!-- Start Trip, Real Timestamps, Live Speedometer, Lean      -->
     <!-- ======================================================== -->
-    <div id="viewTrips" class="space-y-5 hidden">
+    <div id="viewTrips" class="space-y-6 hidden">
       
       <!-- START TRIP CONTROL HERO PANEL -->
-      <div class="telemetry-panel p-5 bg-gradient-to-r from-rpCard via-rpCard to-rpEmerald/10 border border-rpBorder space-y-4">
-        
+      <div class="glass-panel p-6 sm:p-8 bg-gradient-to-r from-[#0E131F]/90 via-[#0E131F]/95 to-emerald-500/10 space-y-5 shadow-2xl">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="space-y-1">
-            <div class="flex items-center space-x-2">
-              <h2 class="text-lg font-bold text-white flex items-center space-x-2">
-                <span id="tripRecordingStatusDot" class="w-3 h-3 rounded-full bg-rpEmerald status-pulse"></span>
-                <span id="tripRecordingStateTitle">Active Trip Recorder</span>
-              </h2>
-              <span id="tripLiveStatusPill" class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-rpEmerald/15 text-rpEmerald border border-rpEmerald/30">READY TO RIDE</span>
+          <div class="space-y-1.5">
+            <div class="flex items-center space-x-2.5">
+              <span id="tripRecordingStatusDot" class="w-3 h-3 rounded-full bg-emerald-400 status-pulse"></span>
+              <h2 id="tripRecordingStateTitle" class="text-lg font-bold text-white tracking-tight">Active Trip Telemetry Recorder</h2>
+              <span id="tripLiveStatusPill" class="px-3 py-1 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">READY TO RIDE</span>
             </div>
             
-            <!-- WHEN HE STARTED DISPLAY -->
-            <p id="tripStartTimestampDisplay" class="text-xs text-slate-400 font-tabular">
-              Tap "Start Recording Trip" when mounted. High-frequency GPS and IMU gyroscopes will record your run.
+            <!-- WHEN HE STARTED DISPLAY (Real start timestamp) -->
+            <p id="tripStartTimestampDisplay" class="text-xs text-slate-400 font-mono-numbers">
+              Tap "START RECORDING TRIP" below when mounted. Rhody connects directly to your device's high-precision GPS and IMU gyroscope.
             </p>
           </div>
 
           <!-- PRIMARY TRIP CONTROLS -->
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2.5">
             <!-- START BUTTON -->
-            <button id="btnStartTrip" onclick="startNewTripSession()" class="px-5 py-2.5 text-xs font-bold rounded-lg bg-rpEmerald hover:bg-emerald-500 text-slate-950 transition flex items-center space-x-2 shadow-lg shadow-emerald-950/40">
-              <svg class="w-4 h-4 text-slate-950" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"/></svg>
+            <button id="btnStartTrip" onclick="startNewTripSession()" class="px-6 py-3 text-xs font-black rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 text-black hover:opacity-95 transition flex items-center space-x-2 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+              <svg class="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"/></svg>
               <span>START RECORDING TRIP</span>
             </button>
 
             <!-- PAUSE / RESUME BUTTON -->
-            <button id="btnPauseTrip" onclick="togglePauseTripSession()" class="hidden px-4 py-2 text-xs font-semibold rounded-lg bg-rpAmber hover:bg-amber-400 text-slate-950 transition flex items-center space-x-1.5 shadow-sm">
-              <span id="pauseBtnLabel">Pause Trip</span>
+            <button id="btnPauseTrip" onclick="togglePauseTripSession()" class="hidden px-5 py-2.5 text-xs font-bold rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 transition">
+              <span id="pauseBtnLabel">Pause Recording</span>
             </button>
 
             <!-- FINISH TRIP BUTTON -->
-            <button id="btnFinishTrip" onclick="finishTripSession()" class="hidden px-4 py-2 text-xs font-bold rounded-lg bg-rpRose hover:bg-rose-500 text-white transition flex items-center space-x-1.5 shadow-sm">
-              <span>Finish &amp; Save</span>
-            </button>
-
-            <!-- SIMULATE DEMO RUN -->
-            <button id="btnSimulateRide" onclick="simulateLiveRideDemo()" class="px-3.5 py-2 text-xs font-medium rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition flex items-center space-x-1.5">
-              <svg class="w-3.5 h-3.5 text-rpBlueLight" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <span>Run Valparai Demo</span>
+            <button id="btnFinishTrip" onclick="finishTripSession()" class="hidden px-5 py-2.5 text-xs font-black rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-400/50 shadow-[0_0_15px_rgba(244,63,94,0.3)] transition">
+              <span>FINISH &amp; SAVE RUN</span>
             </button>
           </div>
         </div>
 
-        <!-- ACTIVE ELAPSED TIME & LIVE METRIC STRIP -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs pt-1">
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block">Elapsed Ride Time</span>
-            <span id="liveElapsedTimer" class="text-xl font-bold text-white font-tabular block mt-0.5">00:00:00</span>
-            <span class="text-[11px] text-slate-400 block mt-0.5">Active timer</span>
+        <!-- ACTIVE ELAPSED TIME & REAL LIVE METRIC STRIP -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs pt-2">
+          <div class="bg-[#07090E]/90 p-4 rounded-xl border border-white/[0.08]">
+            <span class="text-[10px] uppercase font-bold text-slate-500 block">Elapsed Stopwatch</span>
+            <span id="liveElapsedTimer" class="text-2xl font-black text-white font-mono-numbers block mt-1 tracking-wider">00:00:00</span>
+            <span class="text-[11px] text-slate-400 block mt-0.5">Real-time counter</span>
           </div>
 
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block">Current Velocity</span>
-            <div class="mt-0.5 flex items-baseline space-x-1">
-              <span id="liveCurrentSpeed" class="text-xl font-bold text-white font-tabular">0.0</span>
-              <span class="text-xs font-bold text-slate-400">KM/H</span>
+          <div class="bg-[#07090E]/90 p-4 rounded-xl border border-white/[0.08]">
+            <span class="text-[10px] uppercase font-bold text-slate-500 block">Real GPS Speed</span>
+            <div class="mt-1 flex items-baseline space-x-1.5">
+              <span id="liveCurrentSpeed" class="text-2xl font-black text-white font-mono-numbers">0.0</span>
+              <span class="text-xs font-bold text-cyan-400">KM/H</span>
             </div>
-            <span id="liveMovementStatus" class="text-[11px] text-rpEmerald block mt-0.5">Bike Stopped</span>
+            <span id="liveMovementStatus" class="text-xs text-amber-400 font-mono-numbers font-bold block mt-1">BIKE IS STOPPED — 0.0 KM/H</span>
           </div>
 
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
+          <div class="bg-[#07090E]/90 p-4 rounded-xl border border-white/[0.08]">
             <span class="text-[10px] uppercase font-bold text-slate-500 block">Distance Covered</span>
-            <div class="mt-0.5 flex items-baseline space-x-1">
-              <span id="liveCurrentDist" class="text-xl font-bold text-rpBlueLight font-tabular">0.00</span>
+            <div class="mt-1 flex items-baseline space-x-1.5">
+              <span id="liveCurrentDist" class="text-2xl font-black text-cyan-300 font-mono-numbers">0.00</span>
               <span class="text-xs font-bold text-slate-400">KM</span>
             </div>
-            <span class="text-[11px] text-slate-400 block mt-0.5">GPS distance</span>
+            <span class="text-[11px] text-slate-400 block mt-0.5">Haversine GPS sum</span>
           </div>
 
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block">Road Grip Telemetry</span>
-            <span id="liveRoadGripStatus" class="text-xs font-bold text-rpEmerald block mt-0.5">DRY (98% GRIP)</span>
-            <span id="liveRoadTemp" class="text-[11px] text-slate-400 block mt-0.5">24°C • Wind 8 km/h</span>
+          <div class="bg-[#07090E]/90 p-4 rounded-xl border border-white/[0.08]">
+            <span class="text-[10px] uppercase font-bold text-slate-500 block">Apex Lean Angle</span>
+            <div id="liveLeanAngleReadout" class="mt-1 text-lg font-bold font-mono-numbers text-cyan-400">
+              0.0&deg; <span class="text-xs text-slate-400 font-normal">UPRIGHT</span>
+            </div>
+            <span class="text-[11px] text-slate-400 block mt-0.5">Device gyroscope</span>
           </div>
         </div>
-
       </div>
 
       <!-- TWIN GAUGES: SPEEDOMETER & LEAN ANGLE + MAP -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         <!-- Live Cockpit Visual Gauges (Column 5) -->
         <div class="lg:col-span-5 space-y-4">
           
-          <div class="telemetry-panel p-4 space-y-3">
-            <div class="flex items-center justify-between border-b border-rpBorder pb-2">
+          <div class="glass-panel p-5 space-y-4 shadow-xl">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Live Cockpit Telemetry</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-rpBlue/15 text-rpBlueLight border border-rpBlue/30">10 Hz IMU</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">10 Hz HARDWARE IMU</span>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 items-center">
+            <div class="grid grid-cols-2 gap-4 items-center">
               <!-- Digital Speed Dial -->
               <div class="flex flex-col items-center">
                 <div class="relative w-[150px] h-[135px] flex items-center justify-center">
                   <canvas id="tripsSpeedCanvas" width="150" height="135" class="w-[150px] h-[135px]"></canvas>
                 </div>
-                <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-1">Speed Gauge</span>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Speed Dial</span>
               </div>
 
               <!-- G-Force Reticle -->
@@ -575,35 +498,32 @@
                 <div class="relative w-[135px] h-[135px] flex items-center justify-center">
                   <canvas id="tripsGforceCanvas" width="135" height="135" class="w-[135px] h-[135px]"></canvas>
                 </div>
-                <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-1">G-Force &amp; Lean</span>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">G-Force Reticle</span>
               </div>
-            </div>
-
-            <div class="p-3 rounded-lg bg-rpDark border border-rpBorder flex items-center justify-between text-xs font-tabular">
-              <span class="text-slate-400">Live Apex Lean:</span>
-              <span id="liveLeanAngleReadout" class="text-rpBlueLight font-bold text-sm">0.0° VERTICAL</span>
             </div>
           </div>
 
           <!-- GUARDIAN PARENT LIVE SAFETY SHARE CARD -->
-          <div class="telemetry-panel p-4 space-y-3 bg-gradient-to-r from-rpCard via-rpCard to-rpEmerald/10">
-            <div class="flex items-center justify-between border-b border-rpBorder pb-2">
+          <div class="glass-panel p-5 space-y-3.5 bg-gradient-to-r from-[#0E131F] to-emerald-500/10 shadow-xl">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div class="flex items-center space-x-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-rpEmerald status-pulse"></span>
-                <span class="text-xs font-bold text-white">Parent Live Safety Beacon</span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 status-pulse"></span>
+                <span class="text-xs font-bold text-white tracking-wide">Parent Live Safety Beacon</span>
               </div>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-rpEmerald/20 text-rpEmerald">ZERO LOGIN</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">ZERO LOGIN NEEDED</span>
             </div>
 
             <p class="text-xs text-slate-300 leading-relaxed">
               Parents can monitor your live speed, location, and moving/stopped state in real-time on any phone or browser.
             </p>
 
-            <div class="p-2.5 rounded-lg bg-rpDark border border-rpBorder flex items-center justify-between gap-2">
-              <span id="parentLiveLinkPreview" class="text-[11px] font-tabular text-slate-400 truncate">https://rhodyy.vercel.app/?live=active</span>
-              <button onclick="shareTripWithParents()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-rpEmerald hover:bg-emerald-500 text-slate-950 transition flex items-center space-x-1 shrink-0">
-                <svg class="w-3.5 h-3.5 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+            <div class="flex items-center space-x-2 pt-1">
+              <button onclick="shareTripWithParents()" class="flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black transition flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
                 <span>Share WhatsApp</span>
+              </button>
+              <button onclick="copyParentTrackingLink()" class="py-2 px-3 text-xs font-medium rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 border border-white/10 transition">
+                Copy Link
               </button>
             </div>
           </div>
@@ -611,27 +531,27 @@
         </div>
 
         <!-- Live Vector Map (Column 7) -->
-        <div class="lg:col-span-7 telemetry-panel p-2 relative overflow-hidden">
+        <div class="lg:col-span-7 glass-panel p-2.5 relative overflow-hidden shadow-2xl">
           <div id="tripsLiveMap"></div>
 
           <!-- Floating Live GPS HUD -->
-          <div class="absolute top-4 left-4 z-[400] bg-rpDark/90 backdrop-blur-md border border-rpBorder rounded-xl p-3 shadow-lg min-w-[170px]">
-            <div class="flex items-center justify-between border-b border-rpBorder pb-1">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Live Breadcrumbs</span>
-              <span class="w-2 h-2 rounded-full bg-rpEmerald status-pulse"></span>
+          <div class="absolute top-5 left-5 z-[400] bg-[#07090E]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl min-w-[180px]">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-1.5">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Live GPS Breadcrumbs</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-400 status-pulse"></span>
             </div>
-            <div class="mt-2 flex items-baseline space-x-1.5">
-              <span id="tripsMapSpeed" class="text-2xl font-bold text-white font-tabular">0</span>
-              <span class="text-xs font-bold text-slate-400">KM/H</span>
+            <div class="mt-2.5 flex items-baseline space-x-1.5">
+              <span id="tripsMapSpeed" class="text-3xl font-black text-white font-mono-numbers">0</span>
+              <span class="text-xs font-bold text-cyan-400">KM/H</span>
             </div>
-            <div class="mt-1 space-y-0.5 text-xs font-tabular text-slate-300">
+            <div class="mt-1 space-y-0.5 text-xs font-mono-numbers text-slate-300">
               <div class="flex justify-between">
                 <span class="text-slate-500">Distance:</span>
                 <span id="tripsMapDist" class="text-white font-medium">0.00 km</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-slate-500">Altitude:</span>
-                <span id="tripsMapAlt" class="text-rpAmber font-medium">-- m</span>
+                <span id="tripsMapAlt" class="text-amber-400 font-medium">-- m</span>
               </div>
             </div>
           </div>
@@ -639,16 +559,16 @@
 
       </div>
 
-      <!-- Recent Started Trips Table -->
-      <div class="telemetry-panel p-5 space-y-3">
-        <div class="flex items-center justify-between border-b border-rpBorder pb-2">
-          <h3 class="text-sm font-bold text-white">Recent Logged Runs</h3>
-          <span class="text-xs text-slate-400">Click any run to view in Analysis</span>
+      <!-- Recent Logged Trips Table (Real Database Trips Only) -->
+      <div class="glass-panel p-6 space-y-3.5 shadow-xl">
+        <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
+          <h3 class="text-sm font-bold text-white">Recent Telemetry Runs (MongoDB Atlas)</h3>
+          <span class="text-xs text-slate-400">Click "Analyze" to inspect speed in each place</span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead>
-              <tr class="border-b border-rpBorder text-slate-500 text-[10px] uppercase font-bold">
+              <tr class="border-b border-white/[0.08] text-slate-500 text-[10px] uppercase font-bold tracking-wider">
                 <th class="py-2.5 px-3">Trip Title</th>
                 <th class="py-2.5 px-3">Start Timestamp</th>
                 <th class="py-2.5 px-3">Distance</th>
@@ -657,7 +577,7 @@
                 <th class="py-2.5 px-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody id="tripsRecentTableBody" class="divide-y divide-rpBorder font-tabular text-slate-300"></tbody>
+            <tbody id="tripsRecentTableBody" class="divide-y divide-white/[0.04]"></tbody>
           </table>
         </div>
       </div>
@@ -666,45 +586,44 @@
 
     <!-- ======================================================== -->
     <!-- TAB 3: ANALYSIS                                          -->
-    <!-- How He Travelled, Speed in Each Place Heatmap & Hover,  -->
-    <!-- Landmarks Table, Trip Completion Dossier, Charts        -->
+    <!-- How He Travelled, Speed Heatmap by Place, Real Charts    -->
     <!-- ======================================================== -->
-    <div id="viewAnalysis" class="space-y-5 hidden">
+    <div id="viewAnalysis" class="space-y-6 hidden">
       
       <!-- Trip Selector Toolbar -->
-      <div class="telemetry-panel p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div class="glass-panel p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xl">
         <div class="flex items-center space-x-3">
-          <div class="p-2 rounded-lg bg-rpBlue/10 text-rpBlueLight border border-rpBlue/20">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+          <div class="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-300 border border-cyan-400/30">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
           </div>
           <div>
             <div class="flex items-center space-x-2">
-              <h2 id="analysisTripTitle" class="text-sm sm:text-base font-bold text-white">Select a Ride for Analysis</h2>
-              <span id="analysisTripBadge" class="px-2 py-0.5 text-[10px] font-semibold rounded bg-rpEmerald/10 text-rpEmerald border border-rpEmerald/25 uppercase">Completed</span>
+              <h2 id="analysisTripTitle" class="text-base font-bold text-white">Select a Ride for Analysis</h2>
+              <span class="px-2.5 py-0.5 text-[9px] font-black rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 uppercase">REAL CLOUD DATA</span>
             </div>
-            <p id="analysisTripSub" class="text-xs text-slate-400">Detailed speed across places, lean angles, elevation & completion report</p>
+            <p class="text-xs text-slate-400">Detailed speed across places, lean angles, elevation profile & completion dossier</p>
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2.5">
           <!-- Dropdown selector -->
-          <div class="relative min-w-[240px]">
-            <select id="analysisTripSelect" onchange="onAnalysisTripSelect(this.value)" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:border-rpBlue transition appearance-none pr-8">
-              <option value="">Loading trips from MongoDB Atlas...</option>
+          <div class="relative min-w-[260px]">
+            <select id="analysisTripSelect" onchange="onAnalysisTripSelect(this.value)" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-4 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:border-cyan-400/60 transition appearance-none pr-9">
+              <option value="">Loading trips from cloud...</option>
             </select>
             <div class="absolute right-3 top-2.5 pointer-events-none text-slate-500">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
             </div>
           </div>
 
           <!-- Export GPX -->
-          <button onclick="downloadActiveGpx()" class="px-3 py-2 text-xs font-medium rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition flex items-center space-x-1.5">
-            <svg class="w-3.5 h-3.5 text-rpBlueLight" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          <button onclick="exportAnalysisGpx()" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-cyan-300 border border-white/10 transition flex items-center space-x-1.5">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
             <span>GPX</span>
           </button>
 
           <!-- Export CSV -->
-          <button onclick="downloadActiveCsv()" class="px-3 py-2 text-xs font-medium rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition flex items-center space-x-1.5">
+          <button onclick="exportAnalysisCsv()" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border border-white/10 transition flex items-center space-x-1.5">
             <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             <span>CSV</span>
           </button>
@@ -712,168 +631,144 @@
       </div>
 
       <!-- HOW HE COMPLETED THE TRIP (COMPLETION DOSSIER) -->
-      <div class="telemetry-panel p-5 space-y-4">
-        <div class="flex items-center justify-between border-b border-rpBorder pb-2">
+      <div class="glass-panel p-6 space-y-4 shadow-xl">
+        <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
           <div class="flex items-center space-x-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-rpEmerald"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Trip Completion Dossier</h3>
           </div>
-          <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-rpEmerald/15 text-rpEmerald border border-rpEmerald/30">COMPLETED SAFELY</span>
+          <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">COMPLETED SAFELY</span>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 text-xs">
+          <div class="bg-[#07090E]/80 p-3.5 rounded-xl border border-white/[0.08]">
             <span class="text-slate-500 text-[10px] uppercase block font-bold">Total Distance</span>
-            <span id="compDist" class="text-lg font-bold text-white font-tabular block mt-0.5">64.8 km</span>
+            <span id="compDist" class="text-lg font-bold text-white font-mono-numbers block mt-1">-- km</span>
           </div>
 
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
+          <div class="bg-[#07090E]/80 p-3.5 rounded-xl border border-white/[0.08]">
             <span class="text-slate-500 text-[10px] uppercase block font-bold">Total Duration</span>
-            <span id="compDuration" class="text-lg font-bold text-white font-tabular block mt-0.5">01:33:12</span>
+            <span id="compDuration" class="text-lg font-bold text-white font-mono-numbers block mt-1">--:--:--</span>
           </div>
 
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
+          <div class="bg-[#07090E]/80 p-3.5 rounded-xl border border-white/[0.08]">
             <span class="text-slate-500 text-[10px] uppercase block font-bold">Peak Velocity</span>
-            <span id="compTopSpeed" class="text-lg font-bold text-rpAmber font-tabular block mt-0.5">134.6 km/h</span>
+            <span id="compTopSpeed" class="text-lg font-bold text-amber-400 font-mono-numbers block mt-1">-- km/h</span>
           </div>
 
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
+          <div class="bg-[#07090E]/80 p-3.5 rounded-xl border border-white/[0.08]">
             <span class="text-slate-500 text-[10px] uppercase block font-bold">Average Speed</span>
-            <span id="compAvgSpeed" class="text-lg font-bold text-rpBlueLight font-tabular block mt-0.5">58.2 km/h</span>
+            <span id="compAvgSpeed" class="text-lg font-bold text-cyan-300 font-mono-numbers block mt-1">-- km/h</span>
           </div>
 
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
-            <span class="text-slate-500 text-[10px] uppercase block font-bold">Max Cornering Lean</span>
-            <span id="compMaxLean" class="text-lg font-bold text-indigo-400 font-tabular block mt-0.5">42.5° L / 39° R</span>
+          <div class="bg-[#07090E]/80 p-3.5 rounded-xl border border-white/[0.08]">
+            <span class="text-slate-500 text-[10px] uppercase block font-bold">Max Apex Lean</span>
+            <span id="compMaxLean" class="text-lg font-bold text-cyan-400 font-mono-numbers block mt-1">--° APEX</span>
           </div>
 
-          <div class="bg-rpDark p-3 rounded-lg border border-rpBorder">
-            <span class="text-slate-500 text-[10px] uppercase block font-bold">Elevation Climbed</span>
-            <span id="compElevation" class="text-lg font-bold text-rpEmerald font-tabular block mt-0.5">+1,120 m</span>
+          <div class="bg-[#07090E]/80 p-3.5 rounded-xl border border-white/[0.08]">
+            <span class="text-slate-500 text-[10px] uppercase block font-bold">Elevation Gain</span>
+            <span id="compElevation" class="text-lg font-bold text-emerald-400 font-mono-numbers block mt-1">+0 m</span>
           </div>
         </div>
       </div>
 
       <!-- SPEED IN EACH PLACE HEATMAP MAP + INTERACTIVE INSPECTION -->
-      <div class="telemetry-panel p-4 space-y-3">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-rpBorder gap-2">
+      <div class="glass-panel p-5 space-y-4 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-white/[0.08] gap-2">
           <div>
             <h3 class="text-sm font-bold text-white flex items-center space-x-2">
-              <span>Speed in Each Place &mdash; Interactive Heatmap</span>
-              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-rpBlue/20 text-rpBlueLight">COLOR-CODED VELOCITY</span>
+              <span>Speed in Each Place &mdash; Color-Coded Heatmap</span>
+              <span class="px-2.5 py-0.5 text-[9px] font-bold rounded-full bg-cyan-500/20 text-cyan-300">REAL GPS SPEEDS</span>
             </h3>
-            <p class="text-xs text-slate-400">Hover or scrub anywhere along the motorcycle route to inspect exact speed and lean angle at each location</p>
+            <p class="text-xs text-slate-400">Hover anywhere along the motorcycle route to inspect exact speed and lean angle recorded at each spot</p>
           </div>
 
           <!-- Heatmap Legend -->
-          <div class="flex items-center space-x-3 text-[11px] font-tabular">
-            <div class="flex items-center space-x-1">
-              <span class="w-3 h-3 rounded-sm bg-emerald-500"></span>
-              <span class="text-slate-400">20-55 (Corners)</span>
+          <div class="flex items-center space-x-3 text-xs font-mono-numbers">
+            <div class="flex items-center space-x-1.5">
+              <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+              <span class="text-slate-400">&lt; 50 km/h (Corners)</span>
             </div>
-            <div class="flex items-center space-x-1">
-              <span class="w-3 h-3 rounded-sm bg-amber-500"></span>
-              <span class="text-slate-400">55-85 (Sweepers)</span>
+            <div class="flex items-center space-x-1.5">
+              <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+              <span class="text-slate-400">50-90 (Sweepers)</span>
             </div>
-            <div class="flex items-center space-x-1">
-              <span class="w-3 h-3 rounded-sm bg-rose-500"></span>
-              <span class="text-slate-400">85+ (Apex Straights)</span>
+            <div class="flex items-center space-x-1.5">
+              <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+              <span class="text-slate-400">&gt; 90 (Straights)</span>
             </div>
           </div>
         </div>
 
-        <!-- Scrubber Slider -->
-        <div class="p-3 bg-rpDark rounded-lg border border-rpBorder flex items-center space-x-3">
-          <button id="btnAnalysisPlay" onclick="toggleAnalysisPlayback()" class="w-8 h-8 rounded-lg bg-rpBlue text-white flex items-center justify-center font-bold hover:bg-rpBlueHover transition">
-            <svg id="analysisPlayIcon" class="w-3.5 h-3.5 ml-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z" /></svg>
-            <svg id="analysisPauseIcon" class="w-3.5 h-3.5 hidden" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 4h3v12H5V4zm7 0h3v12h-3V4z" clip-rule="evenodd" /></svg>
-          </button>
-          <span id="analysisCurDist" class="text-xs font-tabular text-rpBlueLight font-bold min-w-[55px]">0.00 km</span>
-          <input id="analysisSlider" type="range" min="0" max="100" value="0" oninput="onAnalysisScrub(this.value)" class="flex-1 w-full" />
-          <span id="analysisTotalDist" class="text-xs font-tabular text-slate-400 min-w-[55px] text-right">0.00 km</span>
-        </div>
-
         <!-- Interactive Map Container -->
-        <div class="relative rounded-xl overflow-hidden border border-rpBorder">
+        <div class="relative rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl">
           <div id="analysisMap"></div>
 
-          <!-- FLOATING PLACE & SPEED INSPECTION HUD (Updates on scrub/hover) -->
-          <div id="analysisPlaceHud" class="absolute top-4 left-4 z-[400] bg-rpDark/90 backdrop-blur-md border border-rpBorder rounded-xl p-3.5 shadow-xl min-w-[200px]">
-            <div class="flex items-center justify-between border-b border-rpBorder pb-1">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Place Telemetry</span>
-              <span class="w-2 h-2 rounded-full bg-rpBlueLight"></span>
+          <!-- FLOATING PLACE & SPEED INSPECTION HUD (Updates on hover) -->
+          <div id="analysisHoverHud" class="absolute top-5 left-5 z-[400] bg-[#07090E]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl min-w-[210px] hidden">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-1.5">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Route Telemetry Point</span>
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
             </div>
             
-            <!-- Exact place / Landmark name -->
             <div class="mt-2">
-              <span class="text-[10px] uppercase font-bold text-slate-500 block">Road Sector / Place</span>
-              <span id="analysisHudPlaceName" class="text-sm font-bold text-white block truncate">Valparai Hairpin #14</span>
+              <span id="hudPlace" class="text-xs text-slate-400 block truncate">At km 0.00</span>
             </div>
 
-            <!-- Exact Speed at this place -->
             <div class="mt-2 flex items-baseline space-x-1.5">
-              <span id="analysisHudSpeed" class="text-3xl font-bold text-white font-tabular">64.2</span>
-              <span class="text-xs font-semibold text-slate-400">KM/H</span>
+              <span id="hudSpeed" class="text-3xl font-black text-white font-mono-numbers">0.0</span>
+              <span class="text-xs font-bold text-cyan-400">KM/H</span>
             </div>
 
-            <!-- Apex Lean & Elevation at this place -->
-            <div class="mt-2 space-y-1 text-xs font-tabular text-slate-300">
+            <div class="mt-2 space-y-1 text-xs font-mono-numbers text-slate-300">
               <div class="flex justify-between">
                 <span class="text-slate-500">Apex Lean:</span>
-                <span id="analysisHudLean" class="font-bold text-rpBlueLight">39.5° Left</span>
+                <span id="hudLean" class="font-bold text-cyan-300">0.0°</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-slate-500">Elevation:</span>
-                <span id="analysisHudAlt" class="font-bold text-rpAmber">1,048 m</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-slate-500">Timestamp:</span>
-                <span id="analysisHudTime" class="text-slate-400 text-[11px]">07:18:24 AM</span>
+                <span id="hudAlt" class="font-bold text-amber-400">-- m</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- KEY PLACES & SPEED BREAKDOWN TABLE -->
-      <div class="telemetry-panel p-5 space-y-3">
-        <div class="flex items-center justify-between border-b border-rpBorder pb-2">
+      <!-- KEY SECTORS & SPEED BREAKDOWN TABLE -->
+      <div class="glass-panel p-6 space-y-3.5 shadow-xl">
+        <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Speed at Key Landmarks & Sectors</h3>
-            <p class="text-[11px] text-slate-400">Exact velocity recorded as the rider traversed each mountain pass curve and straight</p>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Speed at Route Sectors &amp; Milestones</h3>
+            <p class="text-[11px] text-slate-400">Exact velocity recorded as the rider traversed each sector along the route</p>
           </div>
-          <span class="text-xs text-slate-400 font-tabular">Indexed Waypoints</span>
+          <span class="text-xs text-cyan-400 font-mono-numbers">Real Recorded Points</span>
         </div>
 
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead>
-              <tr class="border-b border-rpBorder text-slate-500 text-[10px] uppercase font-bold">
-                <th class="py-2 px-3">Location / Landmark</th>
-                <th class="py-2 px-3">Road Sector</th>
-                <th class="py-2 px-3">Distance</th>
-                <th class="py-2 px-3">Speed at Place</th>
-                <th class="py-2 px-3">Apex Lean</th>
-                <th class="py-2 px-3">Altitude</th>
-                <th class="py-2 px-3">Timestamp</th>
+              <tr class="border-b border-white/[0.08] text-slate-500 text-[10px] uppercase font-bold tracking-wider">
+                <th class="py-2.5 px-3">Road Sector</th>
+                <th class="py-2.5 px-3">Distance</th>
+                <th class="py-2.5 px-3">Recorded Speed</th>
+                <th class="py-2.5 px-3">Apex Lean</th>
+                <th class="py-2.5 px-3 text-right">Altitude</th>
               </tr>
             </thead>
-            <tbody id="analysisLandmarksTableBody" class="divide-y divide-rpBorder font-tabular text-slate-300"></tbody>
+            <tbody id="analysisLandmarksTableBody" class="divide-y divide-white/[0.04]"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- Interactive Distance Curve (Speed & Altitude Charts) -->
-      <div class="telemetry-panel p-4 space-y-3">
-        <div class="flex items-center justify-between border-b border-rpBorder pb-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Telemetry Profile Curve</span>
-          <div class="flex items-center space-x-1 bg-rpDark border border-rpBorder rounded-lg p-0.5 text-xs">
-            <button id="chartBtnSpeed" onclick="switchAnalysisChart('speed')" class="px-2.5 py-1 rounded bg-rpBlue text-white font-medium transition">Speed Curve</button>
-            <button id="chartBtnAlt" onclick="switchAnalysisChart('altitude')" class="px-2.5 py-1 rounded text-slate-400 hover:text-white font-medium transition">Elevation Profile</button>
-          </div>
+      <!-- Interactive Distance Curve (Chart.js) -->
+      <div class="glass-panel p-5 space-y-3 shadow-xl">
+        <div class="flex items-center justify-between border-b border-white/[0.08] pb-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Speed &amp; Lean Angle Telemetry Curve</span>
+          <span class="text-xs text-slate-400 font-mono-numbers">Over Distance (km)</span>
         </div>
-        <div class="relative h-[220px] w-full">
-          <canvas id="analysisSpeedChart"></canvas>
+        <div class="relative h-[240px] w-full">
+          <canvas id="analysisChartCanvas"></canvas>
         </div>
       </div>
 
@@ -881,175 +776,140 @@
 
     <!-- ======================================================== -->
     <!-- TAB 4: SETTINGS                                          -->
-    <!-- Rider Profile, Bike Specs, Guardian Safety, Units, Maps, -->
-    <!-- GPS & Sensors, Cloud Sync, APK Download & About         -->
+    <!-- Pilot Identity, Machine Garage, Guardian Parent, Cloud   -->
     <!-- ======================================================== -->
-    <div id="viewSettings" class="space-y-5 hidden">
+    <div id="viewSettings" class="space-y-6 hidden">
       
-      <div class="telemetry-panel p-6 space-y-6">
+      <div class="glass-panel p-6 sm:p-8 space-y-6 shadow-2xl">
         
         <div>
           <h2 class="text-base font-bold text-white flex items-center space-x-2">
             <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            <span>Application Settings &amp; Configuration</span>
+            <span>Telemetry Platform Configuration</span>
           </h2>
-          <p class="text-xs text-slate-400 mt-1">Configure pilot profile, machine garage, parent guardian link, units, and offline caching</p>
+          <p class="text-xs text-slate-400 mt-1">Configure pilot profile, machine garage, parent guardian link, units, and cloud storage</p>
         </div>
 
-        <form onsubmit="handleSaveAppSettings(event)" class="space-y-6">
+        <form onsubmit="event.preventDefault(); saveSettingsFromForm();" class="space-y-6">
           
           <!-- SECTION 1: RIDER PROFILE -->
-          <div class="border-t border-rpBorder pt-4 space-y-3">
-            <h3 class="text-xs font-bold text-rpBlueLight uppercase tracking-wider flex items-center space-x-1.5">
+          <div class="border-t border-white/[0.08] pt-4 space-y-3.5">
+            <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center space-x-1.5">
               <span>👤 1. Rider Profile &amp; Identity</span>
             </h3>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-1">
                 <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pilot Name</label>
-                <input id="setProfileName" type="text" required value="Natesh" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+                <input id="settingName" type="text" required value="Natesh" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition" />
               </div>
 
               <div class="space-y-1">
                 <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Call-Sign / Tag</label>
-                <input id="setProfileHandle" type="text" value="@natesh_pilot" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+                <input id="settingHandle" type="text" value="@natesh_pilot" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition" />
               </div>
             </div>
 
             <div class="space-y-1">
               <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rider Bio / Philosophy</label>
-              <textarea id="setProfileBio" rows="2" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition resize-none">Weekend canyon carver &amp; telemetry enthusiast. Western Ghats apex seeker pushing precision motorcycle telemetry.</textarea>
+              <textarea id="settingBio" rows="2" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition resize-none">Weekend canyon carver &amp; telemetry enthusiast. Western Ghats apex seeker pushing precision motorcycle telemetry.</textarea>
             </div>
           </div>
 
           <!-- SECTION 2: MOTORCYCLE GARAGE CONFIGURATION -->
-          <div class="border-t border-rpBorder pt-4 space-y-3">
-            <h3 class="text-xs font-bold text-rpAmber uppercase tracking-wider flex items-center space-x-1.5">
+          <div class="border-t border-white/[0.08] pt-4 space-y-3.5">
+            <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center space-x-1.5">
               <span>🏍️ 2. Motorcycle Machine Specs</span>
             </h3>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-1">
                 <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Machine Model</label>
-                <input id="setBikeModel" type="text" value="Yamaha MT-09 SP" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+                <input id="settingBikeModel" type="text" value="Yamaha MT-09 SP" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition" />
               </div>
 
               <div class="space-y-1">
                 <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Engine &amp; Output Specs</label>
-                <input id="setBikeSpecs" type="text" value="890cc Triple • 119 BHP • 93 Nm" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+                <input id="settingBikeSpecs" type="text" value="890cc Triple • 119 BHP • 93 Nm" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition" />
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-1">
                 <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">License Plate / ID</label>
-                <input id="setBikePlate" type="text" value="TN-38-RH-0909" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition font-tabular" />
+                <input id="settingBikePlate" type="text" value="TN-38-RH-0909" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition font-mono-numbers" />
               </div>
 
               <div class="space-y-1">
                 <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tire Setup &amp; Cold Pressures</label>
-                <input id="setTires" type="text" value="Pirelli Diablo Rosso IV (Cold PSI: F 32 / R 36)" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+                <input id="settingTires" type="text" value="Pirelli Diablo Rosso IV (Cold PSI: F 32 / R 36)" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition" />
               </div>
             </div>
           </div>
 
           <!-- SECTION 3: GUARDIAN PARENT LIVE SAFETY -->
-          <div class="border-t border-rpBorder pt-4 space-y-3">
-            <h3 class="text-xs font-bold text-rpEmerald uppercase tracking-wider flex items-center space-x-1.5">
+          <div class="border-t border-white/[0.08] pt-4 space-y-3.5">
+            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center space-x-1.5">
               <span>🛡️ 3. Parent / Guardian Live Safety Beacon</span>
             </h3>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-1">
                 <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Guardian Contact Name</label>
-                <input id="setGuardianName" type="text" value="Family Guardian (Mom &amp; Dad)" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
+                <input id="settingParentName" type="text" value="Family Guardian (Mom &amp; Dad)" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition" />
               </div>
 
               <div class="space-y-1">
                 <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Guardian Phone / WhatsApp</label>
-                <input id="setGuardianPhone" type="text" value="+91 98765 43210" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition font-tabular" />
-              </div>
-            </div>
-          </div>
-
-          <!-- SECTION 4: DISPLAY UNITS & MAP PREFERENCES -->
-          <div class="border-t border-rpBorder pt-4 space-y-3">
-            <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center space-x-1.5">
-              <span>⚙️ 4. Units &amp; Map Display</span>
-            </h3>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Speed &amp; Distance</label>
-                <select id="setUnitSpeed" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition">
-                  <option value="kmh">Metric (KM/H, Kilometers)</option>
-                  <option value="mph">Imperial (MPH, Miles)</option>
-                </select>
-              </div>
-
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Default Map Layer</label>
-                <select id="setDefaultMapLayer" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition">
-                  <option value="dark">Esri World Dark Gray Canvas (Zero-Watermark)</option>
-                  <option value="sat">Esri World Imagery (Satellite)</option>
-                  <option value="osm">OpenStreetMap Standard</option>
-                </select>
-              </div>
-
-              <div class="space-y-1">
-                <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">GPS Precision Mode</label>
-                <select id="setGpsMode" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition">
-                  <option value="sport">10 Hz Ultra-Sport Telemetry</option>
-                  <option value="eco">1 Hz Battery Optimized</option>
-                </select>
+                <input id="settingParentPhone" type="text" value="+91 98765 43210" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition font-mono-numbers" />
               </div>
             </div>
           </div>
 
           <!-- SAVE SETTINGS BUTTON -->
           <div class="pt-2 flex items-center justify-end space-x-2">
-            <button type="submit" class="px-5 py-2.5 text-xs font-bold rounded-lg bg-rpBlue hover:bg-rpBlueHover text-white transition shadow-sm flex items-center space-x-1.5">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span>Save Settings</span>
+            <button type="submit" class="px-6 py-2.5 text-xs font-bold rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black transition shadow-[0_0_15px_rgba(0,240,255,0.3)] flex items-center space-x-1.5">
+              <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>Save Configuration</span>
             </button>
           </div>
         </form>
 
-        <!-- SECTION 5: APP DOWNLOAD & CLOUD STORAGE -->
-        <div class="border-t border-rpBorder pt-6 space-y-4">
-          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Cloud Storage &amp; Android App</h3>
+        <!-- SECTION 4: APP DOWNLOAD & CLOUD STORAGE -->
+        <div class="border-t border-white/[0.08] pt-6 space-y-4">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Mobile App &amp; Cloud Database</h3>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- App APK Download Card -->
-            <div class="bg-rpDark p-4 rounded-xl border border-rpBorder space-y-2">
-              <div class="flex items-center space-x-2.5">
-                <div class="w-8 h-8 rounded-lg bg-rpEmerald/20 text-rpEmerald flex items-center justify-center font-bold">
+            <div class="bg-[#07090E] p-5 rounded-2xl border border-white/[0.08] space-y-2.5">
+              <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black">
                   APK
                 </div>
                 <div>
                   <h4 class="text-xs font-bold text-white">Rhody Android Mobile App v1.0.0</h4>
-                  <p class="text-[11px] text-slate-400">Handlebar mount telemetry &amp; live parent tracking</p>
+                  <p class="text-[11px] text-slate-400">Handlebar cockpit HUD &amp; live parent tracking</p>
                 </div>
               </div>
-              <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" download="Rhody-v1.0.0.apk" class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-rpEmerald hover:bg-emerald-500 text-slate-950 transition shadow-sm mt-1">
-                <svg class="w-3.5 h-3.5 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                <span>Download APK (57MB)</span>
+              <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" download="Rhody-v1.0.0.apk" class="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black transition shadow-sm mt-1">
+                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                <span>Download Android APK (57MB)</span>
               </a>
             </div>
 
             <!-- Cloud Database Card -->
-            <div class="bg-rpDark p-4 rounded-xl border border-rpBorder space-y-2">
+            <div class="bg-[#07090E] p-5 rounded-2xl border border-white/[0.08] space-y-2.5">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                  <span class="w-2.5 h-2.5 rounded-full bg-rpEmerald"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
                   <h4 class="text-xs font-bold text-white">MongoDB Atlas Cloud</h4>
                 </div>
-                <span class="text-[10px] text-rpEmerald font-tabular">Online</span>
+                <span class="text-[10px] text-emerald-400 font-mono-numbers">Cluster Active</span>
               </div>
-              <p class="text-[11px] text-slate-400">Telemetry points, user authentication &amp; cloud persistence.</p>
+              <p class="text-[11px] text-slate-400">Real telemetry points, places database &amp; guardian beacons.</p>
               <div class="pt-1 flex items-center space-x-2">
-                <button onclick="pingDatabase()" class="px-2.5 py-1 text-[11px] font-medium rounded bg-rpCard hover:bg-rpCardHover border border-rpBorder text-slate-300">Test Ping</button>
-                <button onclick="clearLocalStorageCache()" class="px-2.5 py-1 text-[11px] font-medium rounded bg-rpCard hover:bg-rpRose/20 hover:text-rpRose border border-rpBorder text-slate-400">Clear Cache</button>
+                <button onclick="backupTripsJson()" class="px-3 py-1.5 text-[11px] font-medium rounded-xl bg-white/[0.05] hover:bg-white/10 border border-white/10 text-slate-300">Backup Trips (JSON)</button>
+                <button onclick="clearLocalDataCache()" class="px-3 py-1.5 text-[11px] font-medium rounded-xl bg-white/[0.05] hover:bg-rose-500/20 hover:text-rose-400 border border-white/10 text-slate-400">Clear Local Cache</button>
               </div>
             </div>
           </div>
@@ -1062,111 +922,32 @@
   </main>
 
   <!-- ================= EMBEDDED YOUTUBE VIDEO PLAYER MODAL ================= -->
-  <div id="youtubePlayerModal" class="fixed inset-0 z-50 bg-rpDark/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
-    <div class="telemetry-panel max-w-3xl w-full p-4 sm:p-5 shadow-2xl relative">
-      <div class="flex items-center justify-between pb-3 border-b border-rpBorder mb-3">
-        <div class="flex items-center space-x-2">
-          <div class="w-7 h-7 rounded-lg bg-red-600 text-white flex items-center justify-center">
+  <div id="youtubePlayerModal" class="fixed inset-0 z-50 bg-[#07090E]/90 backdrop-blur-xl flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-4xl w-full p-5 sm:p-6 shadow-2xl relative border border-white/15">
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/[0.08] mb-3.5">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.4)]">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
           </div>
           <div>
-            <h3 id="youtubePlayerTitle" class="text-sm font-bold text-white truncate max-w-md">Motorcycle Video Guide</h3>
-            <p id="youtubePlayerSubtitle" class="text-[11px] text-slate-400">Rhody Road &amp; Machine Hub</p>
+            <h3 id="youtubePlayerTitle" class="text-sm font-bold text-white truncate max-w-md sm:max-w-xl">Live YouTube Motorcycle Stream</h3>
+            <p class="text-[11px] text-slate-400">Embedded native playback inside Rhody</p>
           </div>
         </div>
-        <button onclick="closeYoutubePlayerModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
+        <div class="flex items-center space-x-2">
+          <a id="youtubeExternalLink" href="" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.05] hover:bg-white/10 text-slate-300 border border-white/10 transition flex items-center space-x-1" title="Open search results directly in YouTube">
+            <span>Open in YouTube ↗</span>
+          </a>
+          <button onclick="closeYoutubePlayerModal()" class="text-slate-400 hover:text-white p-1.5 rounded-lg transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
       </div>
-      <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-rpBorder">
+      <div class="relative w-full aspect-video rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl">
         <iframe id="youtubeIframe" src="" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
       </div>
     </div>
   </div>
-
-  <!-- ================= ADD / PIN PLACE MODAL ================= -->
-  <div id="addPlaceModal" class="fixed inset-0 z-50 bg-rpDark/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="telemetry-panel max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-      <button onclick="closeAddPlaceModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-      </button>
-
-      <div class="flex items-center space-x-2.5 mb-1">
-        <div class="w-8 h-8 rounded-lg bg-rpAmber/20 text-rpAmber border border-rpAmber/30 flex items-center justify-center">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-        </div>
-        <div>
-          <h3 class="text-base font-bold text-white">Save Location / Pin Waypoint</h3>
-          <p class="text-xs text-slate-400">Pin a mountain pass, basecamp, pitstop, or racing circuit to your map</p>
-        </div>
-      </div>
-
-      <!-- Quick OpenStreetMap Geocode Search Box -->
-      <div class="mt-3 p-3 rounded-lg bg-rpDark border border-rpBorder space-y-2">
-        <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Search Place by Name (OpenStreetMap)</label>
-        <div class="flex items-center space-x-2">
-          <input id="placeSearchQuery" type="text" placeholder="e.g. Ooty, Munnar Gap, Kolli Hills..." onkeydown="if(event.key==='Enter'){event.preventDefault();searchGeocodePlace();}" class="flex-1 bg-rpCard border border-rpBorder rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rpBlue transition" />
-          <button type="button" onclick="searchGeocodePlace()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rpBlue text-white hover:bg-rpBlueHover transition shrink-0">
-            Search
-          </button>
-        </div>
-        <div id="geocodeSearchStatus" class="text-[11px] text-slate-400 hidden"></div>
-      </div>
-
-      <form onsubmit="handleSaveNewPlace(event)" class="space-y-3 mt-4">
-        <div class="space-y-1">
-          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Place Title</label>
-          <input id="newPlaceName" type="text" required placeholder="e.g. Munnar Gap Road Pass" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition" />
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div class="space-y-1">
-            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Category</label>
-            <select id="newPlaceCategory" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition">
-              <option value="pass">⛰️ Mountain Pass / Twisties</option>
-              <option value="garage">🏠 Basecamp / Garage</option>
-              <option value="fuel">⛽ Fuel Station &amp; Pitstop</option>
-              <option value="track">🏁 Racing Track / Circuit</option>
-              <option value="cafe">☕ Rider Cafe / Meetpoint</option>
-              <option value="waypoint">📍 General Waypoint</option>
-            </select>
-          </div>
-          <div class="space-y-1">
-            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Altitude (Meters, optional)</label>
-            <input id="newPlaceAltitude" type="number" placeholder="e.g. 1530" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition font-tabular" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div class="space-y-1">
-            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Latitude</label>
-            <input id="newPlaceLat" type="number" step="any" required placeholder="10.0889" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition font-tabular" />
-          </div>
-          <div class="space-y-1">
-            <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Longitude</label>
-            <input id="newPlaceLng" type="number" step="any" required placeholder="77.0595" class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition font-tabular" />
-          </div>
-        </div>
-
-        <div class="space-y-1">
-          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Notes &amp; Road Conditions</label>
-          <textarea id="newPlaceNotes" rows="2" placeholder="Smooth tarmac, scenic hairpins, great visibility..." class="w-full bg-rpDark border border-rpBorder rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rpBlue transition resize-none"></textarea>
-        </div>
-
-        <div class="flex items-center justify-end space-x-2 pt-2">
-          <button type="button" onclick="closeAddPlaceModal()" class="px-4 py-2 text-xs font-medium rounded-lg bg-rpDark hover:bg-rpCardHover text-slate-300 border border-rpBorder transition">
-            Cancel
-          </button>
-          <button type="submit" class="px-4 py-2 text-xs font-bold rounded-lg bg-rpAmber hover:bg-amber-400 text-slate-950 transition shadow-sm">
-            Save to Map
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Toast Notification Container -->
-  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none max-w-sm"></div>
 
   <!-- Application Logic -->
   <script src="/app.js"></script>

@@ -338,86 +338,19 @@ app.get('/api/user/places', async (req, res) => {
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
   const decoded = verifyToken(token);
 
-  // Curated iconic default motorcycle spots
-  const defaultPlaces = [
-    {
-      id: 'default_1',
-      name: 'Munnar Gap Road Pass',
-      category: 'pass',
-      lat: 10.0889,
-      lng: 77.0595,
-      altitude: 1530,
-      notes: 'Misty hairpin curves & tea garden switchbacks. High elevation hillclimb.',
-      isDefault: true
-    },
-    {
-      id: 'default_2',
-      name: 'Valparai 40 Hairpins',
-      category: 'pass',
-      lat: 10.3256,
-      lng: 76.9558,
-      altitude: 1100,
-      notes: '40 continuous numbered hairpin curves through dense Western Ghats canopy.',
-      isDefault: true
-    },
-    {
-      id: 'default_3',
-      name: 'Kolli Hills 70 Hairpin Bends',
-      category: 'pass',
-      lat: 11.2486,
-      lng: 78.3385,
-      altitude: 1300,
-      notes: 'The legendary mountain of death — 70 tight apex corners in 18 km.',
-      isDefault: true
-    },
-    {
-      id: 'default_4',
-      name: 'Kari Motor Speedway Circuit',
-      category: 'track',
-      lat: 10.9022,
-      lng: 77.0278,
-      altitude: 410,
-      notes: 'FIA-certified 2.1 km road-racing circuit. High-speed apex & chicane testing.',
-      isDefault: true
-    },
-    {
-      id: 'default_5',
-      name: 'Basecamp Garage / Home',
-      category: 'garage',
-      lat: 11.0168,
-      lng: 76.9558,
-      altitude: 420,
-      notes: 'Primary motorcycle telemetry sync station & tool garage.',
-      isDefault: true
-    },
-    {
-      id: 'default_6',
-      name: 'Western Ghats Ridge Fuel & Cafe',
-      category: 'fuel',
-      lat: 10.1500,
-      lng: 77.0200,
-      altitude: 1480,
-      notes: 'High-octane XP95 / Speed fuel station and hot tea pitstop.',
-      isDefault: true
-    }
-  ];
-
   if (!db) {
-    return res.json({ success: true, places: defaultPlaces });
+    return res.json({ success: true, places: [] });
   }
 
   try {
-    const filter = decoded && decoded.email
-      ? { $or: [{ userEmail: decoded.email.toLowerCase() }, { isDefault: true }] }
-      : { isDefault: true };
+    const filter = (decoded && decoded.email)
+      ? { $or: [{ userEmail: decoded.email.toLowerCase() }, { userEmail: 'guest' }] }
+      : { userEmail: 'guest' };
 
     const dbPlaces = await db.collection('places').find(filter).sort({ createdAt: -1 }).toArray();
-    
-    // Merge database places with default places if DB has none yet
-    const places = (dbPlaces && dbPlaces.length > 0) ? dbPlaces : defaultPlaces;
-    res.json({ success: true, places });
+    res.json({ success: true, places: dbPlaces || [] });
   } catch (err) {
-    res.json({ success: true, places: defaultPlaces });
+    res.json({ success: true, places: [] });
   }
 });
 
