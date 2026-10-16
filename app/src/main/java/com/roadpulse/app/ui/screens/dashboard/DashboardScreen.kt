@@ -332,10 +332,125 @@ fun DashboardScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // ================= 2. BIKE STATUS & VITALS CARD ("Tells about his bike") =================
-        Column(
+        // ================= ROLE SELECTOR (RIDER COCKPIT vs PARENT PORTAL) =================
+        var selectedRole by remember { mutableStateOf("rider") } // "rider" | "parent"
+        val guardianPurple = Color(0xFFA855F7)
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(ObsidianGlass)
+                .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            // Rider Cockpit Mode Button
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(
+                        if (selectedRole == "rider") HyperCyan.copy(alpha = 0.18f) else Color.Transparent
+                    )
+                    .border(
+                        1.dp,
+                        if (selectedRole == "rider") HyperCyan.copy(alpha = 0.5f) else Color.Transparent,
+                        RoundedCornerShape(10.dp)
+                    )
+                    .clickable { selectedRole = "rider" }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DirectionsBike,
+                        contentDescription = "Rider Cockpit",
+                        tint = if (selectedRole == "rider") HyperCyan else TextMuted,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "RIDER COCKPIT",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (selectedRole == "rider") HyperCyan else TextMuted,
+                        letterSpacing = 0.8.sp
+                    )
+                }
+            }
+
+            // Parent / Guardian Portal Button
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(
+                        if (selectedRole == "parent") guardianPurple.copy(alpha = 0.22f) else Color.Transparent
+                    )
+                    .border(
+                        1.dp,
+                        if (selectedRole == "parent") guardianPurple.copy(alpha = 0.6f) else Color.Transparent,
+                        RoundedCornerShape(10.dp)
+                    )
+                    .clickable { selectedRole = "parent" }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(if (selectedRole == "parent") OptimalGreen else guardianPurple)
+                    )
+                    Text(
+                        text = "PARENT PORTAL",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (selectedRole == "parent") Color.White else TextMuted,
+                        letterSpacing = 0.8.sp
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(RacingRed.copy(alpha = 0.25f))
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = "LIVE",
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Black,
+                            color = RacingRed
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        if (selectedRole == "parent") {
+            ParentGuardianPortalView(
+                riderName = if (authState.isLoggedIn && !authState.user?.name.isNullOrBlank()) authState.user!!.name else "Natesh Kanna",
+                riderEmail = "pilot@rhody.io",
+                pairingCode = "RHODY-8821",
+                speedKmh = metrics.currentSpeedKmh,
+                topSpeedKmh = metrics.maxSpeedKmh,
+                isMoving = metrics.currentSpeedKmh > 3.0,
+                lat = metrics.latitude,
+                lng = metrics.longitude
+            )
+        } else {
+            // ================= 2. BIKE STATUS & VITALS CARD ("Tells about his bike") =================
+            Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(22.dp))
@@ -1353,8 +1468,430 @@ fun DashboardScreen(
         }
 
         Spacer(modifier = Modifier.height(30.dp))
+        } // closes else block for rider cockpit
+    } // closes outer Column
+} // closes DashboardScreen
+
+// ================= PARENT / GUARDIAN PORTAL COMPOSABLE =================
+
+data class GuardianSafetyAlert(
+    val id: String,
+    val title: String,
+    val message: String,
+    val severity: String,
+    val time: String
+)
+
+@Composable
+fun ParentGuardianPortalView(
+    riderName: String,
+    riderEmail: String,
+    pairingCode: String,
+    speedKmh: Float,
+    topSpeedKmh: Float,
+    isMoving: Boolean,
+    lat: Double,
+    lng: Double
+) {
+    val context = LocalContext.current
+    val guardianPurple = Color(0xFFA855F7)
+    val guardianPurpleDark = Color(0xFF1E1035)
+
+    // Real-Time Notification simulation list
+    val parentAlerts = remember {
+        mutableStateListOf(
+            GuardianSafetyAlert(
+                id = "1",
+                title = "⚡ Safe Speed Corridor Maintained",
+                message = "Rider $riderName is riding smoothly within the safe 95 km/h limit.",
+                severity = "normal",
+                time = "Active now"
+            ),
+            GuardianSafetyAlert(
+                id = "2",
+                title = "🛡️ Guardian Radar Link Active",
+                message = "Live telemetry GPS lock established with Yamaha MT-15 V2 (KA-01-EQ-1550).",
+                severity = "info",
+                time = "Connected"
+            )
+        )
     }
 
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // 1. Guardian Header Banner & Quick Hotlines
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(guardianPurpleDark, MidnightCard)
+                    )
+                )
+                .border(1.dp, guardianPurple.copy(alpha = 0.4f), RoundedCornerShape(22.dp))
+                .padding(18.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(guardianPurple.copy(alpha = 0.2f))
+                            .border(1.dp, guardianPurple.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "🛡️", fontSize = 22.sp)
+                    }
+
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "GUARDIAN RADAR",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Black,
+                                color = TextPrimary
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(OptimalGreen.copy(alpha = 0.2f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "LIVE",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = OptimalGreen
+                                )
+                            }
+                        }
+                        Text(
+                            text = "Monitoring: $riderName ($riderEmail)",
+                            fontSize = 11.sp,
+                            color = TextSecondary
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Pairing Connection strip
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(CarbonDark.copy(alpha = 0.6f))
+                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(text = "🔗 Code:", fontSize = 11.sp, color = TextMuted)
+                    Text(text = pairingCode, fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, color = HyperCyan)
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Call Rider Hotline
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(OptimalGreen.copy(alpha = 0.2f))
+                            .border(1.dp, OptimalGreen.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .clickable {
+                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:+919876543210"))
+                                context.startActivity(intent)
+                            }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(imageVector = Icons.Default.Phone, contentDescription = "Call", tint = OptimalGreen, modifier = Modifier.size(12.dp))
+                            Text(text = "Call Rider", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = OptimalGreen)
+                        }
+                    }
+
+                    // 112 SOS Hotline
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(RacingRed.copy(alpha = 0.2f))
+                            .border(1.dp, RacingRed.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .clickable {
+                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
+                                context.startActivity(intent)
+                            }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(text = "🚨 112 SOS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = RacingRed)
+                    }
+                }
+            }
+        }
+
+        // 2. Real-Time Telemetry Radar Strip
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Speed Card
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MidnightCard)
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                    .padding(12.dp)
+            ) {
+                Text(text = "LIVE SPEED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = String.format(Locale.US, "%.1f", speedKmh),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black,
+                        color = HyperCyan,
+                        fontFamily = FontFamily.Monospace
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(text = "km/h", fontSize = 9.sp, color = TextMuted)
+                }
+                Text(text = "Limit: 95 km/h", fontSize = 9.sp, color = SportAmber)
+            }
+
+            // Motion Status Card
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MidnightCard)
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                    .padding(12.dp)
+            ) {
+                Text(text = "MOTION STATUS", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = if (isMoving) "RIDING ON ROAD" else "PARKED AT BASE",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (isMoving) OptimalGreen else HyperCyan
+                )
+                Text(text = "Live GPS Active", fontSize = 9.sp, color = TextMuted)
+            }
+
+            // Rider Battery Card
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MidnightCard)
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                    .padding(12.dp)
+            ) {
+                Text(text = "RIDER PHONE", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = "88%",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black,
+                        color = OptimalGreen,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
+                Text(text = "Nominal State", fontSize = 9.sp, color = OptimalGreen)
+            }
+        }
+
+        // 3. Statutory Legal Document Verification Badge Strip
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(MidnightCard)
+                .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
+                .padding(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "RIDER LEGAL DOCUMENTS STATUS",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "Statutory Vault",
+                    fontSize = 10.sp,
+                    color = HyperCyan
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                ParentDocPill("RC Reg", "KA-01-EQ-1550", true, OptimalGreen, Modifier.weight(1f))
+                ParentDocPill("Licence", "DL Valid", true, HyperCyan, Modifier.weight(1f))
+                ParentDocPill("Insurance", "Active Policy", true, OptimalGreen, Modifier.weight(1f))
+                ParentDocPill("PUC", "Emission Pass", true, SportAmber, Modifier.weight(1f))
+            }
+        }
+
+        // 4. Real-Time Safety Notifications Center
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(MidnightCard)
+                .border(1.dp, guardianPurple.copy(alpha = 0.3f), RoundedCornerShape(18.dp))
+                .padding(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(text = "🔔", fontSize = 14.sp)
+                    Text(
+                        text = "REAL-TIME SAFETY NOTIFICATIONS",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(guardianPurple.copy(alpha = 0.2f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "${parentAlerts.size} Alerts",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = guardianPurple
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                parentAlerts.forEach { alert ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(CarbonDark.copy(alpha = 0.7f))
+                            .border(1.dp, if (alert.severity == "warning") SportAmber.copy(alpha = 0.5f) else CardBorder, RoundedCornerShape(12.dp))
+                            .padding(10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = alert.title,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (alert.severity == "warning") SportAmber else TextPrimary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = alert.message,
+                                fontSize = 10.sp,
+                                color = TextSecondary,
+                                lineHeight = 14.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = alert.time,
+                                fontSize = 8.sp,
+                                color = TextMuted
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Action: Test Speed Warning Trigger
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Test Guardian Alert:",
+                    fontSize = 10.sp,
+                    color = TextMuted
+                )
+
+                Button(
+                    onClick = {
+                        parentAlerts.add(
+                            0,
+                            GuardianSafetyAlert(
+                                id = System.currentTimeMillis().toString(),
+                                title = "⚠️ Over-Speed Alert Detected",
+                                message = "Rider $riderName hit 104 km/h on highway (exceeded safe speed 95 km/h limit).",
+                                severity = "warning",
+                                time = "Just now"
+                            )
+                        )
+                        Toast.makeText(context, "⚠️ Over-Speed Guardian Alert Triggered!", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = SportAmber.copy(alpha = 0.2f)),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.height(30.dp)
+                ) {
+                    Text(text = "⚡ Simulate Speed Warning", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = SportAmber)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+fun ParentDocPill(
+    label: String,
+    status: String,
+    verified: Boolean,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(CarbonDark.copy(alpha = 0.6f))
+            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+            .padding(vertical = 8.dp, horizontal = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = label, fontSize = 8.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(text = status, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = accentColor, maxLines = 1)
     }
 }
 

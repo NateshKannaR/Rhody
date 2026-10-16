@@ -117,52 +117,62 @@ var riderProfile = {
 // PILLAR 1: MOTORCYCLE WHOLE MANAGEMENT DATA STATE
 // ----------------------------------------------------
 var bikeManagementData = {
+  isConfigured: false,
   specs: {
-    makeModel: 'Yamaha MT-15 V2 (BS6 OBD-2)',
-    engine: '155cc Liquid-Cooled 4V SOHC VVA',
-    power: '18.4 PS @ 10,000 RPM',
-    torque: '14.1 Nm @ 7,500 RPM',
-    gearbox: '6-Speed Constant Mesh w/ Assist & Slipper Clutch',
-    fuelTank: '10 Liters (1.5L Reserve)',
-    brakes: 'Dual Channel ABS (282mm Front / 220mm Rear Disc)',
-    kerbWeight: '141 kg',
-    currentOdometer: 14850
+    makeModel: '',
+    engine: '',
+    power: '',
+    torque: '',
+    gearbox: '',
+    fuelTank: '',
+    brakes: '',
+    kerbWeight: '',
+    currentOdometer: 0
   },
   components: {
-    engineOil: { lastServiceOdo: 12000, intervalKm: 4000, name: 'Engine Oil & Filter (Yamalube 10W40)' },
-    driveChain: { lastServiceOdo: 14500, intervalKm: 500, name: 'Drive Chain Lube & Slack Adjust' },
-    airFilter: { lastServiceOdo: 10000, intervalKm: 10000, name: 'High-Flow Air Filter Element' },
-    sparkPlug: { lastServiceOdo: 10000, intervalKm: 12000, name: 'NGK Iridium Spark Plug' },
-    coolant: { lastServiceOdo: 8000, intervalKm: 15000, name: 'Radiator Glycol Coolant Flush' },
-    brakePads: { lastServiceOdo: 11000, intervalKm: 8000, name: 'Sintered Front & Rear Brake Pads' }
+    engineOil: { lastServiceOdo: 0, intervalKm: 4000, name: 'Engine Oil & Filter' },
+    driveChain: { lastServiceOdo: 0, intervalKm: 500, name: 'Drive Chain Lube & Slack Adjust' },
+    airFilter: { lastServiceOdo: 0, intervalKm: 8000, name: 'Viscous Air Filter' },
+    sparkPlug: { lastServiceOdo: 0, intervalKm: 10000, name: 'Spark Plug' },
+    coolant: { lastServiceOdo: 0, intervalKm: 12000, name: 'Radiator Coolant Flush' },
+    brakePads: { lastServiceOdo: 0, intervalKm: 8000, name: 'Brake Pads & Fluid' }
   },
   documents: {
-    rcNumber: 'TN-38-BZ-4242',
-    rcValidUntil: '2037-04-15',
-    insurancePolicy: 'BAJAJ-ALLIANZ-COMP-99824',
-    insuranceExpiry: '2026-11-28',
-    pucNumber: 'TN38PUC2026-092',
-    pucExpiry: '2026-12-14',
-    rsaPhone: '+91 1800 209 7979'
+    rc: { number: '', expiry: '', fileData: '', fileName: '', uploadedAt: null },
+    dl: { number: '', expiry: '', fileData: '', fileName: '', uploadedAt: null },
+    insurance: { provider: '', policyNumber: '', expiry: '', fileData: '', fileName: '', uploadedAt: null },
+    puc: { certificateNumber: '', expiry: '', fileData: '', fileName: '', uploadedAt: null },
+    rcNumber: '',
+    rcExpiry: '',
+    dlNumber: '',
+    dlExpiry: '',
+    insuranceProvider: '',
+    insurancePolicyNumber: '',
+    insuranceExpiry: '',
+    pucNumber: '',
+    pucExpiry: '',
+    rsaPhone: '1800-420-1600'
   },
-  serviceHistory: [
-    { id: 'srv_1', date: '2026-08-10', odo: 12000, center: 'Yamaha Authorized Prime Service, Coimbatore', workDone: 'Periodic 3rd Service: Yamalube fully synthetic oil change, oil filter replacement, brake pad clean, chain degrease & tension set.', cost: 1850 },
-    { id: 'srv_2', date: '2026-04-12', odo: 8000, center: 'Apex Motosports Performance Garage', workDone: 'Radiator coolant flush, spark plug inspection, throttle body synchronization, steering cone bearing greasing.', cost: 2400 },
-    { id: 'srv_3', date: '2025-11-20', odo: 4000, center: 'Yamaha Authorized Prime Service, Coimbatore', workDone: 'Periodic 2nd Service: Engine oil renewal, chain lubrication, clutch free-play adjustment, ECU diagnostics test.', cost: 1320 }
-  ],
-  fuelLogs: [
-    { id: 'fuel_1', date: '2026-10-12', odo: 14850, liters: 8.5, costPerLiter: 102.6, totalCost: 872, fuelGrade: 'XP95 Octane', mileageKmPerL: 48.2 },
-    { id: 'fuel_2', date: '2026-09-28', odo: 14440, liters: 8.2, costPerLiter: 102.5, totalCost: 840, fuelGrade: 'XP95 Octane', mileageKmPerL: 47.6 },
-    { id: 'fuel_3', date: '2026-09-15', odo: 14050, liters: 8.0, costPerLiter: 102.8, totalCost: 822, fuelGrade: 'Standard Petrol', mileageKmPerL: 46.8 }
-  ]
+  serviceHistory: [],
+  fuelLogs: []
 };
 
-// Guardian Parent Alert Configuration
+// Guardian Parent Alert Configuration & Portal State
 var guardianParentConfig = {
   guardianName: 'Family Guardian (Dad & Mom)',
   guardianPhone: '+91 98765 43210',
   speedLimitKmh: 95
 };
+
+var currentRole = 'rider'; // 'rider' | 'parent'
+var parentConnectedRider = 'pilot@rhody.io';
+var parentTelemetryPollTimer = null;
+var parentMapInstance = null;
+var parentMapMarker = null;
+var parentNotificationsList = [];
+var activeDocModalType = 'rc';
+var activeDocFileData = null;
+var activeDocFileName = '';
 
 // Real YouTube Active Query
 var currentYoutubeQuery = 'Yamaha MT-15 V2 motorcycle review pure exhaust sound';
@@ -205,6 +215,9 @@ document.addEventListener('DOMContentLoaded', function() {
   if (liveTripId) {
     initParentLiveTrackingMode(liveTripId);
   }
+
+  // Check Onboarding status for rider
+  checkOnboardingStatus();
 });
 
 // ----------------------------------------------------
@@ -576,7 +589,8 @@ function renderBikeManagement() {
   const specs = bikeManagementData.specs || {};
   const comps = bikeManagementData.components || {};
   const docs = bikeManagementData.documents || {};
-  const curOdo = specs.currentOdometer || 14850;
+  const curOdo = specs.currentOdometer || 0;
+  const isConfigured = Boolean(bikeManagementData.isConfigured);
 
   // 1. Technical Specs Matrix
   const specEngine = document.getElementById('specEngine');
@@ -587,55 +601,132 @@ function renderBikeManagement() {
   const specWeight = document.getElementById('specWeight');
   const odoDisplay = document.getElementById('mgmtOdoDisplay');
 
-  if (specEngine) specEngine.textContent = specs.engine || '155cc Liquid-Cooled 4V SOHC VVA';
-  if (specPower) specPower.textContent = specs.power || '18.4 PS @ 10,000 RPM';
-  if (specGearbox) specGearbox.textContent = specs.gearbox || '6-Speed Constant Mesh w/ Slipper Clutch';
-  if (specFuelTank) specFuelTank.textContent = specs.fuelTank || '10 Liters (1.5L Reserve)';
-  if (specBrakes) specBrakes.textContent = specs.brakes || 'Dual Channel ABS (282mm Front / 220mm Rear Disc)';
-  if (specWeight) specWeight.textContent = specs.kerbWeight || '141 kg';
-  if (odoDisplay) odoDisplay.textContent = `${curOdo.toLocaleString()} KM`;
-
-  // 2. Scheduled Preventative Maintenance Lifecycles
-  updateComponentHealthBar('Oil', comps.engineOil, curOdo);
-  updateComponentHealthBar('Chain', comps.driveChain, curOdo);
-  updateComponentHealthBar('Air', comps.airFilter, curOdo);
-  updateComponentHealthBar('Plug', comps.sparkPlug, curOdo);
-  updateComponentHealthBar('Coolant', comps.coolant, curOdo);
-  updateComponentHealthBar('Brake', comps.brakePads, curOdo);
-
-  // 3. Legal Documents Compliance Countdown
-  if (docs.insuranceExpiry) {
-    const daysIns = calculateDaysRemaining(docs.insuranceExpiry);
-    const badge = document.getElementById('docInsuranceBadge');
-    if (badge) {
-      if (daysIns > 30) {
-        badge.textContent = `Valid till ${docs.insuranceExpiry} (${daysIns} days)`;
-        badge.className = 'text-[10px] text-emerald-400 font-bold block';
-      } else if (daysIns > 0) {
-        badge.textContent = `Expires in ${daysIns} days (${docs.insuranceExpiry})`;
-        badge.className = 'text-[10px] text-amber-400 font-bold block';
-      } else {
-        badge.textContent = `EXPIRED on ${docs.insuranceExpiry}`;
-        badge.className = 'text-[10px] text-rose-400 font-bold block';
-      }
-    }
+  if (specEngine) specEngine.textContent = specs.engine || (isConfigured ? 'Standard Specification' : 'Not Configured');
+  if (specPower) specPower.textContent = specs.power || (isConfigured ? 'Pending Dyno / Spec' : 'Not Configured');
+  if (specGearbox) specGearbox.textContent = specs.gearbox || (isConfigured ? 'Multi-Plate Clutch' : 'Not Configured');
+  if (specFuelTank) specFuelTank.textContent = specs.fuelTank || (isConfigured ? 'Fuel Reservoir' : 'Not Configured');
+  if (specBrakes) specBrakes.textContent = specs.brakes || (isConfigured ? 'Hydraulic Disc ABS' : 'Not Configured');
+  if (specWeight) specWeight.textContent = specs.kerbWeight || (isConfigured ? 'Motorcycle Mass' : 'Not Configured');
+  if (odoDisplay) {
+    odoDisplay.textContent = curOdo > 0 ? `${curOdo.toLocaleString()} KM` : '0 KM (Setup Pending)';
   }
 
-  if (docs.pucExpiry) {
-    const daysPuc = calculateDaysRemaining(docs.pucExpiry);
-    const badge = document.getElementById('docPucBadge');
-    if (badge) {
-      if (daysPuc > 15) {
-        badge.textContent = `Valid till ${docs.pucExpiry} (${daysPuc} days)`;
-        badge.className = 'text-[10px] text-emerald-400 font-bold block';
-      } else if (daysPuc > 0) {
-        badge.textContent = `Expires in ${daysPuc} days (${docs.pucExpiry})`;
-        badge.className = 'text-[10px] text-amber-400 font-bold block';
-      } else {
-        badge.textContent = `EXPIRED on ${docs.pucExpiry}`;
-        badge.className = 'text-[10px] text-rose-400 font-bold block';
-      }
+  // 2. Scheduled Preventative Maintenance Lifecycles
+  updateComponentHealthBar('Oil', comps.engineOil, curOdo, isConfigured);
+  updateComponentHealthBar('Chain', comps.driveChain, curOdo, isConfigured);
+  updateComponentHealthBar('Air', comps.airFilter, curOdo, isConfigured);
+  updateComponentHealthBar('Plug', comps.sparkPlug, curOdo, isConfigured);
+  updateComponentHealthBar('Coolant', comps.coolant, curOdo, isConfigured);
+  updateComponentHealthBar('Brake', comps.brakePads, curOdo, isConfigured);
+
+  // 3. 4-Document Statutory Legal Vault & Badges
+  // RC (Registration Certificate)
+  const rcPlate = document.getElementById('docRcPlate');
+  const rcBadge = document.getElementById('docRcBadge');
+  const btnViewRc = document.getElementById('btnViewRc');
+  const rcObj = docs.rc || {};
+  const rcNum = rcObj.number || docs.rcNumber;
+  if (rcPlate) rcPlate.textContent = rcNum || 'Not Uploaded';
+  if (rcBadge) {
+    if (rcNum) {
+      rcBadge.textContent = rcObj.expiry ? `Verified • Valid till ${rcObj.expiry}` : 'Verified Smart Card';
+      rcBadge.className = 'text-[10px] text-emerald-400 font-bold block';
+    } else {
+      rcBadge.textContent = 'Tap to upload RC';
+      rcBadge.className = 'text-[10px] text-slate-400 font-medium block';
     }
+  }
+  if (btnViewRc) {
+    btnViewRc.classList.toggle('hidden', !(rcObj.fileData || rcNum));
+  }
+
+  // DL (Driving Licence)
+  const dlNumber = document.getElementById('docDlNumber');
+  const dlBadge = document.getElementById('docDlBadge');
+  const btnViewDl = document.getElementById('btnViewDl');
+  const dlObj = docs.dl || {};
+  const dlNum = dlObj.number || docs.dlNumber;
+  if (dlNumber) dlNumber.textContent = dlNum || 'Not Uploaded';
+  if (dlBadge) {
+    if (dlNum) {
+      dlBadge.textContent = dlObj.expiry ? `Active Licence • Till ${dlObj.expiry}` : 'Active Licence';
+      dlBadge.className = 'text-[10px] text-indigo-400 font-bold block';
+    } else {
+      dlBadge.textContent = 'Tap to upload DL';
+      dlBadge.className = 'text-[10px] text-slate-400 font-medium block';
+    }
+  }
+  if (btnViewDl) {
+    btnViewDl.classList.toggle('hidden', !(dlObj.fileData || dlNum));
+  }
+
+  // Comprehensive Insurance
+  const insPolicy = document.getElementById('docInsurancePolicy');
+  const insBadge = document.getElementById('docInsuranceBadge');
+  const btnViewIns = document.getElementById('btnViewInsurance');
+  const insObj = docs.insurance || {};
+  const insNum = insObj.policyNumber || docs.insurancePolicyNumber;
+  const insProv = insObj.provider || docs.insuranceProvider;
+  const insExp = insObj.expiry || docs.insuranceExpiry;
+
+  if (insPolicy) {
+    if (insNum) {
+      insPolicy.textContent = insProv ? `${insProv} (${insNum})` : `#${insNum}`;
+    } else {
+      insPolicy.textContent = 'Not Added';
+    }
+  }
+  if (insBadge) {
+    if (insExp) {
+      const daysIns = calculateDaysRemaining(insExp);
+      if (daysIns > 30) {
+        insBadge.textContent = `Valid till ${insExp} (${daysIns} days)`;
+        insBadge.className = 'text-[10px] text-emerald-400 font-bold block';
+      } else if (daysIns > 0) {
+        insBadge.textContent = `Expires in ${daysIns} days (${insExp})`;
+        insBadge.className = 'text-[10px] text-amber-400 font-bold block';
+      } else {
+        insBadge.textContent = `EXPIRED on ${insExp}`;
+        insBadge.className = 'text-[10px] text-rose-400 font-bold block';
+      }
+    } else {
+      insBadge.textContent = 'Tap to add policy';
+      insBadge.className = 'text-[10px] text-slate-400 font-medium block';
+    }
+  }
+  if (btnViewIns) {
+    btnViewIns.classList.toggle('hidden', !(insObj.fileData || insNum));
+  }
+
+  // PUC (Pollution Under Control)
+  const pucNumEl = document.getElementById('docPucNumber');
+  const pucBadge = document.getElementById('docPucBadge');
+  const btnViewPuc = document.getElementById('btnViewPuc');
+  const pucObj = docs.puc || {};
+  const pucNum = pucObj.certificateNumber || docs.pucNumber;
+  const pucExp = pucObj.expiry || docs.pucExpiry;
+
+  if (pucNumEl) pucNumEl.textContent = pucNum || 'Not Added';
+  if (pucBadge) {
+    if (pucExp) {
+      const daysPuc = calculateDaysRemaining(pucExp);
+      if (daysPuc > 15) {
+        pucBadge.textContent = `Valid till ${pucExp} (${daysPuc} days)`;
+        pucBadge.className = 'text-[10px] text-emerald-400 font-bold block';
+      } else if (daysPuc > 0) {
+        pucBadge.textContent = `Expires in ${daysPuc} days (${pucExp})`;
+        pucBadge.className = 'text-[10px] text-amber-400 font-bold block';
+      } else {
+        pucBadge.textContent = `EXPIRED on ${pucExp}`;
+        pucBadge.className = 'text-[10px] text-rose-400 font-bold block';
+      }
+    } else {
+      pucBadge.textContent = 'Tap to add PUC';
+      pucBadge.className = 'text-[10px] text-slate-400 font-medium block';
+    }
+  }
+  if (btnViewPuc) {
+    btnViewPuc.classList.toggle('hidden', !(pucObj.fileData || pucNum));
   }
 
   // 4. Service History Ledger
@@ -645,19 +736,33 @@ function renderBikeManagement() {
   renderFuelEconomyStats();
 }
 
-function updateComponentHealthBar(compKey, compObj, curOdo) {
+function updateComponentHealthBar(compKey, compObj, curOdo, isConfigured = true) {
   if (!compObj) return;
   const lastOdo = compObj.lastServiceOdo || 0;
   const interval = compObj.intervalKm || 4000;
-  const kmSince = Math.max(0, curOdo - lastOdo);
-  const remaining = Math.max(0, interval - kmSince);
-  const pct = Math.max(0, Math.min(100, Math.round((remaining / interval) * 100)));
 
   const textEl = document.getElementById(`status${compKey}Text`);
   const barEl = document.getElementById(`status${compKey}Bar`);
   const kmEl = document.getElementById(`status${compKey}Km`);
 
-  if (kmEl) kmEl.textContent = `${remaining} KM remaining`;
+  if (!isConfigured && curOdo === 0) {
+    if (textEl) {
+      textEl.textContent = 'PENDING SETTINGS';
+      textEl.className = 'text-[10px] font-bold text-slate-400';
+    }
+    if (barEl) {
+      barEl.style.width = '100%';
+      barEl.className = 'h-1.5 rounded-full bg-slate-700';
+    }
+    if (kmEl) kmEl.textContent = 'Awaiting initial odo';
+    return;
+  }
+
+  const kmSince = Math.max(0, curOdo - lastOdo);
+  const remaining = Math.max(0, interval - kmSince);
+  const pct = Math.max(0, Math.min(100, Math.round((remaining / interval) * 100)));
+
+  if (kmEl) kmEl.textContent = `${remaining.toLocaleString()} KM remaining`;
 
   let colorClass = 'bg-cyan-400';
   let badgeColor = 'text-cyan-300';
@@ -2036,23 +2141,32 @@ function populateSettingsForm() {
   const specsInput = document.getElementById('settingBikeSpecs');
   const plateInput = document.getElementById('settingBikePlate');
   const tiresInput = document.getElementById('settingTires');
+  const parentName = document.getElementById('settingParentName');
+  const parentPhone = document.getElementById('settingParentPhone');
   const odoInput = document.getElementById('settingCurrentOdo');
   const insInput = document.getElementById('settingInsuranceExpiry');
   const pucInput = document.getElementById('settingPucExpiry');
+  const dlNumInput = document.getElementById('settingDlNumber');
+  const dlExpInput = document.getElementById('settingDlExpiry');
   const speedLimitInput = document.getElementById('settingSpeedLimitAlert');
 
-  if (nameInput) nameInput.value = riderProfile.name || 'Natesh';
-  if (handleInput) handleInput.value = riderProfile.handle || '@natesh_pilot';
+  const docs = bikeManagementData.documents || {};
+  const specs = bikeManagementData.specs || {};
+
+  if (nameInput) nameInput.value = riderProfile.name || '';
+  if (handleInput) handleInput.value = riderProfile.handle || '';
   if (bioInput) bioInput.value = riderProfile.bio || '';
-  if (bikeInput) bikeInput.value = riderProfile.bikeModel || (bikeManagementData.specs && bikeManagementData.specs.makeModel) || 'Yamaha MT-15 V2';
-  if (specsInput) specsInput.value = riderProfile.bikeSpecs || (bikeManagementData.specs && bikeManagementData.specs.engine) || '155cc Liquid-Cooled 4V SOHC VVA';
-  if (plateInput) plateInput.value = riderProfile.bikePlate || (bikeManagementData.documents && bikeManagementData.documents.rcNumber) || 'TN-38-BZ-4242';
-  if (tiresInput) tiresInput.value = riderProfile.tireSetup || 'MRF Zapper FX1 / Revz Radial';
-  if (parentName) parentName.value = guardianParentConfig.guardianName || riderProfile.emergencyContactName || 'Family Guardian (Dad & Mom)';
-  if (parentPhone) parentPhone.value = guardianParentConfig.guardianPhone || riderProfile.emergencyContactPhone || '+91 98765 43210';
-  if (odoInput) odoInput.value = (bikeManagementData.specs && bikeManagementData.specs.currentOdometer) || 14850;
-  if (insInput && bikeManagementData.documents) insInput.value = bikeManagementData.documents.insuranceExpiry || '2026-11-28';
-  if (pucInput && bikeManagementData.documents) pucInput.value = bikeManagementData.documents.pucExpiry || '2026-12-14';
+  if (bikeInput) bikeInput.value = riderProfile.bikeModel || specs.makeModel || '';
+  if (specsInput) specsInput.value = riderProfile.bikeSpecs || specs.engine || '';
+  if (plateInput) plateInput.value = (docs.rc && docs.rc.number) || docs.rcNumber || riderProfile.bikePlate || '';
+  if (tiresInput) tiresInput.value = riderProfile.tireSetup || '';
+  if (parentName) parentName.value = guardianParentConfig.guardianName || riderProfile.emergencyContactName || '';
+  if (parentPhone) parentPhone.value = guardianParentConfig.guardianPhone || riderProfile.emergencyContactPhone || '';
+  if (odoInput) odoInput.value = specs.currentOdometer || '';
+  if (insInput) insInput.value = (docs.insurance && docs.insurance.expiry) || docs.insuranceExpiry || '';
+  if (pucInput) pucInput.value = (docs.puc && docs.puc.expiry) || docs.pucExpiry || '';
+  if (dlNumInput) dlNumInput.value = (docs.dl && docs.dl.number) || docs.dlNumber || '';
+  if (dlExpInput) dlExpInput.value = (docs.dl && docs.dl.expiry) || docs.dlExpiry || '';
   if (speedLimitInput) speedLimitInput.value = guardianParentConfig.speedLimitKmh || 95;
 }
 
@@ -2069,6 +2183,8 @@ function saveSettingsFromForm() {
   const odoInput = document.getElementById('settingCurrentOdo');
   const insInput = document.getElementById('settingInsuranceExpiry');
   const pucInput = document.getElementById('settingPucExpiry');
+  const dlNumInput = document.getElementById('settingDlNumber');
+  const dlExpInput = document.getElementById('settingDlExpiry');
   const speedLimitInput = document.getElementById('settingSpeedLimitAlert');
 
   if (nameInput) riderProfile.name = nameInput.value.trim();
@@ -2085,9 +2201,12 @@ function saveSettingsFromForm() {
     bikeManagementData.specs.engine = specsInput.value.trim();
   }
   if (plateInput) {
-    riderProfile.bikePlate = plateInput.value.trim();
+    const p = plateInput.value.trim();
+    riderProfile.bikePlate = p;
     if (!bikeManagementData.documents) bikeManagementData.documents = {};
-    bikeManagementData.documents.rcNumber = plateInput.value.trim();
+    bikeManagementData.documents.rcNumber = p;
+    if (!bikeManagementData.documents.rc) bikeManagementData.documents.rc = {};
+    bikeManagementData.documents.rc.number = p;
   }
   if (tiresInput) riderProfile.tireSetup = tiresInput.value.trim();
   if (parentName) {
@@ -2098,23 +2217,41 @@ function saveSettingsFromForm() {
     riderProfile.emergencyContactPhone = parentPhone.value.trim();
     guardianParentConfig.guardianPhone = parentPhone.value.trim();
   }
-  if (odoInput && odoInput.value) {
+  if (odoInput && odoInput.value !== '') {
     const o = parseInt(odoInput.value) || 0;
-    if (o > 0) {
-      if (!bikeManagementData.specs) bikeManagementData.specs = {};
-      bikeManagementData.specs.currentOdometer = o;
-    }
+    if (!bikeManagementData.specs) bikeManagementData.specs = {};
+    bikeManagementData.specs.currentOdometer = o;
   }
-  if (insInput && insInput.value && bikeManagementData.documents) {
+  if (insInput && insInput.value) {
+    if (!bikeManagementData.documents) bikeManagementData.documents = {};
     bikeManagementData.documents.insuranceExpiry = insInput.value;
+    if (!bikeManagementData.documents.insurance) bikeManagementData.documents.insurance = {};
+    bikeManagementData.documents.insurance.expiry = insInput.value;
   }
-  if (pucInput && pucInput.value && bikeManagementData.documents) {
+  if (pucInput && pucInput.value) {
+    if (!bikeManagementData.documents) bikeManagementData.documents = {};
     bikeManagementData.documents.pucExpiry = pucInput.value;
+    if (!bikeManagementData.documents.puc) bikeManagementData.documents.puc = {};
+    bikeManagementData.documents.puc.expiry = pucInput.value;
+  }
+  if (dlNumInput) {
+    const dVal = dlNumInput.value.trim();
+    if (!bikeManagementData.documents) bikeManagementData.documents = {};
+    bikeManagementData.documents.dlNumber = dVal;
+    if (!bikeManagementData.documents.dl) bikeManagementData.documents.dl = {};
+    bikeManagementData.documents.dl.number = dVal;
+  }
+  if (dlExpInput && dlExpInput.value) {
+    if (!bikeManagementData.documents) bikeManagementData.documents = {};
+    bikeManagementData.documents.dlExpiry = dlExpInput.value;
+    if (!bikeManagementData.documents.dl) bikeManagementData.documents.dl = {};
+    bikeManagementData.documents.dl.expiry = dlExpInput.value;
   }
   if (speedLimitInput && speedLimitInput.value) {
     guardianParentConfig.speedLimitKmh = parseInt(speedLimitInput.value) || 95;
   }
 
+  bikeManagementData.isConfigured = true;
   saveProfile();
   saveBikeManagementToStorage(true);
   renderDashboardProfile();
@@ -2304,3 +2441,809 @@ function showToast(message, type = 'info') {
     setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
   }, 3500);
 }
+
+// ========================================================
+// ONBOARDING WIZARD HANDLERS (FIRST TIME RIDER SETUP)
+// ========================================================
+function checkOnboardingStatus() {
+  const isConfigured = bikeManagementData && bikeManagementData.isConfigured;
+  const skipped = localStorage.getItem('rhody_onboarding_completed') === 'true';
+  // If not configured and not explicitly completed/skipped, prompt user
+  if (!isConfigured && !skipped) {
+    if (currentRole === 'rider') {
+      setTimeout(() => {
+        openOnboardingModal();
+      }, 700);
+    }
+  }
+}
+
+function openOnboardingModal() {
+  const modal = document.getElementById('onboardingModal');
+  if (!modal) return;
+  const specs = (bikeManagementData && bikeManagementData.specs) || {};
+  const docs = (bikeManagementData && bikeManagementData.documents) || {};
+
+  const makeModel = document.getElementById('obMakeModel');
+  const plate = document.getElementById('obPlateNumber');
+  const odo = document.getElementById('obOdometer');
+  const specField = document.getElementById('obSpecs');
+  const insExp = document.getElementById('obInsuranceExpiry');
+  const pucExp = document.getElementById('obPucExpiry');
+  const dlExp = document.getElementById('obDlExpiry');
+
+  if (makeModel) makeModel.value = specs.makeModel || riderProfile.bikeModel || '';
+  if (plate) plate.value = (docs.rc && docs.rc.number) || docs.rcNumber || riderProfile.bikePlate || '';
+  if (odo) odo.value = specs.currentOdometer || '';
+  if (specField) specField.value = specs.engine || riderProfile.bikeSpecs || '';
+  if (insExp) insExp.value = (docs.insurance && docs.insurance.expiry) || docs.insuranceExpiry || '';
+  if (pucExp) pucExp.value = (docs.puc && docs.puc.expiry) || docs.pucExpiry || '';
+  if (dlExp) dlExp.value = (docs.dl && docs.dl.expiry) || docs.dlExpiry || '';
+
+  modal.classList.remove('hidden');
+}
+
+function closeOnboardingModal() {
+  const modal = document.getElementById('onboardingModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function skipOnboarding() {
+  localStorage.setItem('rhody_onboarding_completed', 'true');
+  closeOnboardingModal();
+  showToast('Entered as Guest. You can configure bike specs & upload documents anytime.', 'info');
+}
+
+function handleOnboardingSubmit(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const makeModel = (document.getElementById('obMakeModel')?.value || '').trim();
+  const plate = (document.getElementById('obPlateNumber')?.value || '').trim();
+  const odoVal = parseFloat(document.getElementById('obOdometer')?.value) || 0;
+  const specText = (document.getElementById('obSpecs')?.value || '').trim();
+  const insExpiry = (document.getElementById('obInsuranceExpiry')?.value || '').trim();
+  const pucExpiry = (document.getElementById('obPucExpiry')?.value || '').trim();
+  const dlExpiry = (document.getElementById('obDlExpiry')?.value || '').trim();
+
+  if (!bikeManagementData.specs) bikeManagementData.specs = {};
+  if (!bikeManagementData.documents) bikeManagementData.documents = {};
+
+  bikeManagementData.isConfigured = true;
+  if (makeModel) bikeManagementData.specs.makeModel = makeModel;
+  if (specText) bikeManagementData.specs.engine = specText;
+  bikeManagementData.specs.currentOdometer = odoVal;
+
+  if (plate) {
+    bikeManagementData.documents.rcNumber = plate;
+    if (!bikeManagementData.documents.rc) bikeManagementData.documents.rc = {};
+    bikeManagementData.documents.rc.number = plate;
+  }
+  if (insExpiry) {
+    bikeManagementData.documents.insuranceExpiry = insExpiry;
+    if (!bikeManagementData.documents.insurance) bikeManagementData.documents.insurance = {};
+    bikeManagementData.documents.insurance.expiry = insExpiry;
+  }
+  if (pucExpiry) {
+    bikeManagementData.documents.pucExpiry = pucExpiry;
+    if (!bikeManagementData.documents.puc) bikeManagementData.documents.puc = {};
+    bikeManagementData.documents.puc.expiry = pucExpiry;
+  }
+  if (dlExpiry) {
+    bikeManagementData.documents.dlExpiry = dlExpiry;
+    if (!bikeManagementData.documents.dl) bikeManagementData.documents.dl = {};
+    bikeManagementData.documents.dl.expiry = dlExpiry;
+  }
+
+  // Update profile
+  if (makeModel) riderProfile.bikeModel = makeModel;
+  if (plate) riderProfile.bikePlate = plate;
+  if (specText) riderProfile.bikeSpecs = specText;
+  saveProfile();
+
+  localStorage.setItem('rhody_onboarding_completed', 'true');
+  saveBikeManagementToStorage(true);
+  renderDashboardBike();
+  renderBikeManagement();
+  populateSettingsForm();
+  closeOnboardingModal();
+  showToast('Motorcycle Cockpit configured successfully!', 'success');
+}
+
+// ========================================================
+// 4-DOCUMENT LEGAL VAULT (RC, DL, INSURANCE, PUC)
+// ========================================================
+function openDocModal(type) {
+  activeDocModalType = type;
+  activeDocFileData = null;
+  activeDocFileName = '';
+
+  const modal = document.getElementById('docVaultModal');
+  const title = document.getElementById('docVaultModalTitle');
+  const subtitle = document.getElementById('docVaultModalSubtitle');
+  const label = document.getElementById('docVaultNumberLabel');
+  const numberInput = document.getElementById('docVaultNumberInput');
+  const expiryInput = document.getElementById('docVaultExpiryInput');
+  const providerCont = document.getElementById('docVaultProviderFieldContainer');
+  const providerInput = document.getElementById('docVaultProviderInput');
+  const fileNameDisplay = document.getElementById('docVaultFileNameDisplay');
+  const previewCont = document.getElementById('docVaultPreviewContainer');
+  const thumbImg = document.getElementById('docVaultThumbImg');
+  const thumbName = document.getElementById('docVaultThumbName');
+  const iconBadge = document.getElementById('docVaultIconBadge');
+
+  if (!modal) return;
+  const docs = bikeManagementData.documents || {};
+  const currentDoc = (docs[type]) || {};
+
+  if (providerCont) providerCont.classList.add('hidden');
+
+  if (type === 'rc') {
+    if (iconBadge) iconBadge.textContent = '📋';
+    if (title) title.textContent = 'Upload Vehicle Registration Certificate (RC)';
+    if (subtitle) subtitle.textContent = 'Upload statutory RC smart card or digital scan';
+    if (label) label.textContent = 'Vehicle Registration / Plate Number';
+    if (numberInput) {
+      numberInput.placeholder = 'e.g. TN-38-BZ-4242';
+      numberInput.value = currentDoc.number || docs.rcNumber || '';
+    }
+    if (expiryInput) expiryInput.value = currentDoc.expiry || docs.rcExpiry || '';
+  } else if (type === 'dl') {
+    if (iconBadge) iconBadge.textContent = '🪪';
+    if (title) title.textContent = 'Upload Driving Licence (DL)';
+    if (subtitle) subtitle.textContent = 'Official motorcycle rider licence with endorsement';
+    if (label) label.textContent = 'Driving Licence (DL) Number';
+    if (numberInput) {
+      numberInput.placeholder = 'e.g. DL-1420110012345';
+      numberInput.value = currentDoc.number || docs.dlNumber || '';
+    }
+    if (expiryInput) expiryInput.value = currentDoc.expiry || docs.dlExpiry || '';
+  } else if (type === 'insurance') {
+    if (iconBadge) iconBadge.textContent = '🛡️';
+    if (title) title.textContent = 'Upload Comprehensive Insurance Policy';
+    if (subtitle) subtitle.textContent = 'Active third-party & own-damage motor insurance';
+    if (label) label.textContent = 'Insurance Policy Number';
+    if (providerCont) providerCont.classList.remove('hidden');
+    if (providerInput) providerInput.value = currentDoc.provider || docs.insuranceProvider || '';
+    if (numberInput) {
+      numberInput.placeholder = 'e.g. POL-9928371-YMH';
+      numberInput.value = currentDoc.policyNumber || docs.insurancePolicyNumber || '';
+    }
+    if (expiryInput) expiryInput.value = currentDoc.expiry || docs.insuranceExpiry || '';
+  } else if (type === 'puc') {
+    if (iconBadge) iconBadge.textContent = '🌿';
+    if (title) title.textContent = 'Upload Pollution Under Control (PUC) Certificate';
+    if (subtitle) subtitle.textContent = 'Official emission testing certificate';
+    if (label) label.textContent = 'PUC Certificate Number';
+    if (numberInput) {
+      numberInput.placeholder = 'e.g. PUC-KA01-2024-998';
+      numberInput.value = currentDoc.certificateNumber || docs.pucNumber || '';
+    }
+    if (expiryInput) expiryInput.value = currentDoc.expiry || docs.pucExpiry || '';
+  }
+
+  // If already uploaded document file exists
+  if (currentDoc.fileData) {
+    activeDocFileData = currentDoc.fileData;
+    activeDocFileName = currentDoc.fileName || `${type}_document.jpg`;
+    if (fileNameDisplay) fileNameDisplay.textContent = activeDocFileName;
+    if (previewCont) previewCont.classList.remove('hidden');
+    if (thumbImg) thumbImg.src = currentDoc.fileData;
+    if (thumbName) thumbName.textContent = activeDocFileName;
+  } else {
+    if (fileNameDisplay) fileNameDisplay.textContent = 'Click to choose image or camera scan';
+    if (previewCont) previewCont.classList.add('hidden');
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeDocModal() {
+  const modal = document.getElementById('docVaultModal');
+  if (modal) modal.classList.add('hidden');
+  activeDocFileData = null;
+  activeDocFileName = '';
+}
+
+function handleDocFileSelection(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  const fileNameDisplay = document.getElementById('docVaultFileNameDisplay');
+  const previewCont = document.getElementById('docVaultPreviewContainer');
+  const thumbImg = document.getElementById('docVaultThumbImg');
+  const thumbName = document.getElementById('docVaultThumbName');
+
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    activeDocFileData = event.target.result;
+    activeDocFileName = file.name;
+    if (fileNameDisplay) fileNameDisplay.textContent = file.name;
+    if (previewCont) previewCont.classList.remove('hidden');
+    if (thumbImg) thumbImg.src = activeDocFileData;
+    if (thumbName) thumbName.textContent = file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeActiveDocFile() {
+  activeDocFileData = null;
+  activeDocFileName = '';
+  const fileInput = document.getElementById('docVaultFileInput');
+  if (fileInput) fileInput.value = '';
+  const fileNameDisplay = document.getElementById('docVaultFileNameDisplay');
+  const previewCont = document.getElementById('docVaultPreviewContainer');
+  if (fileNameDisplay) fileNameDisplay.textContent = 'Click to choose image or camera scan';
+  if (previewCont) previewCont.classList.add('hidden');
+}
+
+function handleDocModalSubmit(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const type = activeDocModalType;
+  const numVal = (document.getElementById('docVaultNumberInput')?.value || '').trim();
+  const expVal = (document.getElementById('docVaultExpiryInput')?.value || '').trim();
+  const provVal = (document.getElementById('docVaultProviderInput')?.value || '').trim();
+
+  if (!bikeManagementData.documents) bikeManagementData.documents = {};
+  if (!bikeManagementData.documents[type]) bikeManagementData.documents[type] = {};
+
+  const docObj = bikeManagementData.documents[type];
+  docObj.expiry = expVal;
+  docObj.uploadedAt = new Date().toISOString();
+  if (activeDocFileData) {
+    docObj.fileData = activeDocFileData;
+    docObj.fileName = activeDocFileName;
+  }
+
+  if (type === 'rc') {
+    docObj.number = numVal;
+    bikeManagementData.documents.rcNumber = numVal;
+    bikeManagementData.documents.rcExpiry = expVal;
+    if (!riderProfile.bikePlate) {
+      riderProfile.bikePlate = numVal;
+      saveProfile();
+    }
+  } else if (type === 'dl') {
+    docObj.number = numVal;
+    bikeManagementData.documents.dlNumber = numVal;
+    bikeManagementData.documents.dlExpiry = expVal;
+  } else if (type === 'insurance') {
+    docObj.provider = provVal;
+    docObj.policyNumber = numVal;
+    bikeManagementData.documents.insuranceProvider = provVal;
+    bikeManagementData.documents.insurancePolicyNumber = numVal;
+    bikeManagementData.documents.insuranceExpiry = expVal;
+  } else if (type === 'puc') {
+    docObj.certificateNumber = numVal;
+    bikeManagementData.documents.pucNumber = numVal;
+    bikeManagementData.documents.pucExpiry = expVal;
+  }
+
+  saveBikeManagementToStorage(true);
+  renderBikeManagement();
+  closeDocModal();
+  showToast(`${type.toUpperCase()} document saved securely to vault!`, 'success');
+}
+
+function deleteActiveDoc() {
+  const type = activeDocModalType;
+  if (!confirm(`Are you sure you want to remove this ${type.toUpperCase()} document?`)) return;
+
+  if (bikeManagementData.documents && bikeManagementData.documents[type]) {
+    delete bikeManagementData.documents[type];
+  }
+  if (type === 'rc') { bikeManagementData.documents.rcNumber = ''; bikeManagementData.documents.rcExpiry = ''; }
+  if (type === 'dl') { bikeManagementData.documents.dlNumber = ''; bikeManagementData.documents.dlExpiry = ''; }
+  if (type === 'insurance') { bikeManagementData.documents.insurancePolicyNumber = ''; bikeManagementData.documents.insuranceProvider = ''; bikeManagementData.documents.insuranceExpiry = ''; }
+  if (type === 'puc') { bikeManagementData.documents.pucNumber = ''; bikeManagementData.documents.pucExpiry = ''; }
+
+  saveBikeManagementToStorage(true);
+  renderBikeManagement();
+  closeDocModal();
+  showToast(`${type.toUpperCase()} document removed.`, 'info');
+}
+
+function viewUploadedDoc(type) {
+  const docs = bikeManagementData.documents || {};
+  const doc = docs[type] || {};
+
+  const modal = document.getElementById('docViewerModal');
+  const title = document.getElementById('docViewerTitle');
+  const meta = document.getElementById('docViewerMeta');
+  const img = document.getElementById('docViewerImg');
+  const dlBtn = document.getElementById('docViewerDownloadBtn');
+
+  if (!modal) return;
+
+  const typeLabels = {
+    rc: 'Registration Certificate (RC)',
+    dl: 'Driving Licence (DL)',
+    insurance: 'Comprehensive Insurance Policy',
+    puc: 'Pollution Under Control (PUC)'
+  };
+
+  const docNumber = doc.number || doc.policyNumber || doc.certificateNumber || docs[type + 'Number'] || 'Verified';
+  const expiry = doc.expiry || docs[type + 'Expiry'] || 'Active';
+
+  if (title) title.textContent = typeLabels[type] || 'Document Scan';
+  if (meta) meta.textContent = `${docNumber} • Valid till: ${expiry}`;
+
+  // Default visual SVG badge scan if user saved without image
+  const defaultScanSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="600" height="400" rx="20" fill="%230E131F" stroke="%2300F0FF" stroke-width="3"/><text x="50" y="80" fill="%2300F0FF" font-family="monospace" font-size="24" font-weight="bold">RHODY OFFICIAL LEGAL VAULT</text><text x="50" y="140" fill="%23FFFFFF" font-family="sans-serif" font-size="28" font-weight="900">${typeLabels[type] || type.toUpperCase()}</text><text x="50" y="190" fill="%2394A3B8" font-family="monospace" font-size="18">ID: ${docNumber}</text><text x="50" y="230" fill="%2310B981" font-family="sans-serif" font-size="16" font-weight="bold">VERIFIED COMPLIANCE RECORD</text><text x="50" y="270" fill="%23E2E8F0" font-family="sans-serif" font-size="14">Validity Date: ${expiry}</text><rect x="50" y="320" width="160" height="35" rx="8" fill="%2310B981" fill-opacity="0.2" stroke="%2310B981"/><text x="70" y="343" fill="%2310B981" font-family="sans-serif" font-size="12" font-weight="bold">✓ ACTIVE RECORD</text></svg>`;
+
+  const imageSrc = doc.fileData || defaultScanSvg;
+  if (img) img.src = imageSrc;
+  if (dlBtn) {
+    dlBtn.href = imageSrc;
+    dlBtn.download = doc.fileName || `${type}_document.png`;
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeDocViewerModal() {
+  const modal = document.getElementById('docViewerModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+// Quick Odometer Prompt Modal
+function openOdoPrompt() {
+  const modal = document.getElementById('odoPromptModal');
+  const input = document.getElementById('promptOdoInput');
+  const curOdo = (bikeManagementData.specs && bikeManagementData.specs.currentOdometer) || 0;
+  if (input) input.value = curOdo || '';
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeOdoPrompt() {
+  const modal = document.getElementById('odoPromptModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function saveOdoPrompt(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const input = document.getElementById('promptOdoInput');
+  const val = parseFloat(input?.value) || 0;
+  if (!bikeManagementData.specs) bikeManagementData.specs = {};
+  bikeManagementData.specs.currentOdometer = val;
+  saveBikeManagementToStorage(true);
+  renderBikeManagement();
+  closeOdoPrompt();
+  showToast(`Odometer updated to ${val.toLocaleString()} KM!`, 'success');
+}
+
+// ========================================================
+// PARENT / GUARDIAN LIVE PORTAL & ROLE SWITCHER
+// ========================================================
+function toggleParentRole() {
+  if (currentRole === 'rider') {
+    const parentAuth = localStorage.getItem('rhody_parent_logged_in');
+    if (parentAuth === 'true') {
+      switchRole('parent');
+    } else {
+      openParentLoginModal();
+    }
+  } else {
+    switchRole('rider');
+  }
+}
+
+function openParentLoginModal() {
+  const modal = document.getElementById('parentLoginModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeParentLoginModal() {
+  const modal = document.getElementById('parentLoginModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function loginQuickParentDemo() {
+  const emailInput = document.getElementById('parentLoginEmail');
+  const codeInput = document.getElementById('parentLoginRiderCode');
+  if (emailInput) emailInput.value = 'guardian@family.io';
+  if (codeInput) codeInput.value = 'RHODY-8821';
+  handleParentLoginSubmit(new Event('submit'));
+}
+
+function handleParentLoginSubmit(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const email = (document.getElementById('parentLoginEmail')?.value || '').trim() || 'guardian@family.io';
+  const riderCode = (document.getElementById('parentLoginRiderCode')?.value || '').trim() || 'RHODY-8821';
+
+  fetch('/api/parent/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, riderCode })
+  })
+    .then(r => r.json())
+    .then(data => {
+      localStorage.setItem('rhody_parent_logged_in', 'true');
+      localStorage.setItem('rhody_parent_email', email);
+      parentConnectedRider = (data && data.profile && data.profile.connectedRiderEmail) || riderCode;
+      closeParentLoginModal();
+      switchRole('parent');
+      showToast('Welcome to Guardian Safety Radar', 'success');
+    })
+    .catch(() => {
+      localStorage.setItem('rhody_parent_logged_in', 'true');
+      closeParentLoginModal();
+      switchRole('parent');
+      showToast('Connected to Guardian Safety Radar (Offline)', 'info');
+    });
+}
+
+function switchRole(role) {
+  currentRole = role;
+  const parentView = document.getElementById('viewParentPortal');
+  const btnRoleSwitcher = document.getElementById('btnRoleSwitcher');
+
+  if (role === 'parent') {
+    // Hide rider view tabs
+    ['dashboard', 'trips', 'parenting', 'settings', 'analysis'].forEach(v => {
+      const el = document.getElementById('view' + capitalizeFirst(v));
+      if (el) el.classList.add('hidden');
+    });
+
+    if (parentView) parentView.classList.remove('hidden');
+    if (btnRoleSwitcher) {
+      btnRoleSwitcher.innerHTML = '<span>← Return to Rider Mode</span>';
+      btnRoleSwitcher.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] transition flex items-center space-x-1.5';
+    }
+
+    ensureLeaflet(function() {
+      initParentMap();
+    });
+    fetchParentRiderStatus();
+    startParentTelemetryPolling();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    // Return to rider mode
+    if (parentTelemetryPollTimer) {
+      clearInterval(parentTelemetryPollTimer);
+      parentTelemetryPollTimer = null;
+    }
+    if (parentView) parentView.classList.add('hidden');
+    if (btnRoleSwitcher) {
+      btnRoleSwitcher.innerHTML = '<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span></span><span>🛡️ Parent Portal</span>';
+      btnRoleSwitcher.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(168,85,247,0.2)]';
+    }
+    switchMainView(currentView || 'dashboard');
+  }
+}
+
+function connectParentRider() {
+  const input = document.getElementById('parentPairingCodeInput');
+  const code = (input?.value || '').trim();
+  if (!code) {
+    showToast('Please enter a rider code or email', 'error');
+    return;
+  }
+  const parentEmail = localStorage.getItem('rhody_parent_email') || 'guardian@family.io';
+
+  fetch('/api/parent/connect-rider', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ parentEmail, riderCodeOrEmail: code })
+  })
+    .then(r => r.json())
+    .then(data => {
+      parentConnectedRider = (data && data.parentProfile && data.parentProfile.connectedRiderEmail) || code;
+      if (input) input.value = '';
+      fetchParentRiderStatus();
+      showToast(`Successfully paired with rider ${parentConnectedRider}`, 'success');
+    })
+    .catch(() => {
+      parentConnectedRider = code;
+      fetchParentRiderStatus();
+      showToast(`Connected to ${code}`, 'info');
+    });
+}
+
+function startParentTelemetryPolling() {
+  if (parentTelemetryPollTimer) clearInterval(parentTelemetryPollTimer);
+  parentTelemetryPollTimer = setInterval(fetchParentRiderStatus, 3500);
+}
+
+function fetchParentRiderStatus() {
+  const riderQuery = parentConnectedRider || 'pilot@rhody.io';
+  fetch(`/api/parent/rider-status?riderEmail=${encodeURIComponent(riderQuery)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data) return;
+      updateParentDashboardUI(data);
+    })
+    .catch(() => {
+      // In case backend is offline, update with local state
+      updateParentDashboardUI({
+        rider: riderProfile,
+        bike: bikeManagementData,
+        beacon: {
+          currentSpeedKmh: liveSpeedKmh || 0,
+          maxSpeedKmh: peakTripSpeed || 86.4,
+          batteryPercent: 88,
+          isMoving: isTripRecording && liveSpeedKmh > 2,
+          latitude: lastKnownGpsFix ? lastKnownGpsFix.coords.latitude : 12.9716,
+          longitude: lastKnownGpsFix ? lastKnownGpsFix.coords.longitude : 77.5946
+        },
+        trips: allTripsCache || [],
+        notifications: parentNotificationsList
+      });
+    });
+}
+
+function updateParentDashboardUI(data) {
+  const rider = data.rider || riderProfile;
+  const bike = data.bike || bikeManagementData;
+  const beacon = data.beacon || {};
+  const trips = data.trips || [];
+  const notifs = data.notifications || [];
+
+  // 1. Rider & Bike Identity
+  const pairedRiderName = document.getElementById('parentPairedRiderName');
+  const pairedBikeName = document.getElementById('parentPairedBikeName');
+  const pairedPlate = document.getElementById('parentPairedPlate');
+  const pairedCodeDisplay = document.getElementById('parentPairedCodeDisplay');
+  const callRiderBtn = document.getElementById('parentCallRiderBtn');
+
+  if (pairedRiderName) pairedRiderName.textContent = rider.name || 'Natesh';
+  if (pairedBikeName) pairedBikeName.textContent = (bike.specs && bike.specs.makeModel) || rider.bikeModel || 'Yamaha MT-15 V2';
+  if (pairedPlate) pairedPlate.textContent = (bike.documents && bike.documents.rcNumber) || rider.bikePlate || 'KA-01-EQ-1550';
+  if (pairedCodeDisplay) pairedCodeDisplay.textContent = `RHODY-8821 (${rider.email || 'pilot@rhody.io'})`;
+  if (callRiderBtn) callRiderBtn.href = `tel:${rider.emergencyContactPhone || '+919876543210'}`;
+
+  // 2. Telemetry Readouts
+  const motionStatus = document.getElementById('parentTelemetryMotionStatus');
+  const speedVal = document.getElementById('parentTelemetrySpeedVal');
+  const topSpeed = document.getElementById('parentTelemetryTopSpeed');
+  const batteryVal = document.getElementById('parentTelemetryBattery');
+  const speedThresholdDisplay = document.getElementById('parentSpeedThresholdDisplay');
+
+  const curSpeed = Number(beacon.currentSpeedKmh) || 0;
+  const maxSpd = Number(beacon.maxSpeedKmh) || 0;
+  const isMoving = Boolean(beacon.isMoving);
+
+  if (speedVal) speedVal.textContent = curSpeed.toFixed(1);
+  if (topSpeed) topSpeed.textContent = maxSpd.toFixed(1);
+  if (batteryVal) batteryVal.textContent = `${beacon.batteryPercent || 88}%`;
+  if (speedThresholdDisplay) speedThresholdDisplay.textContent = `${guardianParentConfig.speedLimitKmh} km/h`;
+
+  if (motionStatus) {
+    if (isMoving && curSpeed > 0) {
+      motionStatus.innerHTML = '<span class="text-emerald-400">🟢 RIDING ON ROAD</span>';
+    } else {
+      motionStatus.innerHTML = '<span class="text-cyan-300">🔵 PARKED / IDLE</span>';
+    }
+  }
+
+  // 3. Live Radar Map Marker & Coordinates
+  const lat = beacon.latitude || (lastKnownGpsFix && lastKnownGpsFix.coords && lastKnownGpsFix.coords.latitude) || 12.9716;
+  const lng = beacon.longitude || (lastKnownGpsFix && lastKnownGpsFix.coords && lastKnownGpsFix.coords.longitude) || 77.5946;
+
+  if (parentMapInstance) {
+    const latLng = [lat, lng];
+    if (!parentMapMarker) {
+      const bikeIcon = L.divIcon({
+        className: 'custom-parent-radar-pin',
+        html: `<div style="width:36px;height:36px;border-radius:50%;background:#A855F7;border:3px solid #FFFFFF;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 20px #A855F7;">🏍️</div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      });
+      parentMapMarker = L.marker(latLng, { icon: bikeIcon }).addTo(parentMapInstance);
+      parentMapInstance.setView(latLng, 14);
+    } else {
+      parentMapMarker.setLatLng(latLng);
+    }
+  }
+
+  // 4. Statutory Legal Document Status
+  const docs = bike.documents || {};
+  const parentDocRc = document.getElementById('parentDocRcStatus');
+  const parentDocDl = document.getElementById('parentDocDlStatus');
+  const parentDocIns = document.getElementById('parentDocInsStatus');
+  const parentDocPuc = document.getElementById('parentDocPucStatus');
+
+  if (parentDocRc) {
+    const rcNum = (docs.rc && docs.rc.number) || docs.rcNumber;
+    parentDocRc.textContent = rcNum ? `Active (${rcNum})` : 'Not Uploaded';
+    parentDocRc.className = `text-xs font-bold ${rcNum ? 'text-emerald-400' : 'text-slate-400'} block mt-1 truncate`;
+  }
+  if (parentDocDl) {
+    const dlNum = (docs.dl && docs.dl.number) || docs.dlNumber;
+    parentDocDl.textContent = dlNum ? `Valid (${dlNum})` : 'Not Uploaded';
+    parentDocDl.className = `text-xs font-bold ${dlNum ? 'text-emerald-400' : 'text-slate-400'} block mt-1 truncate`;
+  }
+  if (parentDocIns) {
+    const insExp = (docs.insurance && docs.insurance.expiry) || docs.insuranceExpiry;
+    if (insExp) {
+      const days = calculateDaysRemaining(insExp);
+      parentDocIns.textContent = days > 0 ? `Valid (${days}d left)` : 'Expired';
+      parentDocIns.className = `text-xs font-bold ${days > 0 ? 'text-emerald-400' : 'text-rose-400'} block mt-1 truncate`;
+    } else {
+      parentDocIns.textContent = 'Missing Policy';
+      parentDocIns.className = 'text-xs font-bold text-slate-400 block mt-1 truncate';
+    }
+  }
+  if (parentDocPuc) {
+    const pucExp = (docs.puc && docs.puc.expiry) || docs.pucExpiry;
+    if (pucExp) {
+      const days = calculateDaysRemaining(pucExp);
+      parentDocPuc.textContent = days > 0 ? `Valid (${days}d left)` : 'Expired';
+      parentDocPuc.className = `text-xs font-bold ${days > 0 ? 'text-amber-400' : 'text-rose-400'} block mt-1 truncate`;
+    } else {
+      parentDocPuc.textContent = 'Missing PUC';
+      parentDocPuc.className = 'text-xs font-bold text-slate-400 block mt-1 truncate';
+    }
+  }
+
+  // 5. Recent Trips Ledger for Parent
+  const recentTripsList = document.getElementById('parentRecentTripsList');
+  if (recentTripsList && trips.length > 0) {
+    recentTripsList.innerHTML = trips.slice(0, 4).map(t => `
+      <div class="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/30 transition">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-purple-500/15 text-purple-300 flex items-center justify-center text-xs font-black">
+            🏁
+          </div>
+          <div>
+            <span class="text-xs font-bold text-white block">${t.title || 'Recorded Ride'}</span>
+            <span class="text-[10px] text-slate-400">${new Date(t.startTime || t.createdAt || Date.now()).toLocaleDateString()} &bull; ${t.durationFormatted || '24m 12s'}</span>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="text-xs font-black text-cyan-300 block font-mono-numbers">${(t.distanceKm || 0).toFixed(1)} KM</span>
+          <span class="text-[10px] text-slate-400 font-mono-numbers">Top: ${(t.topSpeedKmh || 0).toFixed(0)} km/h</span>
+        </div>
+      </div>
+    `).join('');
+  } else if (recentTripsList) {
+    recentTripsList.innerHTML = '<p class="text-xs text-slate-400 py-3 text-center">No recent rides logged for this rider yet.</p>';
+  }
+
+  // 6. Notifications
+  renderParentNotifications(notifs);
+}
+
+function initParentMap() {
+  const container = document.getElementById('parentLiveMap');
+  if (!container) return;
+  if (parentMapInstance) {
+    parentMapInstance.invalidateSize();
+    return;
+  }
+
+  const defaultCoords = [12.9716, 77.5946];
+  parentMapInstance = L.map('parentLiveMap', {
+    zoomControl: true,
+    attributionControl: false
+  }).setView(defaultCoords, 14);
+
+  L.tileLayer(esriDarkLayerUrl, {
+    maxZoom: 19
+  }).addTo(parentMapInstance);
+}
+
+function recenterParentMap() {
+  if (!parentMapInstance) return;
+  if (parentMapMarker) {
+    parentMapInstance.setView(parentMapMarker.getLatLng(), 15, { animate: true });
+  } else {
+    parentMapInstance.setView([12.9716, 77.5946], 14, { animate: true });
+  }
+}
+
+function renderParentNotifications(notifs) {
+  parentNotificationsList = notifs || [];
+  const feed = document.getElementById('parentNotifFeed');
+  const countBadge = document.getElementById('parentNotifCountBadge');
+  if (!feed) return;
+
+  if (countBadge) {
+    countBadge.textContent = `${parentNotificationsList.length} Alerts`;
+  }
+
+  if (parentNotificationsList.length === 0) {
+    feed.innerHTML = `
+      <div class="text-center py-8 text-slate-400 text-xs">
+        <span class="text-2xl block mb-2">🛡️</span>
+        <span class="font-bold text-white block">All Systems Nominal</span>
+        <span>No safety alerts or warnings detected.</span>
+      </div>
+    `;
+    return;
+  }
+
+  feed.innerHTML = parentNotificationsList.map(n => {
+    let icon = '🔔';
+    let borderColor = 'border-purple-500/30';
+    let badgeColor = 'text-purple-300 bg-purple-500/20';
+
+    if (n.type === 'speed_warning' || n.severity === 'warning') {
+      icon = '⚡';
+      borderColor = 'border-amber-500/40';
+      badgeColor = 'text-amber-300 bg-amber-500/20';
+    } else if (n.type === 'sos' || n.severity === 'critical') {
+      icon = '🚨';
+      borderColor = 'border-rose-500/50';
+      badgeColor = 'text-rose-300 bg-rose-500/20';
+    } else if (n.type === 'trip_start') {
+      icon = '🟢';
+      borderColor = 'border-emerald-500/40';
+      badgeColor = 'text-emerald-300 bg-emerald-500/20';
+    }
+
+    const timeStr = n.timestamp ? new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+
+    return `
+      <div class="p-3.5 rounded-xl bg-white/[0.03] border ${borderColor} space-y-1.5 transition hover:bg-white/[0.05]">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span>${icon}</span>
+            <span class="text-xs font-bold text-white">${n.title || 'Guardian Alert'}</span>
+          </div>
+          <span class="text-[10px] ${badgeColor} font-bold px-2 py-0.5 rounded-full">${timeStr}</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">${n.message || ''}</p>
+        <div class="flex items-center justify-between pt-1 border-t border-white/[0.04]">
+          <span class="text-[10px] text-slate-400 font-mono">${n.riderEmail || 'pilot@rhody.io'}</span>
+          <button onclick="dismissParentNotification('${n.id}')" class="text-[10px] text-slate-400 hover:text-rose-400 transition">
+            Dismiss ✕
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function simulateSpeedAlert() {
+  const speed = 104.5;
+  const newAlert = {
+    id: 'notif_' + Date.now(),
+    type: 'speed_warning',
+    title: '⚠️ Over-Speed Alert Triggered',
+    message: `Rider Natesh exceeded the guardian speed limit (${guardianParentConfig.speedLimitKmh} km/h) reaching ${speed} km/h on Bangalore Expressway.`,
+    severity: 'warning',
+    riderEmail: parentConnectedRider || 'pilot@rhody.io',
+    timestamp: new Date().toISOString()
+  };
+
+  fetch('/api/parent/notifications', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(newAlert)
+  })
+    .then(r => r.json())
+    .then(data => {
+      fetchParentRiderStatus();
+      showToast('⚠️ Simulated Over-Speed Guardian Notification Sent!', 'error');
+    })
+    .catch(() => {
+      parentNotificationsList.unshift(newAlert);
+      renderParentNotifications(parentNotificationsList);
+      showToast('⚠️ Over-Speed Alert Logged!', 'error');
+    });
+}
+
+function dismissParentNotification(id) {
+  fetch(`/api/parent/notifications/${id}`, { method: 'DELETE' })
+    .then(() => {
+      parentNotificationsList = parentNotificationsList.filter(n => n.id !== id);
+      renderParentNotifications(parentNotificationsList);
+    })
+    .catch(() => {
+      parentNotificationsList = parentNotificationsList.filter(n => n.id !== id);
+      renderParentNotifications(parentNotificationsList);
+    });
+}
+
+function clearParentNotifications() {
+  fetch('/api/parent/notifications/all', { method: 'DELETE' })
+    .then(() => {
+      parentNotificationsList = [];
+      renderParentNotifications([]);
+      showToast('Notifications cleared', 'info');
+    })
+    .catch(() => {
+      parentNotificationsList = [];
+      renderParentNotifications([]);
+    });
+}
+

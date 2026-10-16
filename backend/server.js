@@ -66,6 +66,11 @@ app.use(async (req, res, next) => {
       req.db = await getDb();
       next();
     } catch (err) {
+      // For parent and bike management routes, allow graceful offline fallback
+      if (req.path.startsWith('/api/parent') || req.path.startsWith('/api/user/bike-management') || req.path.startsWith('/api/trips')) {
+        req.db = null;
+        return next();
+      }
       console.error('[RoadPulse] Database error on request:', err.message);
       return res.status(503).json({
         error: 'Database disconnected. Please check MongoDB Atlas IP whitelist (ensure 0.0.0.0/0 is added in Network Access for Vercel cloud hosting).',
@@ -401,45 +406,47 @@ const defaultMotorcyclePlaces = [
 // MOTORCYCLE WHOLE MANAGEMENT ENDPOINTS (PILLAR 1 & 4)
 // ----------------------------------------------------
 const defaultBikeManagement = {
+  isConfigured: false,
   specs: {
-    makeModel: 'Yamaha MT-15 V2 (BS6 OBD-2)',
-    engine: '155cc Liquid-Cooled 4V SOHC VVA',
-    power: '18.4 PS @ 10,000 RPM',
-    torque: '14.1 Nm @ 7,500 RPM',
-    gearbox: '6-Speed Constant Mesh w/ Assist & Slipper Clutch',
-    fuelTank: '10 Liters (1.5L Reserve)',
-    brakes: 'Dual Channel ABS (282mm Front / 220mm Rear Disc)',
-    kerbWeight: '141 kg',
-    currentOdometer: 14850
+    makeModel: '',
+    engine: '',
+    power: '',
+    torque: '',
+    gearbox: '',
+    fuelTank: '',
+    brakes: '',
+    kerbWeight: '',
+    currentOdometer: 0
   },
   components: {
-    engineOil: { lastServiceOdo: 12000, intervalKm: 4000, name: 'Engine Oil & Filter (Yamalube 10W40)' },
-    driveChain: { lastServiceOdo: 14500, intervalKm: 500, name: 'Drive Chain Lube & Slack Adjust' },
-    airFilter: { lastServiceOdo: 10000, intervalKm: 10000, name: 'High-Flow Air Filter Element' },
-    sparkPlug: { lastServiceOdo: 10000, intervalKm: 12000, name: 'NGK Iridium Spark Plug' },
-    coolant: { lastServiceOdo: 8000, intervalKm: 15000, name: 'Radiator Glycol Coolant Flush' },
-    brakePads: { lastServiceOdo: 11000, intervalKm: 8000, name: 'Sintered Front & Rear Brake Pads' }
+    engineOil: { lastServiceOdo: 0, intervalKm: 4000, name: 'Engine Oil & Filter' },
+    driveChain: { lastServiceOdo: 0, intervalKm: 500, name: 'Drive Chain Lube & Slack Adjust' },
+    airFilter: { lastServiceOdo: 0, intervalKm: 8000, name: 'Viscous Air Filter' },
+    sparkPlug: { lastServiceOdo: 0, intervalKm: 10000, name: 'Spark Plug' },
+    coolant: { lastServiceOdo: 0, intervalKm: 12000, name: 'Radiator Coolant Flush' },
+    brakePads: { lastServiceOdo: 0, intervalKm: 8000, name: 'Brake Pads & Fluid' }
   },
   documents: {
-    rcNumber: 'TN-38-BZ-4242',
-    rcValidUntil: '2037-04-15',
-    insurancePolicy: 'BAJAJ-ALLIANZ-COMP-99824',
-    insuranceExpiry: '2026-11-28',
-    pucNumber: 'TN38PUC2026-092',
-    pucExpiry: '2026-12-14',
-    rsaPhone: '+91 1800 209 7979'
+    rc: { number: '', expiry: '', fileData: '', fileName: '', uploadedAt: null },
+    dl: { number: '', expiry: '', fileData: '', fileName: '', uploadedAt: null },
+    insurance: { provider: '', policyNumber: '', expiry: '', fileData: '', fileName: '', uploadedAt: null },
+    puc: { certificateNumber: '', expiry: '', fileData: '', fileName: '', uploadedAt: null },
+    rcNumber: '',
+    rcExpiry: '',
+    dlNumber: '',
+    dlExpiry: '',
+    insuranceProvider: '',
+    insurancePolicyNumber: '',
+    insuranceExpiry: '',
+    pucNumber: '',
+    pucExpiry: '',
+    rsaPhone: '1800-420-1600'
   },
-  serviceHistory: [
-    { id: 'srv_1', date: '2026-08-10', odo: 12000, center: 'Yamaha Authorized Prime Service, Coimbatore', workDone: 'Periodic 3rd Service: Yamalube fully synthetic oil change, oil filter replacement, brake pad clean, chain degrease & tension set.', cost: 1850 },
-    { id: 'srv_2', date: '2026-04-12', odo: 8000, center: 'Apex Motosports Performance Garage', workDone: 'Radiator coolant flush, spark plug inspection, throttle body synchronization, steering cone bearing greasing.', cost: 2400 },
-    { id: 'srv_3', date: '2025-11-20', odo: 4000, center: 'Yamaha Authorized Prime Service, Coimbatore', workDone: 'Periodic 2nd Service: Engine oil renewal, chain lubrication, clutch free-play adjustment, ECU diagnostics test.', cost: 1320 }
-  ],
-  fuelLogs: [
-    { id: 'fuel_1', date: '2026-10-12', odo: 14850, liters: 8.5, costPerLiter: 102.6, totalCost: 872, fuelGrade: 'XP95 Octane', mileageKmPerL: 48.2 },
-    { id: 'fuel_2', date: '2026-09-28', odo: 14440, liters: 8.2, costPerLiter: 102.5, totalCost: 840, fuelGrade: 'XP95 Octane', mileageKmPerL: 47.6 },
-    { id: 'fuel_3', date: '2026-09-15', odo: 14050, liters: 8.0, costPerLiter: 102.8, totalCost: 822, fuelGrade: 'Standard Petrol', mileageKmPerL: 46.8 }
-  ]
+  serviceHistory: [],
+  fuelLogs: []
 };
+
+let guestBikeManagementStore = JSON.parse(JSON.stringify(defaultBikeManagement));
 
 // GET /api/user/bike-management
 app.get('/api/user/bike-management', async (req, res) => {
@@ -449,17 +456,20 @@ app.get('/api/user/bike-management', async (req, res) => {
   const userEmail = decoded ? decoded.email.toLowerCase() : 'guest';
 
   if (!db) {
-    return res.json({ success: true, data: defaultBikeManagement });
+    return res.json({ success: true, data: guestBikeManagementStore });
   }
 
   try {
     const doc = await db.collection('bike_management').findOne({ userEmail });
-    if (doc) {
+    if (doc && doc.data) {
+      if (userEmail === 'guest') {
+        guestBikeManagementStore = doc.data;
+      }
       return res.json({ success: true, data: doc.data });
     }
-    res.json({ success: true, data: defaultBikeManagement });
+    res.json({ success: true, data: guestBikeManagementStore });
   } catch (err) {
-    res.json({ success: true, data: defaultBikeManagement });
+    res.json({ success: true, data: guestBikeManagementStore });
   }
 });
 
@@ -472,6 +482,9 @@ app.post('/api/user/bike-management', async (req, res) => {
 
   try {
     const mgmtData = req.body;
+    if (userEmail === 'guest') {
+      guestBikeManagementStore = Object.assign({}, guestBikeManagementStore, mgmtData);
+    }
     if (db) {
       await db.collection('bike_management').updateOne(
         { userEmail },
@@ -904,6 +917,223 @@ app.get('/api/youtube/search', async (req, res) => {
     console.error('YouTube search error:', err.message);
     res.status(500).json({ error: err.message, videos: [] });
   }
+});
+
+// ----------------------------------------------------
+// PARENT / GUARDIAN PORTAL ENDPOINTS & NOTIFICATIONS
+// ----------------------------------------------------
+let parentNotifications = [
+  {
+    id: 'notif_welcome',
+    riderEmail: 'pilot@rhody.io',
+    riderName: 'Natesh',
+    type: 'info',
+    title: 'Guardian Safety Radar Active',
+    message: 'Your parent account is now securely linked to rider Natesh (Yamaha MT-15 V2). Real-time speed, telemetry, and live emergency notifications are enabled.',
+    timestamp: new Date(Date.now() - 1800000).toISOString(),
+    severity: 'info',
+    read: false
+  },
+  {
+    id: 'notif_overspeed_demo',
+    riderEmail: 'pilot@rhody.io',
+    riderName: 'Natesh',
+    type: 'overspeed',
+    title: 'Speed Threshold Alert (98.4 km/h)',
+    message: 'Rider crossed safe threshold (limit: 95 km/h) on Outer Ring Road Expressway.',
+    timestamp: new Date(Date.now() - 3600000).toISOString(),
+    severity: 'warning',
+    speedKmh: 98.4,
+    read: false
+  },
+  {
+    id: 'notif_doc_check',
+    riderEmail: 'pilot@rhody.io',
+    riderName: 'Natesh',
+    type: 'compliance',
+    title: 'Legal Compliance Verified',
+    message: 'All 4 statutory motorcycle documents (RC, Driving Licence, Insurance, and PUC) are active.',
+    timestamp: new Date(Date.now() - 7200000).toISOString(),
+    severity: 'info',
+    read: true
+  }
+];
+
+let parentConnections = new Map();
+
+// POST /api/parent/login
+app.post('/api/parent/login', async (req, res) => {
+  const { email, riderCode } = req.body;
+  const parentEmail = (email && String(email).trim().toLowerCase()) || 'parent@rhody.io';
+  const targetRider = 'pilot@rhody.io';
+
+  const parentProfile = {
+    parentEmail,
+    parentName: 'Family Guardian (Mom & Dad)',
+    connectedRiderEmail: targetRider,
+    connectedRiderName: 'Natesh',
+    role: 'parent',
+    token: 'parent_token_' + Date.now()
+  };
+  parentConnections.set(parentEmail, parentProfile);
+
+  res.json({
+    success: true,
+    message: 'Parent / Guardian login successful',
+    profile: parentProfile
+  });
+});
+
+// POST /api/parent/connect-rider
+app.post('/api/parent/connect-rider', async (req, res) => {
+  const { parentEmail, riderCodeOrEmail } = req.body;
+  const pEmail = (parentEmail && String(parentEmail).trim().toLowerCase()) || 'parent@rhody.io';
+  const connectedRiderEmail = 'pilot@rhody.io';
+
+  const parentProfile = {
+    parentEmail: pEmail,
+    parentName: 'Family Guardian (Mom & Dad)',
+    connectedRiderEmail,
+    connectedRiderName: 'Natesh',
+    pairedAt: new Date().toISOString()
+  };
+  parentConnections.set(pEmail, parentProfile);
+
+  res.json({
+    success: true,
+    message: `Successfully connected with Rider (${connectedRiderEmail})`,
+    parentProfile
+  });
+});
+
+// GET /api/parent/rider-status
+app.get('/api/parent/rider-status', async (req, res) => {
+  try {
+    const riderEmail = req.query.riderEmail || 'pilot@rhody.io';
+
+    let rider = null;
+    if (db) {
+      rider = await db.collection('users').findOne({ email: riderEmail });
+    }
+    const profile = rider || guestProfileCache;
+
+    let bikeMgmt = null;
+    if (db) {
+      const doc = await db.collection('bike_management').findOne({ userEmail: 'guest' });
+      if (doc && doc.data) bikeMgmt = doc.data;
+    }
+    if (!bikeMgmt) bikeMgmt = guestBikeManagementStore;
+
+    let latestBeacon = null;
+    for (const beacon of liveBeacons.values()) {
+      latestBeacon = beacon;
+      break;
+    }
+    if (!latestBeacon && db) {
+      latestBeacon = await db.collection('live_beacons').findOne({}, { sort: { updatedAt: -1 } });
+    }
+
+    if (!latestBeacon) {
+      latestBeacon = {
+        tripId: 'live-safety-beacon',
+        riderName: profile.name || 'Natesh',
+        status: 'PARKED',
+        isMoving: false,
+        currentSpeedKmh: 0,
+        maxSpeedKmh: 86.4,
+        latitude: 12.9716,
+        longitude: 77.5946,
+        altitudeMeters: 920,
+        batteryPercent: 88,
+        totalDistanceKm: 0,
+        updatedAt: new Date()
+      };
+    }
+
+    let recentTrips = [];
+    if (db) {
+      recentTrips = await db.collection('trips')
+        .find({})
+        .sort({ startTime: -1 })
+        .limit(5)
+        .toArray();
+    }
+
+    const notifs = parentNotifications.filter(n => !n.riderEmail || n.riderEmail === riderEmail);
+
+    res.json({
+      success: true,
+      rider: {
+        name: profile.name || 'Natesh',
+        email: riderEmail,
+        avatar: profile.avatar || '',
+        phone: profile.emergencyContactPhone || '+91 98765 43210',
+        emergencyContactName: profile.emergencyContactName || 'Family Guardian',
+        bikeModel: profile.bikeModel || (bikeMgmt.specs && bikeMgmt.specs.makeModel) || 'Yamaha MT-15 V2',
+        bikePlate: profile.bikePlate || (bikeMgmt.documents && (bikeMgmt.documents.rcNumber || (bikeMgmt.documents.rc && bikeMgmt.documents.rc.number))) || 'KA-01-EQ-1550',
+        odometer: (bikeMgmt.specs && bikeMgmt.specs.currentOdometer) || 0
+      },
+      documents: bikeMgmt.documents || {},
+      telemetry: latestBeacon,
+      recentTrips: recentTrips.map(t => ({
+        id: t._id ? t._id.toString() : t.id,
+        name: t.name || 'Ride Telemetry Session',
+        distanceKm: t.distanceKm || (t.totalDistanceMeters ? (t.totalDistanceMeters / 1000).toFixed(1) : 0),
+        durationFormatted: t.durationFormatted || '25 min',
+        maxSpeedKmh: t.maxSpeedKmh || (t.topSpeedKmh ? t.topSpeedKmh.toFixed(1) : 0),
+        startTime: t.startTime
+      })),
+      notifications: notifs
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/parent/notifications
+app.get('/api/parent/notifications', (req, res) => {
+  const riderEmail = req.query.riderEmail || 'pilot@rhody.io';
+  const list = parentNotifications.filter(n => !n.riderEmail || n.riderEmail === riderEmail);
+  res.json({ success: true, notifications: list });
+});
+
+// POST /api/parent/notifications
+app.post('/api/parent/notifications', async (req, res) => {
+  const { type, title, message, severity, riderEmail, latitude, longitude, speedKmh } = req.body;
+  const newNotif = {
+    id: 'notif_' + Date.now(),
+    riderEmail: riderEmail || 'pilot@rhody.io',
+    riderName: 'Natesh',
+    type: type || 'alert',
+    title: title || 'Safety Alert',
+    message: message || '',
+    severity: severity || 'warning',
+    latitude: latitude || null,
+    longitude: longitude || null,
+    speedKmh: speedKmh || null,
+    timestamp: new Date().toISOString(),
+    read: false
+  };
+
+  parentNotifications.unshift(newNotif);
+  if (parentNotifications.length > 50) parentNotifications.pop();
+
+  if (db) {
+    db.collection('parent_notifications').insertOne(newNotif).catch(() => {});
+  }
+
+  res.json({ success: true, notification: newNotif });
+});
+
+// DELETE /api/parent/notifications/:id
+app.delete('/api/parent/notifications/:id', (req, res) => {
+  const id = req.params.id;
+  if (id === 'all') {
+    parentNotifications = [];
+  } else {
+    parentNotifications = parentNotifications.filter(n => n.id !== id);
+  }
+  res.json({ success: true, message: 'Notification dismissed' });
 });
 
 // App APK & Release Download Redirects
