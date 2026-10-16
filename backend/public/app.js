@@ -218,6 +218,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Check Onboarding status for rider
   checkOnboardingStatus();
+
+  // Upfront Role Gateway: Prompt user immediately if role is not yet selected
+  checkRoleOnStartup();
 });
 
 // ----------------------------------------------------
@@ -1072,7 +1075,7 @@ function openParentViewNewTab() {
 function shareTripWithParents() {
   const url = getParentLiveBeaconUrl();
   const text = encodeURIComponent(
-    `🏍️ Rhody Live Ride Beacon:\nI am riding my bike right now!\nTrack my live speed, location, and safety status here:\n${url}`
+    `Rhody Live Ride Beacon:\nI am riding my bike right now!\nTrack my live speed, location, and safety status here:\n${url}`
   );
   const waUrl = `https://wa.me/?text=${text}`;
   window.open(waUrl, '_blank');
@@ -1350,16 +1353,37 @@ function setupDeviceSensorFusion() {
 
 function updateLiveLeanAngleDisplay(leanDeg) {
   const leanReadout = document.getElementById('liveLeanAngleReadout');
-  if (!leanReadout) return;
-
   const rounded = Math.abs(leanDeg).toFixed(1);
-  if (leanDeg < -2.0) {
-    leanReadout.innerHTML = `<span class="text-cyan-400 font-mono">${rounded}&deg;</span> <span class="text-xs text-slate-400">LEFT APEX</span>`;
-  } else if (leanDeg > 2.0) {
-    leanReadout.innerHTML = `<span class="text-amber-400 font-mono">${rounded}&deg;</span> <span class="text-xs text-slate-400">RIGHT APEX</span>`;
-  } else {
-    leanReadout.innerHTML = `<span class="text-emerald-400 font-mono">0.0&deg;</span> <span class="text-xs text-slate-400">UPRIGHT</span>`;
+
+  if (leanReadout) {
+    if (leanDeg < -2.0) {
+      leanReadout.innerHTML = `<span class="text-cyan-400 font-mono">${rounded}&deg;</span> <span class="text-xs text-slate-400">LEFT APEX</span>`;
+    } else if (leanDeg > 2.0) {
+      leanReadout.innerHTML = `<span class="text-amber-400 font-mono">${rounded}&deg;</span> <span class="text-xs text-slate-400">RIGHT APEX</span>`;
+    } else {
+      leanReadout.innerHTML = `<span class="text-emerald-400 font-mono">0.0&deg;</span> <span class="text-xs text-slate-400">UPRIGHT</span>`;
+    }
   }
+
+  // Sync with Advanced Motorsport Lean Gyro & Friction Circle
+  const liveLeanText = document.getElementById('liveLeanDegreeText');
+  if (liveLeanText) liveLeanText.textContent = `${rounded}\u00B0 LEAN`;
+
+  if (leanDeg < -2.0) {
+    const leftEl = document.getElementById('apexMaxLeft');
+    if (leftEl) {
+      const curL = parseFloat(leftEl.textContent) || 0;
+      if (Math.abs(leanDeg) > curL) leftEl.textContent = `${rounded}\u00B0`;
+    }
+  } else if (leanDeg > 2.0) {
+    const rightEl = document.getElementById('apexMaxRight');
+    if (rightEl) {
+      const curR = parseFloat(rightEl.textContent) || 0;
+      if (leanDeg > curR) rightEl.textContent = `${rounded}\u00B0`;
+    }
+  }
+
+  updateFrictionCircleDot((leanDeg / 50), 0.15);
 }
 
 function startNewTripSession() {
@@ -2395,11 +2419,11 @@ function fetchRoadWeather(lat, lng, label) {
       const gripBadge = document.getElementById('roadGripBadge');
       if (gripBadge) {
         if (cw.weathercode === 0) {
-          gripBadge.innerHTML = `🟢 <strong>DRY ROAD (98% GRIP)</strong> &bull; ${cw.temperature}°C &bull; ${label}`;
+          gripBadge.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1.5 shadow-[0_0_8px_#10B981]"></span><strong>DRY ROAD (98% GRIP)</strong> &bull; ${cw.temperature}&deg;C &bull; ${label}`;
         } else if (cw.weathercode > 50) {
-          gripBadge.innerHTML = `🔴 <strong>WET TARMAC (45% GRIP)</strong> &bull; Caution in corners &bull; ${label}`;
+          gripBadge.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-rose-500 mr-1.5 shadow-[0_0_8px_#F43F5E]"></span><strong>WET TARMAC (45% GRIP)</strong> &bull; Caution in corners &bull; ${label}`;
         } else {
-          gripBadge.innerHTML = `🟡 <strong>OPTIMAL ROAD (${cw.temperature}°C)</strong> &bull; ${label}`;
+          gripBadge.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-amber-400 mr-1.5 shadow-[0_0_8px_#F59E0B]"></span><strong>OPTIMAL ROAD (${cw.temperature}&deg;C)</strong> &bull; ${label}`;
         }
       }
     })
@@ -2577,7 +2601,7 @@ function openDocModal(type) {
   if (providerCont) providerCont.classList.add('hidden');
 
   if (type === 'rc') {
-    if (iconBadge) iconBadge.textContent = '📋';
+    if (iconBadge) iconBadge.innerHTML = '<svg class="w-5 h-5 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>';
     if (title) title.textContent = 'Upload Vehicle Registration Certificate (RC)';
     if (subtitle) subtitle.textContent = 'Upload statutory RC smart card or digital scan';
     if (label) label.textContent = 'Vehicle Registration / Plate Number';
@@ -2587,7 +2611,7 @@ function openDocModal(type) {
     }
     if (expiryInput) expiryInput.value = currentDoc.expiry || docs.rcExpiry || '';
   } else if (type === 'dl') {
-    if (iconBadge) iconBadge.textContent = '🪪';
+    if (iconBadge) iconBadge.innerHTML = '<svg class="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>';
     if (title) title.textContent = 'Upload Driving Licence (DL)';
     if (subtitle) subtitle.textContent = 'Official motorcycle rider licence with endorsement';
     if (label) label.textContent = 'Driving Licence (DL) Number';
@@ -2597,7 +2621,7 @@ function openDocModal(type) {
     }
     if (expiryInput) expiryInput.value = currentDoc.expiry || docs.dlExpiry || '';
   } else if (type === 'insurance') {
-    if (iconBadge) iconBadge.textContent = '🛡️';
+    if (iconBadge) iconBadge.innerHTML = '<svg class="w-5 h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>';
     if (title) title.textContent = 'Upload Comprehensive Insurance Policy';
     if (subtitle) subtitle.textContent = 'Active third-party & own-damage motor insurance';
     if (label) label.textContent = 'Insurance Policy Number';
@@ -2609,7 +2633,7 @@ function openDocModal(type) {
     }
     if (expiryInput) expiryInput.value = currentDoc.expiry || docs.insuranceExpiry || '';
   } else if (type === 'puc') {
-    if (iconBadge) iconBadge.textContent = '🌿';
+    if (iconBadge) iconBadge.innerHTML = '<svg class="w-5 h-5 text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>';
     if (title) title.textContent = 'Upload Pollution Under Control (PUC) Certificate';
     if (subtitle) subtitle.textContent = 'Official emission testing certificate';
     if (label) label.textContent = 'PUC Certificate Number';
@@ -2811,6 +2835,138 @@ function saveOdoPrompt(e) {
 }
 
 // ========================================================
+// UPFRONT ROLE GATEWAY & CONSENT HANDSHAKE
+// ========================================================
+let activeGuardianRequestId = null;
+let riderGuardianPollTimer = null;
+
+function checkRoleOnStartup() {
+  const savedRole = localStorage.getItem('rhody_user_role');
+  const urlParams = new URLSearchParams(window.location.search);
+  const roleParam = urlParams.get('role');
+
+  if (roleParam === 'parent' || roleParam === 'rider') {
+    selectRoleFromGateway(roleParam, false);
+    return;
+  }
+
+  if (savedRole === 'parent') {
+    switchRole('parent');
+  } else if (savedRole === 'rider') {
+    switchRole('rider');
+    checkRiderGuardianRequests();
+  } else {
+    // Prompt upfront at entry
+    openRoleGatewayModal();
+  }
+}
+
+function openRoleGatewayModal() {
+  const modal = document.getElementById('roleGatewayModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeRoleGatewayModal() {
+  const modal = document.getElementById('roleGatewayModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function selectRoleFromGateway(role, notify = true) {
+  closeRoleGatewayModal();
+  localStorage.setItem('rhody_user_role', role);
+
+  if (role === 'parent') {
+    localStorage.setItem('rhody_parent_logged_in', 'true');
+    if (!localStorage.getItem('rhody_parent_email')) {
+      localStorage.setItem('rhody_parent_email', 'guardian@family.io');
+    }
+    switchRole('parent');
+    if (notify) showToast('Logged in as Parent / Guardian Radar', 'success');
+  } else {
+    switchRole('rider');
+    checkRiderGuardianRequests();
+    if (notify) showToast('Logged in as Rider Cockpit — Telemetry Active', 'success');
+  }
+}
+
+function checkRiderGuardianRequests() {
+  const riderCode = 'RHODY-8821';
+  fetch(`/api/rider/guardian-requests?riderCode=${encodeURIComponent(riderCode)}`)
+    .then(r => r.json())
+    .then(data => {
+      const banner = document.getElementById('riderGuardianRequestBanner');
+      if (!banner) return;
+      if (data && data.requests && data.requests.length > 0) {
+        const pending = data.requests.find(req => req.status === 'pending_approval');
+        if (pending) {
+          activeGuardianRequestId = pending.id;
+          const reqName = document.getElementById('guardianRequesterName');
+          const reqEmail = document.getElementById('guardianRequesterEmail');
+          if (reqName) reqName.textContent = pending.parentName || 'Family Guardian';
+          if (reqEmail) reqEmail.textContent = pending.parentEmail || 'guardian@family.io';
+          banner.classList.remove('hidden');
+          return;
+        }
+      }
+      banner.classList.add('hidden');
+    })
+    .catch(() => {});
+}
+
+function respondGuardianRequest(action) {
+  const reqId = activeGuardianRequestId || 'req_1';
+  const apiAction = action === 'accept' ? 'approved' : 'rejected';
+
+  fetch('/api/rider/respond-guardian-request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requestId: reqId,
+      action: apiAction,
+      parentEmail: 'guardian@family.io'
+    })
+  })
+    .then(r => r.json())
+    .then(data => {
+      const banner = document.getElementById('riderGuardianRequestBanner');
+      if (banner) banner.classList.add('hidden');
+      if (action === 'accept') {
+        showToast('Guardian access granted! Telemetry & safety radar shared.', 'success');
+      } else {
+        showToast('Guardian connection request declined.', 'info');
+      }
+    })
+    .catch(() => {
+      const banner = document.getElementById('riderGuardianRequestBanner');
+      if (banner) banner.classList.add('hidden');
+      showToast(action === 'accept' ? 'Guardian access granted' : 'Request declined', 'info');
+    });
+}
+
+function simulateRiderAcceptanceDemo() {
+  fetch('/api/rider/respond-guardian-request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requestId: activeGuardianRequestId || 'req_demo_01',
+      action: 'approved',
+      parentEmail: localStorage.getItem('rhody_parent_email') || 'guardian@family.io'
+    })
+  })
+    .then(() => {
+      showToast('Rider authorized telemetry access! Radar unlocked.', 'success');
+      fetchParentRiderStatus();
+    })
+    .catch(() => {
+      showToast('Rider authorized access (Demo)', 'success');
+      const waitingBanner = document.getElementById('parentWaitingApprovalBanner');
+      const authorizedGrid = document.getElementById('parentAuthorizedGrid');
+      if (waitingBanner) waitingBanner.classList.add('hidden');
+      if (authorizedGrid) authorizedGrid.classList.remove('hidden');
+    });
+}
+
+// ========================================================
 // PARENT / GUARDIAN LIVE PORTAL & ROLE SWITCHER
 // ========================================================
 function toggleParentRole() {
@@ -2867,7 +3023,7 @@ function handleParentLoginSubmit(e) {
       localStorage.setItem('rhody_parent_logged_in', 'true');
       closeParentLoginModal();
       switchRole('parent');
-      showToast('Connected to Guardian Safety Radar (Offline)', 'info');
+      showToast('Connected to Guardian Safety Radar', 'info');
     });
 }
 
@@ -2875,6 +3031,8 @@ function switchRole(role) {
   currentRole = role;
   const parentView = document.getElementById('viewParentPortal');
   const btnRoleSwitcher = document.getElementById('btnRoleSwitcher');
+  const roleGatewayNavLabel = document.getElementById('roleGatewayNavLabel');
+  const btnRoleSwitcherText = document.getElementById('btnRoleSwitcherText');
 
   if (role === 'parent') {
     // Hide rider view tabs
@@ -2884,9 +3042,15 @@ function switchRole(role) {
     });
 
     if (parentView) parentView.classList.remove('hidden');
+    if (roleGatewayNavLabel) roleGatewayNavLabel.textContent = 'Role: Parent Radar';
+    if (btnRoleSwitcherText) btnRoleSwitcherText.textContent = 'Rider Cockpit';
     if (btnRoleSwitcher) {
-      btnRoleSwitcher.innerHTML = '<span>← Return to Rider Mode</span>';
       btnRoleSwitcher.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] transition flex items-center space-x-1.5';
+    }
+
+    if (riderGuardianPollTimer) {
+      clearInterval(riderGuardianPollTimer);
+      riderGuardianPollTimer = null;
     }
 
     ensureLeaflet(function() {
@@ -2902,11 +3066,18 @@ function switchRole(role) {
       parentTelemetryPollTimer = null;
     }
     if (parentView) parentView.classList.add('hidden');
+    if (roleGatewayNavLabel) roleGatewayNavLabel.textContent = 'Role: Rider Cockpit';
+    if (btnRoleSwitcherText) btnRoleSwitcherText.textContent = 'Parent Portal';
     if (btnRoleSwitcher) {
-      btnRoleSwitcher.innerHTML = '<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span></span><span>🛡️ Parent Portal</span>';
       btnRoleSwitcher.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(168,85,247,0.2)]';
     }
+
     switchMainView(currentView || 'dashboard');
+
+    checkRiderGuardianRequests();
+    if (!riderGuardianPollTimer) {
+      riderGuardianPollTimer = setInterval(checkRiderGuardianRequests, 4000);
+    }
   }
 }
 
@@ -2929,12 +3100,12 @@ function connectParentRider() {
       parentConnectedRider = (data && data.parentProfile && data.parentProfile.connectedRiderEmail) || code;
       if (input) input.value = '';
       fetchParentRiderStatus();
-      showToast(`Successfully paired with rider ${parentConnectedRider}`, 'success');
+      showToast(`Link request sent to rider ${parentConnectedRider}. Awaiting approval.`, 'success');
     })
     .catch(() => {
       parentConnectedRider = code;
       fetchParentRiderStatus();
-      showToast(`Connected to ${code}`, 'info');
+      showToast(`Connection request sent to ${code}`, 'info');
     });
 }
 
@@ -2945,15 +3116,18 @@ function startParentTelemetryPolling() {
 
 function fetchParentRiderStatus() {
   const riderQuery = parentConnectedRider || 'pilot@rhody.io';
-  fetch(`/api/parent/rider-status?riderEmail=${encodeURIComponent(riderQuery)}`)
+  const parentEmail = localStorage.getItem('rhody_parent_email') || 'guardian@family.io';
+
+  fetch(`/api/parent/rider-status?riderEmail=${encodeURIComponent(riderQuery)}&parentEmail=${encodeURIComponent(parentEmail)}`)
     .then(r => r.json())
     .then(data => {
       if (!data) return;
       updateParentDashboardUI(data);
     })
     .catch(() => {
-      // In case backend is offline, update with local state
+      // In case backend is offline, update with safe local state
       updateParentDashboardUI({
+        authorized: true,
         rider: riderProfile,
         bike: bikeManagementData,
         beacon: {
@@ -2971,6 +3145,24 @@ function fetchParentRiderStatus() {
 }
 
 function updateParentDashboardUI(data) {
+  const waitingBanner = document.getElementById('parentWaitingApprovalBanner');
+  const authorizedGrid = document.getElementById('parentAuthorizedGrid');
+  const waitingRiderEmail = document.getElementById('parentWaitingRiderEmail');
+
+  // STRICT CONSENT GATING: Hide private telemetry, GPS, and documents until approved
+  if (data.authorized === false) {
+    if (waitingBanner) waitingBanner.classList.remove('hidden');
+    if (authorizedGrid) authorizedGrid.classList.add('hidden');
+    if (waitingRiderEmail) {
+      waitingRiderEmail.textContent = (data.rider && data.rider.email) || parentConnectedRider || 'pilot@rhody.io';
+    }
+    return;
+  }
+
+  // Rider has authorized access -> reveal full portal
+  if (waitingBanner) waitingBanner.classList.add('hidden');
+  if (authorizedGrid) authorizedGrid.classList.remove('hidden');
+
   const rider = data.rider || riderProfile;
   const bike = data.bike || bikeManagementData;
   const beacon = data.beacon || {};
@@ -2985,8 +3177,8 @@ function updateParentDashboardUI(data) {
   const callRiderBtn = document.getElementById('parentCallRiderBtn');
 
   if (pairedRiderName) pairedRiderName.textContent = rider.name || 'Natesh';
-  if (pairedBikeName) pairedBikeName.textContent = (bike.specs && bike.specs.makeModel) || rider.bikeModel || 'Yamaha MT-15 V2';
-  if (pairedPlate) pairedPlate.textContent = (bike.documents && bike.documents.rcNumber) || rider.bikePlate || 'KA-01-EQ-1550';
+  if (pairedBikeName) pairedBikeName.textContent = (bike && bike.specs && bike.specs.makeModel) || rider.bikeModel || 'Yamaha MT-15 V2';
+  if (pairedPlate) pairedPlate.textContent = (bike && bike.documents && bike.documents.rcNumber) || rider.bikePlate || 'KA-01-EQ-1550';
   if (pairedCodeDisplay) pairedCodeDisplay.textContent = `RHODY-8821 (${rider.email || 'pilot@rhody.io'})`;
   if (callRiderBtn) callRiderBtn.href = `tel:${rider.emergencyContactPhone || '+919876543210'}`;
 
@@ -3008,9 +3200,9 @@ function updateParentDashboardUI(data) {
 
   if (motionStatus) {
     if (isMoving && curSpeed > 0) {
-      motionStatus.innerHTML = '<span class="text-emerald-400">🟢 RIDING ON ROAD</span>';
+      motionStatus.innerHTML = '<span class="inline-flex items-center space-x-1.5 text-emerald-400 font-bold"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><span>RIDING ON ROAD</span></span>';
     } else {
-      motionStatus.innerHTML = '<span class="text-cyan-300">🔵 PARKED / IDLE</span>';
+      motionStatus.innerHTML = '<span class="inline-flex items-center space-x-1.5 text-cyan-300 font-bold"><span class="w-2 h-2 rounded-full bg-cyan-400"></span><span>PARKED / IDLE</span></span>';
     }
   }
 
@@ -3023,7 +3215,7 @@ function updateParentDashboardUI(data) {
     if (!parentMapMarker) {
       const bikeIcon = L.divIcon({
         className: 'custom-parent-radar-pin',
-        html: `<div style="width:36px;height:36px;border-radius:50%;background:#A855F7;border:3px solid #FFFFFF;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 20px #A855F7;">🏍️</div>`,
+        html: `<div style="width:36px;height:36px;border-radius:50%;background:#A855F7;border:2px solid #FFFFFF;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px #A855F7;"><svg style="width:20px;height:20px;color:white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 19a3 3 0 100-6 3 3 0 000 6zM5 19a3 3 0 100-6 3 3 0 000 6zm0 0h3l3.5-7H16l2 4m-4.5-4L12 8l-3 4"/></svg></div>`,
         iconSize: [36, 36],
         iconAnchor: [18, 18]
       });
@@ -3035,7 +3227,7 @@ function updateParentDashboardUI(data) {
   }
 
   // 4. Statutory Legal Document Status
-  const docs = bike.documents || {};
+  const docs = (bike && bike.documents) || {};
   const parentDocRc = document.getElementById('parentDocRcStatus');
   const parentDocDl = document.getElementById('parentDocDlStatus');
   const parentDocIns = document.getElementById('parentDocInsStatus');
@@ -3081,7 +3273,7 @@ function updateParentDashboardUI(data) {
       <div class="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/30 transition">
         <div class="flex items-center space-x-3">
           <div class="w-8 h-8 rounded-lg bg-purple-500/15 text-purple-300 flex items-center justify-center text-xs font-black">
-            🏁
+            <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>
           </div>
           <div>
             <span class="text-xs font-bold text-white block">${t.title || 'Recorded Ride'}</span>
@@ -3143,7 +3335,9 @@ function renderParentNotifications(notifs) {
   if (parentNotificationsList.length === 0) {
     feed.innerHTML = `
       <div class="text-center py-8 text-slate-400 text-xs">
-        <span class="text-2xl block mb-2">🛡️</span>
+        <div class="w-10 h-10 mx-auto mb-2 rounded-xl bg-purple-500/15 border border-purple-400/30 flex items-center justify-center text-purple-300">
+          <svg class="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
         <span class="font-bold text-white block">All Systems Nominal</span>
         <span>No safety alerts or warnings detected.</span>
       </div>
@@ -3152,20 +3346,20 @@ function renderParentNotifications(notifs) {
   }
 
   feed.innerHTML = parentNotificationsList.map(n => {
-    let icon = '🔔';
+    let iconSvg = '<svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>';
     let borderColor = 'border-purple-500/30';
     let badgeColor = 'text-purple-300 bg-purple-500/20';
 
     if (n.type === 'speed_warning' || n.severity === 'warning') {
-      icon = '⚡';
+      iconSvg = '<svg class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>';
       borderColor = 'border-amber-500/40';
       badgeColor = 'text-amber-300 bg-amber-500/20';
     } else if (n.type === 'sos' || n.severity === 'critical') {
-      icon = '🚨';
+      iconSvg = '<svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
       borderColor = 'border-rose-500/50';
       badgeColor = 'text-rose-300 bg-rose-500/20';
     } else if (n.type === 'trip_start') {
-      icon = '🟢';
+      iconSvg = '<svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
       borderColor = 'border-emerald-500/40';
       badgeColor = 'text-emerald-300 bg-emerald-500/20';
     }
@@ -3176,7 +3370,7 @@ function renderParentNotifications(notifs) {
       <div class="p-3.5 rounded-xl bg-white/[0.03] border ${borderColor} space-y-1.5 transition hover:bg-white/[0.05]">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2">
-            <span>${icon}</span>
+            ${iconSvg}
             <span class="text-xs font-bold text-white">${n.title || 'Guardian Alert'}</span>
           </div>
           <span class="text-[10px] ${badgeColor} font-bold px-2 py-0.5 rounded-full">${timeStr}</span>
@@ -3184,8 +3378,9 @@ function renderParentNotifications(notifs) {
         <p class="text-xs text-slate-300 leading-relaxed">${n.message || ''}</p>
         <div class="flex items-center justify-between pt-1 border-t border-white/[0.04]">
           <span class="text-[10px] text-slate-400 font-mono">${n.riderEmail || 'pilot@rhody.io'}</span>
-          <button onclick="dismissParentNotification('${n.id}')" class="text-[10px] text-slate-400 hover:text-rose-400 transition">
-            Dismiss ✕
+          <button onclick="dismissParentNotification('${n.id}')" class="text-[10px] text-slate-400 hover:text-rose-400 transition flex items-center space-x-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <span>Dismiss</span>
           </button>
         </div>
       </div>
@@ -3198,8 +3393,8 @@ function simulateSpeedAlert() {
   const newAlert = {
     id: 'notif_' + Date.now(),
     type: 'speed_warning',
-    title: '⚠️ Over-Speed Alert Triggered',
-    message: `Rider Natesh exceeded the guardian speed limit (${guardianParentConfig.speedLimitKmh} km/h) reaching ${speed} km/h on Bangalore Expressway.`,
+    title: 'Speed Threshold Alert',
+    message: `Rider Natesh exceeded guardian safety limit (${guardianParentConfig.speedLimitKmh} km/h) reaching ${speed} km/h on Bangalore Expressway.`,
     severity: 'warning',
     riderEmail: parentConnectedRider || 'pilot@rhody.io',
     timestamp: new Date().toISOString()
@@ -3213,12 +3408,12 @@ function simulateSpeedAlert() {
     .then(r => r.json())
     .then(data => {
       fetchParentRiderStatus();
-      showToast('⚠️ Simulated Over-Speed Guardian Notification Sent!', 'error');
+      showToast('Speed alert notification dispatched to parent feed', 'error');
     })
     .catch(() => {
       parentNotificationsList.unshift(newAlert);
       renderParentNotifications(parentNotificationsList);
-      showToast('⚠️ Over-Speed Alert Logged!', 'error');
+      showToast('Speed alert logged', 'error');
     });
 }
 
@@ -3245,5 +3440,140 @@ function clearParentNotifications() {
       parentNotificationsList = [];
       renderParentNotifications([]);
     });
+}
+
+// ========================================================
+// ADVANCED MOTORSPORT DYNO & FRICTION CIRCLE ENGINE
+// ========================================================
+let dynoTestRunning = false;
+let dynoTimerInterval = null;
+let dynoStartTime = null;
+
+function startSprintDynoTest() {
+  if (dynoTestRunning) return;
+  dynoTestRunning = true;
+
+  const btnText = document.getElementById('btnStartDynoText');
+  const statusBadge = document.getElementById('dynoStatusBadge');
+  const treeStage = document.getElementById('treeStageLight');
+  const treeY1 = document.getElementById('treeYellow1');
+  const treeY2 = document.getElementById('treeYellow2');
+  const treeGreen = document.getElementById('treeGreenGo');
+  const speedText = document.getElementById('dynoCurrentSpeed');
+  const elapsedText = document.getElementById('dynoElapsedMs');
+  const progressBar = document.getElementById('dynoSpeedProgressBar');
+
+  if (btnText) btnText.textContent = 'Staging Tree...';
+  if (statusBadge) {
+    statusBadge.textContent = 'STAGING';
+    statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/40';
+  }
+
+  // Reset lights
+  [treeStage, treeY1, treeY2, treeGreen].forEach(l => {
+    if (l) l.className = 'w-3.5 h-3.5 rounded-full bg-slate-800 border border-white/10';
+  });
+
+  // Stage light
+  if (treeStage) treeStage.className = 'w-3.5 h-3.5 rounded-full bg-amber-400 shadow-[0_0_12px_#F59E0B] border border-amber-300';
+
+  setTimeout(() => {
+    if (treeY1) treeY1.className = 'w-3.5 h-3.5 rounded-full bg-amber-400 shadow-[0_0_12px_#F59E0B] border border-amber-300';
+  }, 400);
+
+  setTimeout(() => {
+    if (treeY2) treeY2.className = 'w-3.5 h-3.5 rounded-full bg-amber-400 shadow-[0_0_12px_#F59E0B] border border-amber-300';
+  }, 800);
+
+  setTimeout(() => {
+    // GREEN GO!
+    if (treeGreen) treeGreen.className = 'w-3.5 h-3.5 rounded-full bg-emerald-400 shadow-[0_0_16px_#10B981] border border-emerald-300 animate-pulse';
+    if (btnText) btnText.textContent = 'SPRINT ACTIVE';
+    if (statusBadge) {
+      statusBadge.textContent = 'RUNNING';
+      statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40';
+    }
+
+    dynoStartTime = performance.now();
+    let recorded60 = false;
+    let recorded100 = false;
+
+    dynoTimerInterval = setInterval(() => {
+      const now = performance.now();
+      const elapsedSec = (now - dynoStartTime) / 1000;
+      if (elapsedText) elapsedText.textContent = `${elapsedSec.toFixed(2)} s`;
+
+      // Non-linear realistic motorcycle acceleration curve
+      const speed = Math.min(124, Math.pow(elapsedSec / 6.2, 0.72) * 100);
+      if (speedText) speedText.textContent = `${speed.toFixed(1)} km/h`;
+      if (progressBar) progressBar.style.width = `${Math.min(100, (speed / 120) * 100)}%`;
+
+      // Update IMU friction circle dot dynamically during acceleration
+      updateFrictionCircleDot(0.12, Math.min(1.0, 0.35 + (speed / 120) * 0.55));
+
+      if (speed >= 60 && !recorded60) {
+        recorded60 = true;
+        const val60 = document.getElementById('dyno0to60Val');
+        if (val60) val60.textContent = `${elapsedSec.toFixed(2)} s`;
+      }
+
+      if (speed >= 100 && !recorded100) {
+        recorded100 = true;
+        const val100 = document.getElementById('dyno0to100Val');
+        if (val100) val100.textContent = `${elapsedSec.toFixed(2)} s`;
+        const trapVal = document.getElementById('dynoTrapSpeedVal');
+        if (trapVal) trapVal.textContent = (speed * 1.08).toFixed(1);
+
+        clearInterval(dynoTimerInterval);
+        dynoTestRunning = false;
+        if (btnText) btnText.textContent = 'Launch Sprint Dyno';
+        if (statusBadge) {
+          statusBadge.textContent = `PASS: ${elapsedSec.toFixed(2)}s`;
+          statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40';
+        }
+        showToast(`Sprint Dyno Complete! 0-100 in ${elapsedSec.toFixed(2)}s`, 'success');
+      }
+    }, 40);
+  }, 1200);
+}
+
+function resetDynoRecords() {
+  if (dynoTimerInterval) clearInterval(dynoTimerInterval);
+  dynoTestRunning = false;
+  const val60 = document.getElementById('dyno0to60Val');
+  const val100 = document.getElementById('dyno0to100Val');
+  const trapVal = document.getElementById('dynoTrapSpeedVal');
+  const speedText = document.getElementById('dynoCurrentSpeed');
+  const elapsedText = document.getElementById('dynoElapsedMs');
+  const progressBar = document.getElementById('dynoSpeedProgressBar');
+  const statusBadge = document.getElementById('dynoStatusBadge');
+  const btnText = document.getElementById('btnStartDynoText');
+  const apexL = document.getElementById('apexMaxLeft');
+  const apexR = document.getElementById('apexMaxRight');
+
+  if (val60) val60.textContent = '--';
+  if (val100) val100.textContent = '--';
+  if (trapVal) trapVal.textContent = '--';
+  if (speedText) speedText.textContent = '0.0 km/h';
+  if (elapsedText) elapsedText.textContent = '0.00 s';
+  if (progressBar) progressBar.style.width = '0%';
+  if (statusBadge) {
+    statusBadge.textContent = 'READY';
+    statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10';
+  }
+  if (btnText) btnText.textContent = 'Launch Sprint Dyno';
+  if (apexL) apexL.textContent = '0.0\u00B0';
+  if (apexR) apexR.textContent = '0.0\u00B0';
+  updateFrictionCircleDot(0, 0);
+  showToast('Dyno and Apex records reset to zero', 'info');
+}
+
+function updateFrictionCircleDot(lateralG, longitudinalG) {
+  const dot = document.getElementById('frictionCircleDot');
+  if (!dot) return;
+  const xPercent = 50 + Math.max(-45, Math.min(45, lateralG * 40));
+  const yPercent = 50 - Math.max(-45, Math.min(45, longitudinalG * 40));
+  dot.style.left = `${xPercent}%`;
+  dot.style.top = `${yPercent}%`;
 }
 

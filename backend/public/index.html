@@ -90,13 +90,13 @@
   <div class="fixed top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-[140px] pointer-events-none"></div>
   <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-rose-500/5 rounded-full blur-[140px] pointer-events-none"></div>
 
-  <!-- ================= TOP HEADER NAVIGATION ================= -->
-  <header class="border-b border-white/[0.08] bg-[#07090E]/90 backdrop-blur-xl sticky top-0 z-40">
-    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+  <!-- ================= MODERN FLOATING GLASS NAVIGATION BAR ================= -->
+  <header class="sticky top-0 z-40 px-3 sm:px-6 pt-3 pb-1 max-w-[1600px] mx-auto w-full transition-all duration-300">
+    <div class="bg-[#0A0D14]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.7)] px-4 sm:px-5 h-16 flex items-center justify-between">
       
       <!-- Brand Identity -->
       <div class="flex items-center space-x-3.5 cursor-pointer" onclick="switchMainView('dashboard')">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.4)]">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.4)] border border-cyan-300/30">
           <svg class="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
             <path d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
@@ -104,52 +104,78 @@
         <div>
           <div class="flex items-center space-x-2">
             <span class="text-base font-black tracking-widest text-white">RHODY</span>
-            <span class="px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">Motorcycle Telemetry</span>
+            <span class="px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">Precision Telemetry</span>
           </div>
-          <span class="text-[10px] block text-slate-400 font-mono tracking-wider">PRECISION GPS &bull; IMU FUSION &bull; REAL DATA</span>
+          <span class="text-[10px] block text-slate-400 font-mono tracking-wider">REAL GPS &bull; IMU FUSION &bull; GUARDIAN SHIELD</span>
         </div>
       </div>
 
-      <!-- EXACT 4 DESKTOP NAVIGATION TABS -->
+      <!-- EXACT 4 DESKTOP NAVIGATION TABS WITH ULTRA-CRISP MOTORSPORT SVG ICONS -->
       <nav class="hidden md:flex items-center p-1 bg-white/[0.03] border border-white/[0.08] rounded-2xl space-x-1 shadow-inner backdrop-blur-md">
         <!-- 1. GARAGE & BIKE MANAGEMENT -->
         <button id="navTabDashboard" onclick="switchMainView('dashboard')" class="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(0,240,255,0.2)] flex items-center space-x-2 transition">
-          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/>
+          </svg>
           <span>Bike Management</span>
         </button>
 
         <!-- 2. TRIPS & CALCULATION -->
         <button id="navTabTrips" onclick="switchMainView('trips')" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
-          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
           <span>Trip Calculations</span>
           <span id="navLiveTripPulse" class="hidden w-2 h-2 rounded-full bg-emerald-400 status-pulse"></span>
         </button>
 
         <!-- 3. BIKE PARENTING BEACON -->
         <button id="navTabParenting" onclick="switchMainView('parenting')" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
-          <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <svg class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
           <span>Bike Parenting</span>
         </button>
 
         <!-- 4. SETTINGS -->
         <button id="navTabSettings" onclick="switchMainView('settings')" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
           <span>Settings</span>
         </button>
       </nav>
 
-      <!-- Right Header Actions -->
+      <!-- Right Header Actions (Upfront Role Selector, APK Download & Profile) -->
       <div class="flex items-center space-x-2.5">
-        <!-- Parent / Rider Role Switcher -->
-        <button id="btnRoleSwitcher" onclick="toggleParentRole()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(168,85,247,0.2)]" title="Switch between Rider Cockpit and Parent Guardian Portal">
-          <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        
+        <!-- UPFRONT ROLE GATEWAY SELECTOR (Rider vs Parent) -->
+        <button id="btnRoleGateway" onclick="openRoleGatewayModal()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-500/20 to-cyan-500/20 hover:from-purple-500/30 hover:to-cyan-500/30 text-white border border-purple-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(168,85,247,0.25)]" title="Choose Rider Cockpit or Parent Guardian Mode">
+          <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <span id="roleGatewayNavLabel">Role: Rider Cockpit</span>
+          <svg class="w-3 h-3 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+        </button>
+
+        <!-- Direct Parent Role Switcher Button -->
+        <button id="btnRoleSwitcher" onclick="toggleParentRole()" class="hidden sm:flex px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-400/40 transition items-center space-x-1.5 shadow-[0_0_15px_rgba(168,85,247,0.2)]" title="Switch between Rider Cockpit and Parent Guardian Portal">
+          <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
           <span id="btnRoleSwitcherText">Parent Portal</span>
           <span id="navParentAlertDot" class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
         </button>
 
         <!-- Direct Android APK Download -->
         <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" download="Rhody-v1.0.0.apk" class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
           <span class="hidden sm:inline">Download App</span>
           <span class="px-1.5 py-0.2 text-[9px] font-black rounded bg-emerald-400/25 text-emerald-300">APK</span>
         </a>
@@ -165,7 +191,10 @@
 
         <!-- Refresh Button -->
         <button onclick="refreshData()" title="Reload telemetry records" class="p-2 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] transition">
-          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
         </button>
       </div>
 
@@ -173,21 +202,31 @@
   </header>
 
   <!-- ================= MOBILE STICKY BOTTOM NAV BAR (EXACT 4 TABS) ================= -->
-  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#07090E]/95 backdrop-blur-xl border-t border-white/[0.08] px-2 py-1.5 flex items-center justify-around shadow-2xl">
-    <button id="mobileTabDashboard" onclick="switchMainView('dashboard')" class="flex flex-col items-center justify-center flex-1 py-1 text-cyan-300 font-bold">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0A0D14]/95 backdrop-blur-2xl border-t border-white/[0.08] px-2 py-1.5 flex items-center justify-around shadow-2xl">
+    <button id="mobileTabDashboard" onclick="switchMainView('dashboard')" class="flex flex-col items-center justify-center flex-1 py-1 text-cyan-300 font-bold transition">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/>
+      </svg>
       <span class="text-[10px] mt-0.5">Garage</span>
     </button>
-    <button id="mobileTabTrips" onclick="switchMainView('trips')" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-300 font-medium">
-      <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+    <button id="mobileTabTrips" onclick="switchMainView('trips')" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-300 font-medium transition">
+      <svg class="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
       <span class="text-[10px] mt-0.5">Trips</span>
     </button>
-    <button id="mobileTabParenting" onclick="switchMainView('parenting')" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-300 font-medium">
-      <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    <button id="mobileTabParenting" onclick="switchMainView('parenting')" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-300 font-medium transition">
+      <svg class="w-5 h-5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
       <span class="text-[10px] mt-0.5">Parenting</span>
     </button>
-    <button id="mobileTabSettings" onclick="switchMainView('settings')" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-300 font-medium">
-      <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    <button id="mobileTabSettings" onclick="switchMainView('settings')" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-300 font-medium transition">
+      <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
       <span class="text-[10px] mt-0.5">Settings</span>
     </button>
   </div>
@@ -201,6 +240,41 @@
     <!-- ======================================================== -->
     <div id="viewDashboard" class="space-y-6">
       
+      <!-- ================= GUARDIAN CONSENT AUTHORIZATION BANNER (TWO-WAY HANDSHAKE) ================= -->
+      <div id="riderGuardianRequestBanner" class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-950/70 via-[#0E131F]/95 to-amber-950/40 border border-purple-400/40 shadow-[0_0_30px_rgba(168,85,247,0.25)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hidden">
+        <div class="flex items-start space-x-3.5">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-400/50 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+            <svg class="w-5 h-5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-black uppercase tracking-wider text-purple-300">Guardian Safety Connection Request</span>
+              <span class="px-2 py-0.5 text-[9px] font-extrabold uppercase rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">Action Required</span>
+            </div>
+            <p class="text-xs text-slate-200 mt-1">
+              <strong id="guardianRequesterName" class="text-white font-bold">Family Guardian (Dad &amp; Mom)</strong> (<span id="guardianRequesterEmail" class="text-cyan-300 font-mono">guardian@family.io</span>) has requested live GPS beacon, telemetry, and motorcycle legal status monitoring.
+            </p>
+            <p class="text-[11px] text-slate-400 mt-0.5">
+              Strict privacy protection: <strong>Zero telemetry or location is shared</strong> until you explicitly grant access.
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2 w-full md:w-auto shrink-0">
+          <button onclick="respondGuardianRequest('accept')" class="flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_20px_rgba(16,185,129,0.35)] transition active:scale-95 flex items-center justify-center space-x-1.5">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>Accept &amp; Grant Access</span>
+          </button>
+          <button onclick="respondGuardianRequest('reject')" class="flex-1 md:flex-none px-3.5 py-2 text-xs font-semibold rounded-xl bg-white/[0.06] hover:bg-white/10 text-slate-300 border border-white/10 transition flex items-center justify-center space-x-1">
+            <span>Decline</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Welcome Message & Rider Profile Hero Banner (Cyber-Tactile Cockpit) -->
       <div class="glass-panel p-6 sm:p-8 bg-gradient-to-r from-[#0E131F]/95 via-[#0E131F]/90 to-cyan-500/10 relative overflow-hidden shadow-2xl border border-cyan-500/20">
         <div class="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
@@ -227,8 +301,8 @@
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                   <span>Upload</span>
                 </label>
-                <button id="btnRemovePhoto" onclick="removeRiderAvatar()" title="Remove photo" class="px-2 py-1 text-[11px] font-medium rounded-lg bg-white/[0.05] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 transition hidden">
-                  ✕
+                <button id="btnRemovePhoto" onclick="removeRiderAvatar()" title="Remove photo" class="px-2 py-1 text-[11px] font-medium rounded-lg bg-white/[0.05] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 transition hidden flex items-center justify-center">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
               <input type="file" id="dashPhotoFileInput" accept="image/png, image/jpeg, image/webp" onchange="handleProfilePhotoUpload(event)" class="hidden" />
@@ -313,11 +387,13 @@
           <!-- Quick Machine Garage Switcher -->
           <div class="flex flex-wrap items-center gap-2">
             <div class="flex items-center p-1 rounded-xl bg-[#07090E] border border-white/[0.08] space-x-1">
-              <button id="bikeBtn_mt15" onclick="switchActiveBike('mt15')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 transition">
-                🏍️ MT-15 V2
+              <button id="bikeBtn_mt15" onclick="switchActiveBike('mt15')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 transition flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/></svg>
+                <span>MT-15 V2</span>
               </button>
-              <button id="bikeBtn_mt09" onclick="switchActiveBike('mt09')" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition">
-                🏍️ MT-09 SP
+              <button id="bikeBtn_mt09" onclick="switchActiveBike('mt09')" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/></svg>
+                <span>MT-09 SP</span>
               </button>
             </div>
             <button onclick="searchYoutubeForBike()" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
@@ -355,7 +431,10 @@
 
           <div class="bg-[#07090E]/80 p-3.5 rounded-2xl border border-white/[0.08]">
             <span class="text-[10px] uppercase font-bold text-slate-500 block">Road Weather &amp; Grip</span>
-            <span id="roadGripBadge" class="text-xs font-bold text-emerald-400 block mt-1">🟢 DRY (98% GRIP)</span>
+            <span id="roadGripBadge" class="text-xs font-bold text-emerald-400 flex items-center space-x-1.5 mt-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34D399]"></span>
+              <span>DRY (98% GRIP)</span>
+            </span>
             <span class="text-[10px] text-slate-400 block mt-0.5">28&deg;C Asphalt &bull; Open-Meteo</span>
           </div>
         </div>
@@ -364,7 +443,10 @@
         <div class="p-4 rounded-2xl bg-[#07090E]/90 border border-white/[0.08] space-y-3.5">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
             <div class="flex items-center space-x-2">
-              <span class="text-amber-400 font-bold">⛽ Fuel Telemetry:</span>
+              <div class="w-5 h-5 rounded-md bg-amber-500/15 flex items-center justify-center shrink-0">
+                <svg class="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"/><path d="M13 10h4a2 2 0 0 1 2 2v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-9l-3-3"/><rect x="6" y="6" width="4" height="4"/></svg>
+              </div>
+              <span class="text-amber-400 font-bold">Fuel Telemetry:</span>
               <span class="text-white font-mono-numbers font-bold"><span id="dashFuelPercent">82%</span> (<span id="dashFuelLiters">8.2L remaining</span>)</span>
               <span class="text-slate-500">&bull;</span>
               <span id="dashEstRange" class="text-emerald-400 font-mono-numbers font-bold">~380 KM Estimated Range</span>
@@ -384,7 +466,9 @@
           <!-- Secondary Telemetry Row: Engine Coolant, Battery, Oil Life, Odometer -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
             <div class="flex items-center space-x-2.5">
-              <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">🌡️</div>
+              <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>
+              </div>
               <div>
                 <span class="text-[10px] text-slate-500 block">Coolant Temp</span>
                 <span class="text-white font-mono-numbers font-bold"><span id="dashCoolantVal">88&deg;C</span> <span id="dashCoolantStatus" class="text-[9px] text-emerald-400 font-normal">Nominal</span></span>
@@ -392,7 +476,9 @@
             </div>
 
             <div class="flex items-center space-x-2.5">
-              <div class="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">⚡</div>
+              <div class="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
               <div>
                 <span class="text-[10px] text-slate-500 block">Battery Voltage</span>
                 <span class="text-white font-mono-numbers font-bold"><span id="dashBatteryVal">12.6 V</span> <span id="dashBatteryStatus" class="text-[9px] text-cyan-400 font-normal">Healthy</span></span>
@@ -400,7 +486,9 @@
             </div>
 
             <div class="flex items-center space-x-2.5">
-              <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">🛢️</div>
+              <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+              </div>
               <div>
                 <span class="text-[10px] text-slate-500 block">Oil Life</span>
                 <span class="text-white font-mono-numbers font-bold"><span id="dashOilVal">76%</span> <span id="dashOilNext" class="text-[9px] text-amber-400 font-normal">Next: 2.4k km</span></span>
@@ -408,7 +496,9 @@
             </div>
 
             <div class="flex items-center space-x-2.5">
-              <div class="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0">📊</div>
+              <div class="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              </div>
               <div>
                 <span class="text-[10px] text-slate-500 block">Odometer</span>
                 <span id="dashOdoVal" class="text-white font-mono-numbers font-bold">8,420 km</span>
@@ -425,7 +515,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
           <div class="flex items-center space-x-3">
             <div class="w-10 h-10 rounded-2xl bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 flex items-center justify-center text-lg font-black shadow-[0_0_15px_rgba(0,240,255,0.25)]">
-              ⚙️
+              <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </div>
             <div>
               <div class="flex items-center space-x-2">
@@ -442,7 +532,8 @@
               <span>+ Log Service Record</span>
             </button>
             <button onclick="openFuelLogModal()" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-              <span>⛽ Log Fuel Fill</span>
+              <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"/><path d="M13 10h4a2 2 0 0 1 2 2v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-9l-3-3"/><rect x="6" y="6" width="4" height="4"/></svg>
+              <span>Log Fuel Fill</span>
             </button>
           </div>
         </div>
@@ -450,13 +541,15 @@
         <!-- 1. FULL TECHNICAL SPECIFICATIONS MATRIX / UNCONFIGURED BANNER -->
         <div class="space-y-3">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
-              <span>📐 Technical Engineering Specifications</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
+              <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+              <span>Technical Engineering Specifications</span>
             </span>
             <div class="flex items-center space-x-2">
               <span class="text-[11px] text-cyan-400 font-mono-numbers" id="mgmtOdoDisplay">0 KM Odometer</span>
-              <button onclick="openOnboardingModal()" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 transition">
-                ✏️ Edit Specs
+              <button onclick="openOnboardingModal()" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 transition flex items-center space-x-1">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                <span>Edit Specs</span>
               </button>
             </div>
           </div>
@@ -464,8 +557,8 @@
           <!-- Unconfigured Bike Setup Prompt (Visible when bike is not configured) -->
           <div id="bikeUnconfiguredBanner" class="p-4 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-[#0E131F]/90 to-blue-500/10 border border-cyan-400/30 flex flex-col sm:flex-row items-center justify-between gap-4 hidden">
             <div class="flex items-center space-x-3 text-left">
-              <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center text-lg shrink-0 border border-cyan-400/40 shadow-[0_0_15px_rgba(0,240,255,0.25)]">
-                🏍️
+              <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0 border border-cyan-400/40 shadow-[0_0_15px_rgba(0,240,255,0.25)]">
+                <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/></svg>
               </div>
               <div>
                 <h4 class="text-xs font-bold text-white">No Motorcycle Configured Yet</h4>
@@ -520,15 +613,23 @@
         <!-- 2. PREVENTATIVE MAINTENANCE & COMPONENT HEALTH LIFECYCLE -->
         <div class="space-y-3 pt-1">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
-              <span>🛠️ Scheduled Component Health &amp; Service Intervals</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
+              <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+              </svg>
+              <span>Scheduled Component Health &amp; Service Intervals</span>
             </span>
             <span id="componentHealthOverallBadge" class="text-[11px] text-cyan-400 font-bold">Dynamic Wear Tracking</span>
           </div>
 
           <!-- Odometer not configured prompt -->
           <div id="unconfiguredOdoBanner" class="p-3 rounded-xl bg-amber-500/10 border border-amber-400/30 flex items-center justify-between text-xs hidden">
-            <span class="text-amber-300 text-[11px] font-medium">⚠️ Odometer reading not entered. Enter your current mileage to calculate accurate component wear.</span>
+            <div class="flex items-center space-x-2">
+              <svg class="w-4 h-4 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span class="text-amber-300 text-[11px] font-medium">Odometer reading not entered. Enter your current mileage to calculate accurate component wear.</span>
+            </div>
             <button onclick="openOdoPrompt()" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-400/40 transition">
               Set Odometer
             </button>
@@ -541,7 +642,11 @@
               <div>
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
-                    <span class="text-base">⛓️</span>
+                    <div class="w-6 h-6 rounded-lg bg-cyan-500/15 flex items-center justify-center shrink-0">
+                      <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                      </svg>
+                    </div>
                     <span class="text-xs font-bold text-white">Drive Chain Lube &amp; Slack</span>
                   </div>
                   <span id="statusChainText" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">TRACKING</span>
@@ -564,7 +669,11 @@
               <div>
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
-                    <span class="text-base">🛢️</span>
+                    <div class="w-6 h-6 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                      <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                      </svg>
+                    </div>
                     <span class="text-xs font-bold text-white">Engine Oil &amp; Filter</span>
                   </div>
                   <span id="statusOilText" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">TRACKING</span>
@@ -587,7 +696,11 @@
               <div>
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
-                    <span class="text-base">💨</span>
+                    <div class="w-6 h-6 rounded-lg bg-cyan-500/15 flex items-center justify-center shrink-0">
+                      <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/>
+                      </svg>
+                    </div>
                     <span class="text-xs font-bold text-white">Viscous Air Filter</span>
                   </div>
                   <span id="statusAirText" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">TRACKING</span>
@@ -610,7 +723,11 @@
               <div>
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
-                    <span class="text-base">⚡</span>
+                    <div class="w-6 h-6 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                      <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                      </svg>
+                    </div>
                     <span class="text-xs font-bold text-white">Spark Plug</span>
                   </div>
                   <span id="statusPlugText" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">TRACKING</span>
@@ -633,7 +750,11 @@
               <div>
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
-                    <span class="text-base">🛑</span>
+                    <div class="w-6 h-6 rounded-lg bg-rose-500/15 flex items-center justify-center shrink-0">
+                      <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>
+                      </svg>
+                    </div>
                     <span class="text-xs font-bold text-white">Brake Pads &amp; Fluid</span>
                   </div>
                   <span id="statusBrakeText" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">TRACKING</span>
@@ -656,7 +777,11 @@
               <div>
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
-                    <span class="text-base">❄️</span>
+                    <div class="w-6 h-6 rounded-lg bg-cyan-500/15 flex items-center justify-center shrink-0">
+                      <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14"/>
+                      </svg>
+                    </div>
                     <span class="text-xs font-bold text-white">Radiator Coolant</span>
                   </div>
                   <span id="statusCoolantText" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">TRACKING</span>
@@ -680,8 +805,11 @@
         <!-- 3. REAL 4-DOCUMENT LEGAL VAULT & REGULATORY TRACKER -->
         <div class="space-y-3 pt-1">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
-              <span>📄 Legal Documentation Vault (RC, DL, Insurance, PUC)</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
+              <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+              </svg>
+              <span>Legal Documentation Vault (RC, DL, Insurance, PUC)</span>
             </span>
             <span class="text-[11px] text-cyan-400 font-bold">1-Click Upload &amp; Verification</span>
           </div>
@@ -690,9 +818,11 @@
             <!-- 1. RC (Registration Certificate) -->
             <div class="bg-[#07090E]/90 p-3.5 rounded-2xl border border-white/[0.08] flex flex-col justify-between space-y-2.5 hover:border-cyan-400/40 transition">
               <div class="flex items-start justify-between">
-                <div class="flex items-center space-x-2">
-                  <div class="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-300 flex items-center justify-center text-sm shrink-0">
-                    📋
+                <div class="flex items-center space-x-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-300 flex items-center justify-center shrink-0 border border-cyan-400/30">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="13" y2="13"/>
+                    </svg>
                   </div>
                   <div>
                     <span class="text-[10px] text-slate-500 uppercase font-bold block">RC (Vehicle Reg)</span>
@@ -714,9 +844,11 @@
             <!-- 2. DL (Driving Licence) -->
             <div class="bg-[#07090E]/90 p-3.5 rounded-2xl border border-white/[0.08] flex flex-col justify-between space-y-2.5 hover:border-indigo-400/40 transition">
               <div class="flex items-start justify-between">
-                <div class="flex items-center space-x-2">
-                  <div class="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-300 flex items-center justify-center text-sm shrink-0">
-                    🪪
+                <div class="flex items-center space-x-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-300 flex items-center justify-center shrink-0 border border-indigo-400/30">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10.5" r="2.5"/><path d="M14.5 9h2.5"/><path d="M14.5 13h2.5"/><path d="M6 17c0-1.5 1.5-2.5 3-2.5s3 1 3 2.5"/>
+                    </svg>
                   </div>
                   <div>
                     <span class="text-[10px] text-slate-500 uppercase font-bold block">Driving Licence (DL)</span>
@@ -738,9 +870,11 @@
             <!-- 3. Comprehensive Insurance -->
             <div class="bg-[#07090E]/90 p-3.5 rounded-2xl border border-white/[0.08] flex flex-col justify-between space-y-2.5 hover:border-emerald-400/40 transition">
               <div class="flex items-start justify-between">
-                <div class="flex items-center space-x-2">
-                  <div class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-300 flex items-center justify-center text-sm shrink-0">
-                    🛡️
+                <div class="flex items-center space-x-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-400/30">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>
+                    </svg>
                   </div>
                   <div>
                     <span class="text-[10px] text-slate-500 uppercase font-bold block">Insurance Policy</span>
@@ -762,9 +896,11 @@
             <!-- 4. Emission PUC -->
             <div class="bg-[#07090E]/90 p-3.5 rounded-2xl border border-white/[0.08] flex flex-col justify-between space-y-2.5 hover:border-amber-400/40 transition">
               <div class="flex items-start justify-between">
-                <div class="flex items-center space-x-2">
-                  <div class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-300 flex items-center justify-center text-sm shrink-0">
-                    🌿
+                <div class="flex items-center space-x-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-300 flex items-center justify-center shrink-0 border border-amber-400/30">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                    </svg>
                   </div>
                   <div>
                     <span class="text-[10px] text-slate-500 uppercase font-bold block">Pollution Cert (PUC)</span>
@@ -786,9 +922,11 @@
             <!-- 5. Roadside Assistance -->
             <div class="bg-[#07090E]/90 p-3.5 rounded-2xl border border-white/[0.08] flex flex-col justify-between space-y-2.5 hover:border-rose-400/40 transition">
               <div class="flex items-start justify-between">
-                <div class="flex items-center space-x-2">
-                  <div class="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-300 flex items-center justify-center text-sm shrink-0">
-                    📞
+                <div class="flex items-center space-x-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-300 flex items-center justify-center shrink-0 border border-rose-400/30">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
                   </div>
                   <div>
                     <span class="text-[10px] text-slate-500 uppercase font-bold block">24x7 Roadside Assistance</span>
@@ -844,7 +982,11 @@
           <div class="lg:col-span-4 bg-[#07090E]/80 p-5 rounded-2xl border border-white/[0.08] space-y-4">
             <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div class="flex items-center space-x-2">
-                <span class="text-amber-400 text-base">⛽</span>
+                <div class="w-6 h-6 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                  <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"/><path d="M13 10h4a2 2 0 0 1 2 2v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-9l-3-3"/><rect x="6" y="6" width="4" height="4"/>
+                  </svg>
+                </div>
                 <h4 class="text-xs font-bold text-white uppercase tracking-wider">Fuel &amp; Mileage Calculator</h4>
               </div>
               <button onclick="openFuelLogModal()" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-amber-500/20 text-amber-300 border border-amber-400/30 transition">
@@ -884,6 +1026,173 @@
 
         </div>
 
+      </div>
+
+      <!-- ================= ADVANCED MOTORSPORT TELEMATICS SUITE ================= -->
+      <!-- 0-100 SPRINT DYNO, APEX GYRO FRICTION CIRCLE, ROAD SURFACE GRIP RADAR -->
+      <div class="glass-panel p-6 space-y-6 shadow-2xl border border-cyan-500/20 bg-gradient-to-br from-[#0E131F]/95 via-[#0A0D14]/95 to-[#141A29]/90">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-2xl bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(0,240,255,0.25)]">
+              <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h3 class="text-sm sm:text-base font-bold text-white tracking-wide">Advanced Motorcycle Telematics &amp; Dyno Suite</h3>
+                <span class="px-2.5 py-0.5 text-[9px] font-black rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">PRECISION IMU &bull; SPRINT DYNO</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">High-rate IMU lean angle dynamics, 0-100 km/h acceleration telemetry &amp; surface grip radar</p>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button onclick="startSprintDynoTest()" id="btnStartDyno" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black shadow-[0_0_20px_rgba(0,240,255,0.35)] transition active:scale-95 flex items-center space-x-1.5">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span id="btnStartDynoText">Launch Sprint Dyno</span>
+            </button>
+            <button onclick="resetDynoRecords()" class="px-3 py-2 text-xs font-semibold rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 border border-white/10 transition">
+              Reset Apex Memory
+            </button>
+          </div>
+        </div>
+
+        <!-- 3-Column Advanced Telematics Matrix -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+          <!-- 1. 0-100 KM/H ACCELERATION SPRINT DYNO (5 Cols) -->
+          <div class="lg:col-span-5 bg-[#07090E]/90 p-5 rounded-2xl border border-white/[0.08] flex flex-col justify-between space-y-4">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
+              <div class="flex items-center space-x-2">
+                <div class="w-6 h-6 rounded-lg bg-cyan-500/15 flex items-center justify-center shrink-0">
+                  <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4v8z"/></svg>
+                </div>
+                <h4 class="text-xs font-bold text-white uppercase tracking-wider">0–100 km/h Sprint Dyno</h4>
+              </div>
+              <span id="dynoStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10">STAGE READY</span>
+            </div>
+
+            <!-- F1 Drag Tree Launch Lights -->
+            <div class="flex items-center justify-center space-x-3 py-2 bg-[#0E131F] rounded-xl border border-white/[0.06]">
+              <div class="flex items-center space-x-2">
+                <span class="text-[9px] font-mono text-slate-400 uppercase font-bold">Launch Tree:</span>
+                <span id="treeStageLight" class="w-3.5 h-3.5 rounded-full bg-amber-500/20 border border-amber-400/40"></span>
+                <span id="treeYellow1" class="w-3.5 h-3.5 rounded-full bg-amber-500/20 border border-amber-400/40"></span>
+                <span id="treeYellow2" class="w-3.5 h-3.5 rounded-full bg-amber-500/20 border border-amber-400/40"></span>
+                <span id="treeGreenGo" class="w-3.5 h-3.5 rounded-full bg-emerald-500/20 border border-emerald-400/40"></span>
+              </div>
+            </div>
+
+            <!-- Sprint Dyno Digital Readouts -->
+            <div class="grid grid-cols-3 gap-2.5 text-center">
+              <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
+                <span class="text-[9px] uppercase font-bold text-slate-400 block">0–60 km/h</span>
+                <span id="dyno0to60Val" class="text-xl font-black text-cyan-300 font-mono-numbers block mt-1">2.84 s</span>
+                <span class="text-[9px] text-slate-500 block mt-0.5">Quick Launch</span>
+              </div>
+              <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
+                <span class="text-[9px] uppercase font-bold text-slate-400 block">0–100 km/h</span>
+                <span id="dyno0to100Val" class="text-xl font-black text-amber-300 font-mono-numbers block mt-1">6.42 s</span>
+                <span class="text-[9px] text-emerald-400 block mt-0.5">Peak Sprint</span>
+              </div>
+              <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
+                <span class="text-[9px] uppercase font-bold text-slate-400 block">Trap Speed</span>
+                <span id="dynoTrapSpeedVal" class="text-xl font-black text-rose-400 font-mono-numbers block mt-1">118.4</span>
+                <span class="text-[9px] text-slate-500 block mt-0.5">KM/H @ 400M</span>
+              </div>
+            </div>
+
+            <!-- Dynamic Dyno Live Run Speed Bar -->
+            <div class="space-y-1 pt-1">
+              <div class="flex justify-between text-[10px] font-mono-numbers text-slate-400">
+                <span>Current Sprint: <strong id="dynoCurrentSpeed" class="text-white">0.0 km/h</strong></span>
+                <span>Elapsed: <strong id="dynoElapsedMs" class="text-cyan-300">0.00 s</strong></span>
+              </div>
+              <div class="w-full bg-[#141A29] h-2 rounded-full overflow-hidden">
+                <div id="dynoSpeedProgressBar" class="h-full bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 rounded-full transition-all duration-200" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. LEAN ANGLE GYRO & CORNERING FRICTION CIRCLE (4 Cols) -->
+          <div class="lg:col-span-4 bg-[#07090E]/90 p-5 rounded-2xl border border-white/[0.08] flex flex-col justify-between space-y-4">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
+              <div class="flex items-center space-x-2">
+                <div class="w-6 h-6 rounded-lg bg-purple-500/15 flex items-center justify-center shrink-0">
+                  <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/></svg>
+                </div>
+                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Lean Angle &amp; Friction Circle</h4>
+              </div>
+              <span id="liveLeanDegreeText" class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-400/30 font-mono-numbers">0.0&deg; LEAN</span>
+            </div>
+
+            <!-- Friction Circle Target Visualizer -->
+            <div class="relative w-36 h-36 mx-auto rounded-full border border-white/15 flex items-center justify-center bg-[#0A0D14] shadow-inner">
+              <div class="absolute inset-4 rounded-full border border-dashed border-white/10"></div>
+              <div class="absolute inset-8 rounded-full border border-purple-500/20"></div>
+              <!-- Crosshairs -->
+              <div class="absolute inset-x-0 top-1/2 h-px bg-white/10"></div>
+              <div class="absolute inset-y-0 left-1/2 w-px bg-white/10"></div>
+              <!-- Real-Time IMU Friction Dot -->
+              <div id="frictionCircleDot" class="absolute w-3.5 h-3.5 rounded-full bg-cyan-400 shadow-[0_0_12px_#00F0FF] transition-all duration-150 transform -translate-x-1/2 -translate-y-1/2" style="top: 50%; left: 50%;"></div>
+            </div>
+
+            <!-- Apex Lean Memory Strip (Left vs Right Max) -->
+            <div class="grid grid-cols-2 gap-3 text-xs pt-1">
+              <div class="p-2.5 rounded-xl bg-[#0E131F] border border-white/[0.06] flex items-center justify-between">
+                <div>
+                  <span class="text-[9px] uppercase font-bold text-slate-500 block">Left Apex Max</span>
+                  <span id="apexMaxLeft" class="text-sm font-black text-cyan-300 font-mono-numbers block mt-0.5">42.5&deg;</span>
+                </div>
+                <span class="text-[10px] font-bold text-cyan-400">&larr; APEX</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-[#0E131F] border border-white/[0.06] flex items-center justify-between">
+                <div>
+                  <span class="text-[9px] uppercase font-bold text-slate-500 block">Right Apex Max</span>
+                  <span id="apexMaxRight" class="text-sm font-black text-purple-300 font-mono-numbers block mt-0.5">46.8&deg;</span>
+                </div>
+                <span class="text-[10px] font-bold text-purple-400">APEX &rarr;</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. ROAD SURFACE & TARMAC GRIP RADAR (3 Cols) -->
+          <div class="lg:col-span-3 bg-[#07090E]/90 p-5 rounded-2xl border border-white/[0.08] flex flex-col justify-between space-y-4">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
+              <div class="flex items-center space-x-2">
+                <div class="w-6 h-6 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                  <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M7 5l5 7-5 7M17 5l-5 7 5 7"/></svg>
+                </div>
+                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Surface Grip Radar</h4>
+              </div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">RADAR LIVE</span>
+            </div>
+
+            <div class="space-y-3">
+              <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Friction Coefficient (&mu;)</span>
+                <span id="gripFrictionMu" class="text-2xl font-black text-emerald-400 font-mono-numbers block mt-0.5">0.88 &mu;</span>
+                <span class="text-[9px] text-slate-500 block mt-0.5">Dry Aggregate Asphalt</span>
+              </div>
+
+              <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Tire Traction Reserve</span>
+                <span id="gripTireReserve" class="text-2xl font-black text-cyan-300 font-mono-numbers block mt-0.5">94%</span>
+                <span class="text-[9px] text-cyan-400 block mt-0.5">Optimal Slip Ratio</span>
+              </div>
+
+              <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Estimated Tarmac Temp</span>
+                <span id="gripTarmacTemp" class="text-xl font-black text-amber-300 font-mono-numbers block mt-0.5">32.4&deg; C</span>
+                <span class="text-[9px] text-slate-500 block mt-0.5">Warm Tire Grip Window</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
 
       <!-- SEARCH YOUTUBE VIDEOS (100% REAL YOUTUBE STREAMING) -->
@@ -1335,7 +1644,8 @@
         <!-- LIVE PARENT BEACON LINK BAR -->
         <div class="p-3.5 rounded-2xl bg-[#07090E]/90 border border-white/[0.08] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div class="flex items-center space-x-2.5 min-w-0">
-            <span class="text-xs text-purple-400 font-bold shrink-0">🔗 Parent Live URL:</span>
+            <svg class="w-3.5 h-3.5 text-purple-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span class="text-xs text-purple-400 font-bold shrink-0">Parent Live URL:</span>
             <span id="parentLiveLinkDisplay" class="text-xs text-slate-300 font-mono truncate">https://rhodyy.vercel.app/beacon?pilot=natesh&bike=mt15</span>
           </div>
           <div class="flex items-center space-x-2 shrink-0">
@@ -1350,7 +1660,10 @@
           
           <div class="bg-[#07090E]/80 p-4 rounded-2xl border border-white/[0.08]">
             <span class="text-[10px] uppercase font-bold text-slate-500 block">Rider Motion Status</span>
-            <span id="parentMotionStatus" class="text-sm font-bold text-emerald-400 block mt-1">🟢 RIDING SAFELY</span>
+            <span id="parentMotionStatus" class="text-sm font-bold text-emerald-400 flex items-center space-x-1.5 mt-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34D399]"></span>
+              <span>RIDING SAFELY</span>
+            </span>
             <span class="text-[10px] text-slate-400 block mt-0.5">Real GPS Motion Stream</span>
           </div>
 
@@ -1383,8 +1696,8 @@
         <div class="glass-panel p-6 space-y-4 shadow-xl border border-rose-500/20">
           <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
             <div class="flex items-center space-x-2.5">
-              <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-sm font-bold">
-                🆘
+              <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
               <h3 class="text-xs font-bold text-white uppercase tracking-wider">Guardian Emergency Contact</h3>
             </div>
@@ -1421,8 +1734,8 @@
         <div class="glass-panel p-6 space-y-4 shadow-xl border border-purple-500/20">
           <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
             <div class="flex items-center space-x-2.5">
-              <div class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-sm font-bold">
-                🛡️
+              <div class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               </div>
               <h3 class="text-xs font-bold text-white uppercase tracking-wider">Parental Safety Guardrails</h3>
             </div>
@@ -1431,7 +1744,9 @@
 
           <div class="space-y-3 text-xs text-slate-300">
             <div class="flex items-start space-x-3 p-3 rounded-xl bg-[#07090E] border border-white/[0.06]">
-              <span class="text-base text-amber-400">⚡</span>
+              <div class="w-6 h-6 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
               <div>
                 <strong class="text-white block">Speed Alert Notification</strong>
                 <p class="text-[11px] text-slate-400 mt-0.5">If the rider exceeds 95 KM/H, an instant notification is logged and sent to the parent dashboard.</p>
@@ -1439,7 +1754,9 @@
             </div>
 
             <div class="flex items-start space-x-3 p-3 rounded-xl bg-[#07090E] border border-white/[0.06]">
-              <span class="text-base text-emerald-400">📍</span>
+              <div class="w-6 h-6 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
               <div>
                 <strong class="text-white block">Arrival / Safe Basecamp Ping</strong>
                 <p class="text-[11px] text-slate-400 mt-0.5">When rider reaches home or campus garage, parents receive an automatic "Trip Safely Completed" notification.</p>
@@ -1472,8 +1789,9 @@
           
           <!-- SECTION 1: RIDER PROFILE -->
           <div class="border-t border-white/[0.08] pt-4 space-y-3.5">
-            <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center space-x-1.5">
-              <span>👤 1. Rider Profile &amp; Identity</span>
+            <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center space-x-2">
+              <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>1. Rider Profile &amp; Identity</span>
             </h3>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1496,8 +1814,9 @@
 
           <!-- SECTION 2: MOTORCYCLE GARAGE CONFIGURATION -->
           <div class="border-t border-white/[0.08] pt-4 space-y-3.5">
-            <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center space-x-1.5">
-              <span>🏍️ 2. Motorcycle Machine Specs</span>
+            <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center space-x-2">
+              <svg class="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/></svg>
+              <span>2. Motorcycle Machine Specs</span>
             </h3>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1554,8 +1873,9 @@
 
           <!-- SECTION 3: GUARDIAN PARENT LIVE SAFETY -->
           <div class="border-t border-white/[0.08] pt-4 space-y-3.5">
-            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center space-x-1.5">
-              <span>🛡️ 3. Parent / Guardian Live Safety Beacon</span>
+            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center space-x-2">
+              <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>3. Parent / Guardian Live Safety Beacon</span>
             </h3>
             
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1638,13 +1958,13 @@
       <div class="glass-panel p-6 sm:p-7 bg-gradient-to-r from-purple-950/70 via-[#0E131F]/90 to-cyan-950/40 border border-purple-500/30 rounded-3xl relative overflow-hidden shadow-2xl">
         <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 relative z-10">
           <div class="flex items-center space-x-4">
-            <div class="w-14 h-14 rounded-2xl bg-purple-500/20 text-purple-300 border border-purple-400/40 flex items-center justify-center text-2xl shrink-0 shadow-[0_0_20px_rgba(168,85,247,0.3)]">
-              🛡️
+            <div class="w-14 h-14 rounded-2xl bg-purple-500/20 text-purple-300 border border-purple-400/40 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+              <svg class="w-7 h-7 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
             </div>
             <div>
               <div class="flex items-center space-x-2">
                 <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Guardian Safety Radar</h2>
-                <span class="px-2.5 py-0.5 text-[10px] font-black rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">LIVE RADAR</span>
+                <span id="parentRadarStatusPill" class="px-2.5 py-0.5 text-[10px] font-black rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">LIVE RADAR</span>
               </div>
               <p class="text-xs text-slate-300 mt-0.5">Monitoring Rider: <span id="parentPairedRiderName" class="font-bold text-white">Natesh</span> (<span id="parentPairedBikeName" class="text-cyan-300">Yamaha MT-15 V2</span> • <span id="parentPairedPlate" class="font-mono text-purple-300">KA-01-EQ-1550</span>)</p>
             </div>
@@ -1653,11 +1973,12 @@
           <!-- Quick Action Hotlines -->
           <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
             <a id="parentCallRiderBtn" href="tel:+919876543210" class="flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 transition flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
               <span>Call Rider</span>
             </a>
             <a href="tel:112" class="flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-xl bg-rose-600/30 hover:bg-rose-600/40 text-rose-300 border border-rose-400/40 transition flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(239,68,68,0.25)]">
-              <span>🚨 112 SOS</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span>112 SOS</span>
             </a>
             <button onclick="toggleParentRole()" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-white/[0.06] hover:bg-white/10 text-slate-300 border border-white/10 transition flex items-center justify-center space-x-1.5">
               <span>Switch to Rider Mode ↗</span>
@@ -1668,7 +1989,8 @@
         <!-- Rider Pairing Bar -->
         <div class="mt-5 pt-4 border-t border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
           <div class="flex items-center space-x-2 text-slate-300">
-            <span class="text-purple-300 font-bold">🔗 Paired Connection:</span>
+            <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span class="text-purple-300 font-bold">Paired Connection:</span>
             <span id="parentPairedCodeDisplay" class="font-mono bg-black/40 px-2 py-0.5 rounded text-cyan-300 border border-white/10">RHODY-8821 (pilot@rhody.io)</span>
           </div>
           <div class="flex items-center space-x-2 w-full sm:w-auto">
@@ -1680,8 +2002,41 @@
         </div>
       </div>
 
-      <!-- Main Parent Cockpit Grid (Telemetry + Map + Notifications) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- ================= AWAITING RIDER AUTHORIZATION (LOCKED STATE) ================= -->
+      <div id="parentWaitingApprovalBanner" class="glass-panel p-6 sm:p-8 bg-gradient-to-r from-amber-950/60 via-[#0E131F]/90 to-purple-950/40 border border-amber-500/30 rounded-3xl relative overflow-hidden shadow-2xl space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <div class="flex items-center space-x-4">
+            <div class="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-400/40 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+              <svg class="w-7 h-7 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h3 class="text-lg font-black text-white tracking-wide">Awaiting Rider Authorization</h3>
+                <span class="px-2.5 py-0.5 text-[9px] font-black uppercase rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 animate-pulse">Radar Locked</span>
+              </div>
+              <p class="text-xs text-slate-300 mt-1">
+                Guardian link request dispatched to rider <span id="parentWaitingRiderEmail" class="font-bold text-cyan-300">pilot@rhody.io</span>.
+              </p>
+              <p class="text-[11px] text-slate-400 mt-0.5 max-w-2xl">
+                In strict adherence to motorcycle rider privacy, live GPS telemetry, speed monitoring, and vehicle legal documents remain encrypted until the rider explicitly taps <strong>"Accept &amp; Grant Access"</strong> inside their Rhody Cockpit.
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 shrink-0 w-full sm:w-auto">
+            <button onclick="simulateRiderAcceptanceDemo()" class="flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-xl bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.3)] transition active:scale-95">
+              Simulate Rider Acceptance (Demo)
+            </button>
+            <button onclick="toggleParentRole()" class="px-3 py-2 text-xs font-medium rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 transition">
+              Back to Rider
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Parent Cockpit Grid (Unlocked once rider authorizes) -->
+      <div id="parentAuthorizedGrid" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         <!-- Left Column: Live Radar Map & Telemetry Readouts (8 Cols) -->
         <div class="lg:col-span-8 space-y-6">
@@ -1718,7 +2073,7 @@
               <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Rider Phone Battery</span>
               <div class="flex items-baseline space-x-1.5 mt-1">
                 <span id="parentTelemetryBattery" class="text-2xl font-black text-emerald-300 font-mono-numbers">88%</span>
-                <span class="text-xs font-bold text-slate-400">🔋</span>
+                <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="16" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>
               </div>
               <span class="text-[10px] text-emerald-400 font-bold">Good Battery Health</span>
             </div>
@@ -1732,8 +2087,9 @@
                 <h3 class="text-xs font-bold text-white uppercase tracking-wider">Live Rider GPS Location &amp; Breadcrumb Radar</h3>
               </div>
               <div class="flex items-center space-x-2">
-                <button onclick="recenterParentMap()" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.05] hover:bg-white/10 text-cyan-300 border border-white/10 transition">
-                  🎯 Center on Rider
+                <button onclick="recenterParentMap()" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.05] hover:bg-white/10 text-cyan-300 border border-white/10 transition flex items-center space-x-1">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+                  <span>Center on Rider</span>
                 </button>
               </div>
             </div>
@@ -1788,7 +2144,7 @@
           <div class="bg-[#07090E]/95 p-5 rounded-2xl border border-purple-500/30 space-y-4 shadow-xl">
             <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div class="flex items-center space-x-2">
-                <span class="text-base">🔔</span>
+                <svg class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                 <h3 class="text-xs font-bold text-white uppercase tracking-wider">Safety Notifications</h3>
                 <span id="parentNotifCountBadge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-400/40">2 Alerts</span>
               </div>
@@ -1805,8 +2161,9 @@
             <!-- Simulate Test Alert Button for Verification -->
             <div class="pt-3 border-t border-white/[0.08] flex items-center justify-between text-xs">
               <span class="text-[10px] text-slate-500">Test Guardian Alert:</span>
-              <button onclick="simulateSpeedAlert()" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-400/30 transition">
-                ⚡ Test Speed Warning
+              <button onclick="simulateSpeedAlert()" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-400/30 transition flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span>Test Speed Warning</span>
               </button>
             </div>
           </div>
@@ -1814,7 +2171,7 @@
           <!-- Guardian Safety Guidance -->
           <div class="bg-gradient-to-br from-purple-950/40 to-[#07090E] p-5 rounded-2xl border border-purple-500/20 space-y-3 text-xs">
             <div class="flex items-center space-x-2">
-              <span class="text-sm">🛡️</span>
+              <svg class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               <h4 class="font-bold text-white uppercase tracking-wider text-[11px]">Safety Rules Enforced</h4>
             </div>
             <ul class="space-y-2 text-slate-300 text-[11px]">
@@ -1848,7 +2205,7 @@
       <div class="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-4">
         <div class="flex items-center space-x-3">
           <div class="w-9 h-9 rounded-xl bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 flex items-center justify-center text-base shadow-[0_0_15px_rgba(0,240,255,0.25)]">
-            🛠️
+            <svg class="w-4 h-4 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           </div>
           <div>
             <h3 class="text-sm font-bold text-white tracking-wide">Log Motorcycle Service Record</h3>
@@ -1906,7 +2263,7 @@
       <div class="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-4">
         <div class="flex items-center space-x-3">
           <div class="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-400/30 flex items-center justify-center text-base shadow-[0_0_15px_rgba(245,158,11,0.25)]">
-            ⛽
+            <svg class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11V9a2 2 0 00-2-2m2 4a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h8a2 2 0 012 2v12m4-8h.01M9 11h4M9 15h4"/></svg>
           </div>
           <div>
             <h3 class="text-sm font-bold text-white tracking-wide">Log Fuel Fill-Up &amp; Mileage</h3>
@@ -2016,6 +2373,129 @@
     </div>
   </div>
 
+  <!-- ================= UPFRONT ROLE & LOGIN GATEWAY MODAL ================= -->
+  <!-- Prompts user upfront upon entry for Rider Cockpit vs Parent Guardian Mode -->
+  <div id="roleGatewayModal" onclick="if(event.target === this) closeRoleGatewayModal()" class="fixed inset-0 z-50 bg-[#07090E]/95 backdrop-blur-2xl flex items-center justify-center p-4 hidden overflow-y-auto">
+    <div class="glass-panel max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative border border-cyan-500/30 my-auto">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-6">
+        <div class="flex items-center space-x-3.5">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.4)] border border-cyan-300/30">
+            <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-black text-white tracking-wide">Select Operational Mode</h3>
+            <p class="text-xs text-slate-400">Choose your portal to enter Rhody Precision Telemetry</p>
+          </div>
+        </div>
+        <button onclick="closeRoleGatewayModal()" class="text-slate-400 hover:text-white p-2 rounded-lg bg-white/[0.05] hover:bg-white/10 transition" title="Close">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+
+      <!-- Dual Cards: Rider Cockpit vs Parent Guardian Radar -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Option 1: RIDER COCKPIT -->
+        <div class="p-5 rounded-2xl bg-[#0A0D14] border border-cyan-500/30 hover:border-cyan-400 transition flex flex-col justify-between space-y-4 shadow-xl group">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="w-12 h-12 rounded-xl bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/>
+                </svg>
+              </div>
+              <span class="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">Full Telemetry</span>
+            </div>
+            <div>
+              <h4 class="text-base font-bold text-white group-hover:text-cyan-300 transition">Rider Cockpit</h4>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                Precision GPS tracking, IMU Lean Angle Gyro, 0-100 km/h Sprint Dyno, Component Health, and 4-Document Vault.
+              </p>
+            </div>
+            <ul class="text-[11px] text-slate-300 space-y-1.5 pt-1">
+              <li class="flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Live GPS Speedometer &amp; Trip Engine</span>
+              </li>
+              <li class="flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>0–100 km/h Sprint Acceleration Dyno</span>
+              </li>
+              <li class="flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Full Motorcycle Whole Management</span>
+              </li>
+            </ul>
+          </div>
+
+          <button onclick="selectRoleFromGateway('rider')" class="w-full py-2.5 text-xs font-bold rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_0_20px_rgba(0,240,255,0.35)] transition active:scale-95 flex items-center justify-center space-x-1.5">
+            <span>Enter as Motorcycle Rider</span>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <!-- Option 2: PARENT / GUARDIAN RADAR -->
+        <div class="p-5 rounded-2xl bg-[#0A0D14] border border-purple-500/30 hover:border-purple-400 transition flex flex-col justify-between space-y-4 shadow-xl group">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="w-12 h-12 rounded-xl bg-purple-500/15 text-purple-300 border border-purple-400/30 flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <path d="m9 12 2 2 4-4"/>
+                </svg>
+              </div>
+              <span class="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/40">Guardian Shield</span>
+            </div>
+            <div>
+              <h4 class="text-base font-bold text-white group-hover:text-purple-300 transition">Parent / Guardian Portal</h4>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                Live GPS safety tracking, High-G crash alert notification, speed alarms &amp; two-way rider authorization.
+              </p>
+            </div>
+            <ul class="text-[11px] text-slate-300 space-y-1.5 pt-1">
+              <li class="flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5 text-purple-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Live Rider GPS Map &amp; Speed Beacon</span>
+              </li>
+              <li class="flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5 text-purple-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>High-G Incident &amp; Overspeed Alarms</span>
+              </li>
+              <li class="flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5 text-purple-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Requires Rider Acceptance to View</span>
+              </li>
+            </ul>
+          </div>
+
+          <button onclick="selectRoleFromGateway('parent')" class="w-full py-2.5 text-xs font-bold rounded-xl bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.35)] transition active:scale-95 flex items-center justify-center space-x-1.5">
+            <span>Connect as Parent / Guardian</span>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Quick 1-Click Demo Buttons -->
+      <div class="mt-5 pt-4 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <span class="text-slate-400 text-[11px]">Instant Quick Launch:</span>
+        <div class="flex items-center space-x-2 w-full sm:w-auto">
+          <button onclick="selectRoleFromGateway('rider')" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25 border border-cyan-400/30 transition text-[11px] font-bold">
+            Rider Natesh (Cockpit)
+          </button>
+          <button onclick="selectRoleFromGateway('parent')" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 border border-purple-400/30 transition text-[11px] font-bold">
+            Family Guardian (Radar)
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ================= PARENT / GUARDIAN LOGIN MODAL ================= -->
   <div id="parentLoginModal" onclick="if(event.target === this) closeParentLoginModal()" class="fixed inset-0 z-50 bg-[#07090E]/90 backdrop-blur-xl flex items-center justify-center p-4 hidden">
     <div class="glass-panel max-w-md w-full p-6 shadow-2xl relative border border-purple-500/30 my-auto">
@@ -2023,7 +2503,7 @@
       <div class="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-4">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-400/30 flex items-center justify-center text-lg shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-            🛡️
+            <svg class="w-5 h-5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
           </div>
           <div>
             <h3 class="text-sm font-bold text-white tracking-wide">Parent &amp; Guardian Login</h3>
@@ -2048,8 +2528,9 @@
         </div>
 
         <div class="pt-2 space-y-2">
-          <button type="submit" class="w-full py-2.5 text-xs font-bold rounded-xl bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.35)] transition active:scale-95">
-            Connect &amp; Open Guardian Radar
+          <button type="submit" class="w-full py-2.5 text-xs font-bold rounded-xl bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.35)] transition active:scale-95 flex items-center justify-center space-x-1.5">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Connect &amp; Open Guardian Radar</span>
           </button>
           
           <button type="button" onclick="loginQuickParentDemo()" class="w-full py-2 text-xs font-semibold rounded-xl bg-white/[0.06] hover:bg-white/10 text-purple-300 border border-purple-400/20 transition">
@@ -2067,7 +2548,7 @@
       <div class="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-4">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 flex items-center justify-center text-lg shadow-[0_0_15px_rgba(0,240,255,0.3)]">
-            🏍️
+            <svg class="w-5 h-5 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 19a3 3 0 100-6 3 3 0 000 6zM5 19a3 3 0 100-6 3 3 0 000 6zm0 0h3l3.5-7H16l2 4m-4.5-4L12 8l-3 4"/></svg>
           </div>
           <div>
             <h3 class="text-base font-black text-white tracking-wide">Configure Motorcycle Telemetry Cockpit</h3>
@@ -2080,8 +2561,9 @@
       </div>
 
       <form onsubmit="handleOnboardingSubmit(event)" class="space-y-4">
-        <div class="bg-cyan-500/10 p-3 rounded-xl border border-cyan-400/30 text-xs text-cyan-300">
-          ✨ You can enter your bike details now or tap <strong>"Enter Without Details"</strong> below to explore first and add them later.
+        <div class="bg-cyan-500/10 p-3 rounded-xl border border-cyan-400/30 text-xs text-cyan-300 flex items-center space-x-2">
+          <svg class="w-4 h-4 flex-shrink-0 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>You can enter your bike details now or tap <strong>"Enter Without Details"</strong> below to explore first and add them later.</span>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2146,7 +2628,7 @@
       <div class="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-4">
         <div class="flex items-center space-x-3">
           <div id="docVaultIconBadge" class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 flex items-center justify-center text-lg">
-            📄
+            <svg class="w-5 h-5 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           </div>
           <div>
             <h3 id="docVaultModalTitle" class="text-sm font-bold text-white tracking-wide">Upload Statutory Document</h3>
@@ -2195,8 +2677,9 @@
                 <img id="docVaultThumbImg" src="" alt="Thumbnail" class="w-10 h-10 object-cover rounded-lg border border-white/20" />
                 <span id="docVaultThumbName" class="text-xs font-medium text-white truncate max-w-xs">document.jpg</span>
               </div>
-              <button type="button" onclick="removeActiveDocFile()" class="text-rose-400 hover:text-rose-300 text-xs font-bold px-2 py-1">
-                ✕ Remove
+              <button type="button" onclick="removeActiveDocFile()" class="text-rose-400 hover:text-rose-300 text-xs font-bold px-2 py-1 flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <span>Remove</span>
               </button>
             </div>
           </div>
@@ -2230,11 +2713,12 @@
           <p id="docViewerMeta" class="text-[11px] text-cyan-300 font-mono">TN-38-BZ-4242</p>
         </div>
         <div class="flex items-center space-x-2">
-          <a id="docViewerDownloadBtn" href="" download="" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-400/30 transition">
-            Download ⤓
+          <a id="docViewerDownloadBtn" href="" download="" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-400/30 transition flex items-center space-x-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <span>Download</span>
           </a>
-          <button onclick="closeDocViewerModal()" class="text-slate-400 hover:text-white p-2 rounded-lg bg-white/[0.05] hover:bg-white/10 transition">
-            ✕
+          <button onclick="closeDocViewerModal()" class="text-slate-400 hover:text-white p-2 rounded-lg bg-white/[0.05] hover:bg-white/10 transition" title="Close">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
       </div>

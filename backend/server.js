@@ -959,57 +959,196 @@ let parentNotifications = [
   }
 ];
 
-let parentConnections = new Map();
+// Two-Way Guardian Consent & Connection State
+let guardianConnections = new Map();
+// Initialize demo guardian connection in pending_approval state
+guardianConnections.set('guardian@family.io', {
+  id: 'req_demo_01',
+  parentEmail: 'guardian@family.io',
+  parentName: 'Family Guardian (Dad & Mom)',
+  riderEmail: 'pilot@rhody.io',
+  status: 'pending_approval',
+  requestedAt: new Date(Date.now() - 3600000).toISOString(),
+  approvedAt: null
+});
 
 // POST /api/parent/login
 app.post('/api/parent/login', async (req, res) => {
   const { email, riderCode } = req.body;
-  const parentEmail = (email && String(email).trim().toLowerCase()) || 'parent@rhody.io';
+  const parentEmail = (email && String(email).trim().toLowerCase()) || 'guardian@family.io';
   const targetRider = 'pilot@rhody.io';
+
+  let conn = guardianConnections.get(parentEmail);
+  if (!conn) {
+    conn = {
+      id: 'req_' + parentEmail.replace(/[^a-zA-Z0-9]/g, '_'),
+      parentEmail,
+      parentName: 'Family Guardian (Dad & Mom)',
+      riderEmail: targetRider,
+      status: 'pending_approval',
+      requestedAt: new Date().toISOString(),
+      approvedAt: null
+    };
+    guardianConnections.set(parentEmail, conn);
+  }
 
   const parentProfile = {
     parentEmail,
-    parentName: 'Family Guardian (Mom & Dad)',
+    parentName: conn.parentName,
     connectedRiderEmail: targetRider,
     connectedRiderName: 'Natesh',
+    status: conn.status,
     role: 'parent',
     token: 'parent_token_' + Date.now()
   };
-  parentConnections.set(parentEmail, parentProfile);
 
   res.json({
     success: true,
     message: 'Parent / Guardian login successful',
-    profile: parentProfile
+    profile: parentProfile,
+    isApproved: conn.status === 'approved'
   });
 });
 
 // POST /api/parent/connect-rider
 app.post('/api/parent/connect-rider', async (req, res) => {
-  const { parentEmail, riderCodeOrEmail } = req.body;
-  const pEmail = (parentEmail && String(parentEmail).trim().toLowerCase()) || 'parent@rhody.io';
-  const connectedRiderEmail = 'pilot@rhody.io';
+  const { parentEmail, parentName, riderCodeOrEmail } = req.body;
+  const pEmail = (parentEmail && String(parentEmail).trim().toLowerCase()) || 'guardian@family.io';
+  const rEmail = (riderCodeOrEmail && String(riderCodeOrEmail).trim().toLowerCase().includes('@'))
+    ? riderCodeOrEmail.trim().toLowerCase()
+    : 'pilot@rhody.io';
 
-  const parentProfile = {
+  const connection = {
+    id: 'req_' + pEmail.replace(/[^a-zA-Z0-9]/g, '_'),
     parentEmail: pEmail,
-    parentName: 'Family Guardian (Mom & Dad)',
-    connectedRiderEmail,
-    connectedRiderName: 'Natesh',
-    pairedAt: new Date().toISOString()
+    parentName: parentName || 'Family Guardian (Dad & Mom)',
+    riderEmail: rEmail,
+    status: 'pending_approval',
+    requestedAt: new Date().toISOString(),
+    approvedAt: null
   };
-  parentConnections.set(pEmail, parentProfile);
+  guardianConnections.set(pEmail, connection);
+
+  // High-priority notification for rider to accept
+  const riderReqNotif = {
+    id: 'req_' + Date.now(),
+    riderEmail: rEmail,
+    type: 'guardian_request',
+    title: 'Guardian Link Request',
+    message: `${connection.parentName} (${pEmail}) is requesting live safety tracking access.`,
+    guardianEmail: pEmail,
+    guardianName: connection.parentName,
+    severity: 'warning',
+    timestamp: new Date().toISOString()
+  };
+  parentNotifications.unshift(riderReqNotif);
 
   res.json({
     success: true,
-    message: `Successfully connected with Rider (${connectedRiderEmail})`,
-    parentProfile
+    status: 'pending_approval',
+    message: `Connection request sent to rider ${rEmail}. Awaiting rider authorization in their cockpit.`,
+    connection
   });
+});
+
+// GET /api/rider/guardian-requests
+app.get('/api/rider/guardian-requests', (req, res) => {
+  const riderEmail = req.query.riderEmail || 'pilot@rhody.io';
+  const requests = [];
+  for (const conn of guardianConnections.values()) {
+    if (!conn.riderEmail || conn.riderEmail === riderEmail) {
+      requests.push(conn);
+    }
+  }
+  res.json({ success: true, requests });
+});
+
+// POST /api/rider/respond-guardian-request
+app.post('/api/rider/respond-guardian-request', (req, res) => {
+  const { parentEmail, requestId, action } = req.body; // action: 'accept' | 'approved' | 'reject' | 'rejected' | 'revoke'
+  let pEmail = (parentEmail && String(parentEmail).trim().toLowerCase());
+
+  if (!pEmail && requestId) {
+    for (const [email, conn] of guardianConnections.entries()) {
+      if (conn.id === requestId) {
+        pEmail = email;
+        break;
+      }
+    }
+  }
+  if (!pEmail) pEmail = 'guardian@family.io';
+
+  let conn = guardianConnections.get(pEmail);
+  if (!conn) {
+    conn = {
+      id: requestId || ('req_' + pEmail.replace(/[^a-zA-Z0-9]/g, '_')),
+      parentEmail: pEmail,
+      parentName: 'Family Guardian',
+      riderEmail: 'pilot@rhody.io',
+      requestedAt: new Date().toISOString()
+    };
+  }
+
+  const isApproved = (action === 'accept' || action === 'approved');
+  if (isApproved) {
+    conn.status = 'approved';
+    conn.approvedAt = new Date().toISOString();
+    guardianConnections.set(pEmail, conn);
+
+    parentNotifications.unshift({
+      id: 'notif_accept_' + Date.now(),
+      riderEmail: conn.riderEmail,
+      type: 'info',
+      title: 'Guardian Access Granted',
+      message: `Rider approved live tracking for ${conn.parentName}. Live radar telemetry and documents are now unlocked.`,
+      timestamp: new Date().toISOString(),
+      severity: 'info'
+    });
+
+    return res.json({
+      success: true,
+      message: `Access granted to ${conn.parentName}`,
+      status: 'approved',
+      connection: conn
+    });
+  } else {
+    conn.status = action === 'revoke' ? 'revoked' : 'rejected';
+    conn.revokedAt = new Date().toISOString();
+    guardianConnections.set(pEmail, conn);
+
+    return res.json({
+      success: true,
+      message: `Access ${action}ed for ${conn.parentName}`,
+      status: conn.status,
+      connection: conn
+    });
+  }
 });
 
 // GET /api/parent/rider-status
 app.get('/api/parent/rider-status', async (req, res) => {
   try {
     const riderEmail = req.query.riderEmail || 'pilot@rhody.io';
+    const parentEmail = (req.query.parentEmail && String(req.query.parentEmail).trim().toLowerCase()) || 'guardian@family.io';
+
+    const conn = guardianConnections.get(parentEmail);
+    const isApproved = conn && conn.status === 'approved';
+
+    const notifs = parentNotifications.filter(n => !n.riderEmail || n.riderEmail === riderEmail);
+
+    // If NOT approved, block private telemetry & coordinates
+    if (!isApproved) {
+      return res.json({
+        success: true,
+        authorized: false,
+        status: (conn && conn.status) || 'pending_approval',
+        guardianName: (conn && conn.parentName) || 'Family Guardian (Dad & Mom)',
+        riderName: 'Natesh',
+        riderEmail: riderEmail,
+        message: 'Awaiting rider authorization. When the rider taps "Accept & Grant Access" in their cockpit, live telemetry and location radar will unlock automatically.',
+        notifications: notifs
+      });
+    }
 
     let rider = null;
     if (db) {
@@ -1059,10 +1198,10 @@ app.get('/api/parent/rider-status', async (req, res) => {
         .toArray();
     }
 
-    const notifs = parentNotifications.filter(n => !n.riderEmail || n.riderEmail === riderEmail);
-
     res.json({
       success: true,
+      authorized: true,
+      status: 'approved',
       rider: {
         name: profile.name || 'Natesh',
         email: riderEmail,
@@ -1074,7 +1213,9 @@ app.get('/api/parent/rider-status', async (req, res) => {
         odometer: (bikeMgmt.specs && bikeMgmt.specs.currentOdometer) || 0
       },
       documents: bikeMgmt.documents || {},
+      bike: bikeMgmt,
       telemetry: latestBeacon,
+      beacon: latestBeacon,
       recentTrips: recentTrips.map(t => ({
         id: t._id ? t._id.toString() : t.id,
         name: t.name || 'Ride Telemetry Session',
@@ -1083,6 +1224,7 @@ app.get('/api/parent/rider-status', async (req, res) => {
         maxSpeedKmh: t.maxSpeedKmh || (t.topSpeedKmh ? t.topSpeedKmh.toFixed(1) : 0),
         startTime: t.startTime
       })),
+      trips: recentTrips,
       notifications: notifs
     });
   } catch (err) {

@@ -336,7 +336,10 @@ fun DashboardScreen(
 
         // ================= ROLE SELECTOR (RIDER COCKPIT vs PARENT PORTAL) =================
         var selectedRole by remember { mutableStateOf("rider") } // "rider" | "parent"
+        var isGuardianAuthorized by remember { mutableStateOf(false) }
+        var hasPendingRiderConsent by remember { mutableStateOf(true) }
         val guardianPurple = Color(0xFFA855F7)
+        val guardianPurpleDark = Color(0xFF1E1035)
 
         Row(
             modifier = Modifier
@@ -446,9 +449,121 @@ fun DashboardScreen(
                 topSpeedKmh = metrics.maxSpeedKmh,
                 isMoving = metrics.currentSpeedKmh > 3.0,
                 lat = metrics.latitude,
-                lng = metrics.longitude
+                lng = metrics.longitude,
+                isAuthorized = isGuardianAuthorized,
+                onAuthorize = { isGuardianAuthorized = true }
             )
         } else {
+            // RIDER GUARDIAN CONSENT BANNER (TWO-WAY HANDSHAKE)
+            if (hasPendingRiderConsent) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(guardianPurpleDark, MidnightCard)
+                            )
+                        )
+                        .border(1.dp, guardianPurple.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(guardianPurple.copy(alpha = 0.2f))
+                                .border(1.dp, guardianPurple.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Guardian Request",
+                                tint = guardianPurple,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "GUARDIAN ACCESS REQUEST",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = guardianPurple,
+                                    letterSpacing = 0.5.sp
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(SportAmber.copy(alpha = 0.2f))
+                                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                                ) {
+                                    Text(
+                                        text = "ACTION REQUIRED",
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = SportAmber
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "Family Guardian (guardian@family.io) requested live GPS and telemetry.",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = TextPrimary,
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                            Text(
+                                text = "Strict privacy: Zero telemetry is shared until you approve.",
+                                fontSize = 10.sp,
+                                color = TextSecondary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                isGuardianAuthorized = true
+                                hasPendingRiderConsent = false
+                                Toast.makeText(context, "Guardian access granted! Telemetry shared.", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = OptimalGreen,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Accept & Grant Access", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                hasPendingRiderConsent = false
+                                Toast.makeText(context, "Guardian request declined", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.weight(0.6f),
+                            shape = RoundedCornerShape(10.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                        ) {
+                            Text("Decline", fontSize = 11.sp, color = TextMuted)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+            }
             // ================= 2. BIKE STATUS & VITALS CARD ("Tells about his bike") =================
             Column(
             modifier = Modifier
@@ -1491,11 +1606,110 @@ fun ParentGuardianPortalView(
     topSpeedKmh: Float,
     isMoving: Boolean,
     lat: Double,
-    lng: Double
+    lng: Double,
+    isAuthorized: Boolean = false,
+    onAuthorize: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val guardianPurple = Color(0xFFA855F7)
     val guardianPurpleDark = Color(0xFF1E1035)
+
+    // AWAITING RIDER AUTHORIZATION (LOCKED STATE)
+    if (!isAuthorized) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color(0xFF3B1E06), MidnightCard)
+                    )
+                )
+                .border(1.dp, SportAmber.copy(alpha = 0.5f), RoundedCornerShape(22.dp))
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(SportAmber.copy(alpha = 0.2f))
+                        .border(1.dp, SportAmber.copy(alpha = 0.4f), RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Radar Locked",
+                        tint = SportAmber,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Awaiting Rider Authorization",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White
+                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(SportAmber.copy(alpha = 0.25f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "RADAR LOCKED",
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SportAmber
+                            )
+                        }
+                    }
+                    Text(
+                        text = "Guardian link request dispatched to rider $riderEmail.",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = HyperCyan,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = "In strict adherence to motorcycle rider privacy, live GPS telemetry, speed monitoring, and vehicle legal documents remain encrypted until the rider explicitly taps 'Accept & Grant Access' inside their Rhody Cockpit.",
+                fontSize = 11.sp,
+                color = TextSecondary,
+                lineHeight = 16.sp
+            )
+
+            Button(
+                onClick = onAuthorize,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = guardianPurple,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "Simulate Rider Acceptance (Demo)",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        return
+    }
 
     // Real-Time Notification simulation list
     val parentAlerts = remember {
