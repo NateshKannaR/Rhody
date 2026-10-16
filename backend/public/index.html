@@ -922,38 +922,60 @@
   </main>
 
   <!-- ================= EMBEDDED YOUTUBE VIDEO PLAYER MODAL ================= -->
-  <div id="youtubePlayerModal" class="fixed inset-0 z-50 bg-[#07090E]/90 backdrop-blur-xl flex items-center justify-center p-4 hidden">
-    <div class="glass-panel max-w-4xl w-full p-5 sm:p-6 shadow-2xl relative border border-white/15">
-      <div class="flex items-center justify-between pb-3.5 border-b border-white/[0.08] mb-3.5">
-        <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.4)]">
+  <div id="youtubePlayerModal" onclick="if(event.target === this) closeYoutubePlayerModal()" class="fixed inset-0 z-50 bg-[#07090E]/95 backdrop-blur-2xl flex flex-col items-center justify-start overflow-y-auto p-3 sm:p-6 hidden">
+    
+    <!-- Floating Universal Close Button (Always visible on any screen) -->
+    <button onclick="closeYoutubePlayerModal()" class="fixed top-3 right-3 sm:top-5 sm:right-6 z-[60] px-3.5 py-1.5 rounded-full bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-[0_0_20px_rgba(239,68,68,0.5)] flex items-center space-x-1.5 transition active:scale-95" title="Close player (or press Escape)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+      <span>Close Player</span>
+      <span class="hidden sm:inline-block font-mono text-[10px] bg-black/30 px-1.5 py-0.5 rounded text-slate-200">Esc</span>
+    </button>
+
+    <div class="glass-panel max-w-4xl w-full p-4 sm:p-6 shadow-2xl relative border border-white/15 my-auto mt-12 sm:mt-8">
+      
+      <!-- Sticky Modal Header -->
+      <div class="sticky -top-4 sm:-top-6 -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 px-4 sm:px-6 py-3.5 bg-[#0E131F]/95 backdrop-blur-md rounded-t-2xl flex items-center justify-between border-b border-white/[0.08] mb-3.5 z-20">
+        <div class="flex items-center space-x-3 min-w-0 pr-4">
+          <div class="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(239,68,68,0.4)]">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
           </div>
-          <div>
-            <h3 id="youtubePlayerTitle" class="text-sm font-bold text-white truncate max-w-md sm:max-w-xl">Live YouTube Motorcycle Stream</h3>
+          <div class="min-w-0">
+            <h3 id="youtubePlayerTitle" class="text-sm font-bold text-white truncate max-w-xs sm:max-w-md md:max-w-lg">Live YouTube Motorcycle Stream</h3>
             <p class="text-[11px] text-slate-400">Embedded native playback inside Rhody</p>
           </div>
         </div>
-        <div class="flex items-center space-x-2">
-          <a id="youtubeExternalLink" href="" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.05] hover:bg-white/10 text-slate-300 border border-white/10 transition flex items-center space-x-1" title="Open search results directly in YouTube">
+        <div class="flex items-center space-x-2 shrink-0">
+          <a id="youtubeExternalLink" href="" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-white/[0.05] hover:bg-white/10 text-slate-300 border border-white/10 transition flex items-center space-x-1" title="Open search results directly in YouTube">
             <span>Open in YouTube ↗</span>
           </a>
-          <button onclick="closeYoutubePlayerModal()" class="text-slate-400 hover:text-white p-1.5 rounded-lg transition">
+          <button onclick="closeYoutubePlayerModal()" class="text-slate-400 hover:text-white p-2 rounded-lg bg-white/[0.05] hover:bg-red-600/30 transition" title="Close (Esc)">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
       </div>
-      <div class="relative w-full aspect-video rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl">
+
+      <!-- Video Player Frame -->
+      <div class="relative w-full aspect-video max-h-[55vh] rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl">
         <iframe id="youtubeIframe" src="" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
       </div>
+
       <!-- Alternative Video Results Strip -->
       <div id="youtubeModalResultsContainer" class="mt-4 pt-3 border-t border-white/[0.08] hidden">
         <div class="flex items-center justify-between mb-2">
           <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Related Real Onboard & Review Streams:</span>
           <span class="text-[10px] text-red-400 font-bold">1-Click to Switch Video</span>
         </div>
-        <div id="youtubeModalResultsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-h-48 overflow-y-auto"></div>
+        <div id="youtubeModalResultsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-h-44 overflow-y-auto"></div>
       </div>
+
+      <!-- Bottom Close Button Bar -->
+      <div class="mt-4 pt-3 flex items-center justify-between border-t border-white/[0.06]">
+        <span class="text-xs text-slate-500">Tap outside or press <kbd class="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px] text-slate-300">Esc</kbd> anytime to close</span>
+        <button onclick="closeYoutubePlayerModal()" class="px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-red-600/30 text-slate-300 hover:text-white font-bold text-xs border border-white/10 transition">
+          Close Player
+        </button>
+      </div>
+
     </div>
   </div>
 

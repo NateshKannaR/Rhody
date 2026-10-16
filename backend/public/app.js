@@ -987,6 +987,13 @@ function closeYoutubePlayerModal() {
   }
 }
 
+// Global keyboard shortcuts (Escape key closes modals)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    closeYoutubePlayerModal();
+  }
+});
+
 // ----------------------------------------------------
 // TRIPS: 100% REAL GPS & DEVICE ORIENTATION SENSORS
 // ----------------------------------------------------
