@@ -2629,6 +2629,32 @@ function closePlatformEntryModal() {
   if (modal) modal.classList.add("hidden");
 }
 
+function handlePlatformLogout() {
+  if (!confirm('Are you sure you want to log out of your session?')) {
+    return;
+  }
+
+  // Clear role & onboarding session keys
+  localStorage.removeItem('rhody_onboarding_completed');
+  localStorage.removeItem('rhody_user_role');
+  localStorage.removeItem('rhody_parent_logged_in');
+  localStorage.removeItem('rhody_parent_email');
+  localStorage.removeItem('rhody_parent_rider_code');
+  localStorage.removeItem('rhody_guardian_authorized');
+
+  // Stop any active trip recording cleanly
+  if (typeof isTripRecording !== 'undefined' && isTripRecording) {
+    if (typeof stopTripRecording === 'function') {
+      try { stopTripRecording(); } catch (e) {}
+    }
+  }
+
+  showToast('Logged out successfully.', 'info');
+
+  // Reset entry wizard to initial role selection state and open modal
+  openPlatformEntryModal('role');
+}
+
 function goToEntryStep(step) {
   currentEntryStep = step;
   const stepRole = document.getElementById("entryStepRole");

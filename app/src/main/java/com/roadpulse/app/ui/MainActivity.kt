@@ -82,6 +82,12 @@ class MainActivity : ComponentActivity() {
                 var guestModeActive by remember { mutableStateOf(false) }
                 var activeRole by remember { mutableStateOf("rider") }
 
+                LaunchedEffect(authState.isLoggedIn) {
+                    if (!authState.isLoggedIn) {
+                        guestModeActive = false
+                    }
+                }
+
                 if (!authState.isLoggedIn && !guestModeActive) {
                     AuthScreen(
                         onAuthenticated = { role ->

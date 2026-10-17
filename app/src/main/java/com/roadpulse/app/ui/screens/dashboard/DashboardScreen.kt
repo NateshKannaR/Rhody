@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
@@ -323,6 +324,7 @@ fun DashboardScreen(
     var showHudMirrorDialog by remember { mutableStateOf(false) }
     var isHudWindshieldFlipped by remember { mutableStateOf(false) }
     var showCrashTestDialog by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -414,6 +416,22 @@ fun DashboardScreen(
                     gpsStatus = metrics.gpsStatus,
                     accuracyMeters = metrics.accuracyMeters
                 )
+
+                IconButton(
+                    onClick = { showLogoutDialog = true },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(RacingRed.copy(alpha = 0.12f))
+                        .border(1.dp, RacingRed.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Logout,
+                        contentDescription = "Log Out",
+                        tint = RacingRed,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
 
@@ -2173,6 +2191,47 @@ fun DashboardScreen(
                 }
             }
         }
+    }
+
+    // ================= LOG OUT CONFIRMATION DIALOG =================
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            containerColor = Color(0xFF0F1420),
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.Logout, contentDescription = null, tint = RacingRed, modifier = Modifier.size(20.dp))
+                    Text("LOG OUT OF RHODY", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
+                }
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to end your session? You will be returned to the Rider / Guardian login screen.",
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        AuthManager.logout()
+                        Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = RacingRed, contentColor = Color.White)
+                ) {
+                    Text("LOG OUT", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("CANCEL", color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                }
+            }
+        )
     }
 
     // ================= AUTONOMOUS G-SHOCK CRASH TEST DIALOG =================
