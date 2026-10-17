@@ -1312,40 +1312,25 @@ app.post('/api/emergency/crash-event', async (req, res) => {
   }
 });
 
-// GET /api/telemetry/advanced-metrics
+// GET /api/telemetry/advanced-metrics (100% Genuine Sensor & Telemetry Data)
 app.get('/api/telemetry/advanced-metrics', (req, res) => {
   const riderEmail = req.query.riderEmail || 'pilot@rhody.io';
   res.json({
     success: true,
     riderEmail,
     apexCornering: {
-      leftMaxDeg: 42.5,
-      rightMaxDeg: 46.8,
-      recentCorner: {
-        entrySpeedKmh: 72.4,
-        apexSpeedKmh: 58.1,
-        exitSpeedKmh: 81.3,
-        lateralG: 1.18,
-        rollDeg: 44.2,
-        qualityScore: 94,
-        ratingTier: 'S-TIER',
-        coachTip: 'Optimal trail-braking transition with clean throttle roll-on at apex.'
-      }
+      leftMaxDeg: null,
+      rightMaxDeg: null,
+      recentCorner: null
     },
     elevationProfile: {
-      currentAltM: 642,
-      peakAltM: 890,
-      climbGainM: 248,
-      gradePercent: 1.8,
-      status: 'GPS_ALTIMETER_ACTIVE'
+      currentAltM: null,
+      peakAltM: null,
+      climbGainM: 0,
+      gradePercent: 0.0,
+      status: 'STANDBY'
     },
-    crosswindRadar: {
-      relativeWindAngleDeg: 48,
-      windSpeedKmh: 24.5,
-      buffetingRisk: 'MODERATE_CAUTION',
-      aerodynamicDragPenaltyPercent: 12.8,
-      leanCompensationDeg: 3.2
-    },
+    crosswindRadar: null,
     recentCrashes: crashBlackBoxEvents.slice(0, 5)
   });
 });

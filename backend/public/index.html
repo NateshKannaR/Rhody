@@ -1000,7 +1000,7 @@
       </div>
 
       <!-- ================= ADVANCED MOTORSPORT TELEMATICS SUITE ================= -->
-      <!-- 0-100 SPRINT DYNO, APEX GYRO FRICTION CIRCLE, ROAD SURFACE GRIP RADAR -->
+      <!-- 0-100 SPRINT DYNO, APEX GYRO FRICTION CIRCLE, GPS & HARDWARE SENSORS RADAR -->
       <div class="glass-panel p-6 space-y-6 shadow-2xl border border-cyan-500/20 bg-gradient-to-br from-[#0E131F]/95 via-[#0A0D14]/95 to-[#141A29]/90">
         
         <!-- Header -->
@@ -1016,7 +1016,7 @@
                 <h3 class="text-sm sm:text-base font-bold text-white tracking-wide">Advanced Motorcycle Telematics &amp; Dyno Suite</h3>
                 <span class="px-2.5 py-0.5 text-[9px] font-black rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">PRECISION IMU &bull; SPRINT DYNO</span>
               </div>
-              <p class="text-xs text-slate-400 mt-0.5">High-rate IMU lean angle dynamics, 0-100 km/h acceleration telemetry &amp; surface grip radar</p>
+              <p class="text-xs text-slate-400 mt-0.5">High-rate IMU lean angle dynamics, 0-100 km/h acceleration telemetry &amp; live GPS satellite radar</p>
             </div>
           </div>
 
@@ -1057,21 +1057,21 @@
               </div>
             </div>
 
-            <!-- Sprint Dyno Digital Readouts -->
+            <!-- Sprint Dyno Digital Readouts (100% Genuine Sensor Data) -->
             <div class="grid grid-cols-3 gap-2.5 text-center">
               <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
                 <span class="text-[9px] uppercase font-bold text-slate-400 block">0–60 km/h</span>
-                <span id="dyno0to60Val" class="text-xl font-black text-cyan-300 font-mono-numbers block mt-1">2.84 s</span>
+                <span id="dyno0to60Val" class="text-xl font-black text-cyan-300 font-mono-numbers block mt-1">-- s</span>
                 <span class="text-[9px] text-slate-500 block mt-0.5">Quick Launch</span>
               </div>
               <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
                 <span class="text-[9px] uppercase font-bold text-slate-400 block">0–100 km/h</span>
-                <span id="dyno0to100Val" class="text-xl font-black text-amber-300 font-mono-numbers block mt-1">6.42 s</span>
+                <span id="dyno0to100Val" class="text-xl font-black text-amber-300 font-mono-numbers block mt-1">-- s</span>
                 <span class="text-[9px] text-emerald-400 block mt-0.5">Peak Sprint</span>
               </div>
               <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
                 <span class="text-[9px] uppercase font-bold text-slate-400 block">Trap Speed</span>
-                <span id="dynoTrapSpeedVal" class="text-xl font-black text-rose-400 font-mono-numbers block mt-1">118.4</span>
+                <span id="dynoTrapSpeedVal" class="text-xl font-black text-rose-400 font-mono-numbers block mt-1">--</span>
                 <span class="text-[9px] text-slate-500 block mt-0.5">KM/H @ 400M</span>
               </div>
             </div>
@@ -1116,49 +1116,49 @@
               <div class="p-2.5 rounded-xl bg-[#0E131F] border border-white/[0.06] flex items-center justify-between">
                 <div>
                   <span class="text-[9px] uppercase font-bold text-slate-500 block">Left Apex Max</span>
-                  <span id="apexMaxLeft" class="text-sm font-black text-cyan-300 font-mono-numbers block mt-0.5">42.5&deg;</span>
+                  <span id="apexMaxLeft" class="text-sm font-black text-cyan-300 font-mono-numbers block mt-0.5">--&deg;</span>
                 </div>
                 <span class="text-[10px] font-bold text-cyan-400">&larr; APEX</span>
               </div>
               <div class="p-2.5 rounded-xl bg-[#0E131F] border border-white/[0.06] flex items-center justify-between">
                 <div>
                   <span class="text-[9px] uppercase font-bold text-slate-500 block">Right Apex Max</span>
-                  <span id="apexMaxRight" class="text-sm font-black text-purple-300 font-mono-numbers block mt-0.5">46.8&deg;</span>
+                  <span id="apexMaxRight" class="text-sm font-black text-purple-300 font-mono-numbers block mt-0.5">--&deg;</span>
                 </div>
                 <span class="text-[10px] font-bold text-purple-400">APEX &rarr;</span>
               </div>
             </div>
           </div>
 
-          <!-- 3. ROAD SURFACE & TARMAC GRIP RADAR (3 Cols) -->
+          <!-- 3. REAL GPS SATELLITE FIX & HARDWARE SENSORS RADAR (3 Cols) -->
           <div class="lg:col-span-3 bg-[#07090E]/90 p-5 rounded-2xl border border-white/[0.08] flex flex-col justify-between space-y-4">
             <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div class="flex items-center space-x-2">
                 <div class="w-6 h-6 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
-                  <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M7 5l5 7-5 7M17 5l-5 7 5 7"/></svg>
+                  <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
                 </div>
-                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Surface Grip Radar</h4>
+                <h4 class="text-xs font-bold text-white uppercase tracking-wider">GPS &amp; IMU Sensors</h4>
               </div>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">RADAR LIVE</span>
+              <span id="gpsFixStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-white/10">GPS STANDBY</span>
             </div>
 
             <div class="space-y-3">
               <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">Friction Coefficient (&mu;)</span>
-                <span id="gripFrictionMu" class="text-2xl font-black text-emerald-400 font-mono-numbers block mt-0.5">0.88 &mu;</span>
-                <span class="text-[9px] text-slate-500 block mt-0.5">Dry Aggregate Asphalt</span>
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Satellite Positioning</span>
+                <span id="gpsFixStatusVal" class="text-lg font-black text-emerald-400 font-mono block mt-0.5">STANDBY</span>
+                <span id="gpsAccuracyVal" class="text-[9px] text-slate-500 block mt-0.5">Awaiting 3D Satellite Fix</span>
               </div>
 
               <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">Tire Traction Reserve</span>
-                <span id="gripTireReserve" class="text-2xl font-black text-cyan-300 font-mono-numbers block mt-0.5">94%</span>
-                <span class="text-[9px] text-cyan-400 block mt-0.5">Optimal Slip Ratio</span>
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Ground Speed &amp; Course</span>
+                <span id="gpsGroundSpeedVal" class="text-xl font-black text-cyan-300 font-mono-numbers block mt-0.5">0.0 KM/H</span>
+                <span id="gpsCompassCourseVal" class="text-[9px] text-cyan-400 block mt-0.5">Heading: Standby</span>
               </div>
 
               <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">Estimated Tarmac Temp</span>
-                <span id="gripTarmacTemp" class="text-xl font-black text-amber-300 font-mono-numbers block mt-0.5">32.4&deg; C</span>
-                <span class="text-[9px] text-slate-500 block mt-0.5">Warm Tire Grip Window</span>
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Hardware IMU Sensor</span>
+                <span id="imuHardwareVal" class="text-base font-black text-amber-300 font-mono block mt-0.5">6-AXIS ARMED</span>
+                <span class="text-[9px] text-slate-500 block mt-0.5">Gyroscope &amp; Accelerometer</span>
               </div>
             </div>
           </div>
@@ -1185,29 +1185,29 @@
                   <span class="text-[10px] text-slate-400">Corner sector split analysis &amp; coaching</span>
                 </div>
               </div>
-              <span id="apexScoreTierBadge" class="px-2 py-0.5 rounded text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-400/40">S-TIER &bull; 96/100</span>
+              <span id="apexScoreTierBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-white/10">AWAITING CORNER PULL</span>
             </div>
 
             <!-- 4 Corner Phases Grid -->
             <div class="grid grid-cols-2 gap-2 text-center text-xs">
               <div class="p-2.5 rounded-xl bg-[#07090E] border border-white/[0.06]">
                 <span class="text-[9px] uppercase font-bold text-slate-400 block">1. Entry Velocity</span>
-                <span id="apexEntrySpeedVal" class="text-base font-black text-cyan-300 font-mono-numbers block mt-0.5">72.4 km/h</span>
+                <span id="apexEntrySpeedVal" class="text-base font-black text-cyan-300 font-mono-numbers block mt-0.5">-- km/h</span>
                 <span class="text-[9px] text-slate-500 block">Trail-Brake Zone</span>
               </div>
               <div class="p-2.5 rounded-xl bg-[#07090E] border border-white/[0.06]">
                 <span class="text-[9px] uppercase font-bold text-slate-400 block">2. Apex Roll Angle</span>
-                <span id="apexLeanAngleVal" class="text-base font-black text-purple-300 font-mono-numbers block mt-0.5">44.2&deg; Roll</span>
+                <span id="apexLeanAngleVal" class="text-base font-black text-purple-300 font-mono-numbers block mt-0.5">--&deg; Roll</span>
                 <span class="text-[9px] text-purple-400 block">Maximum Lean</span>
               </div>
               <div class="p-2.5 rounded-xl bg-[#07090E] border border-white/[0.06]">
                 <span class="text-[9px] uppercase font-bold text-slate-400 block">3. Lateral Grip (G)</span>
-                <span id="apexLateralGVal" class="text-base font-black text-emerald-400 font-mono-numbers block mt-0.5">1.18 G</span>
+                <span id="apexLateralGVal" class="text-base font-black text-emerald-400 font-mono-numbers block mt-0.5">-- G</span>
                 <span class="text-[9px] text-slate-500 block">Tire Adhesion</span>
               </div>
               <div class="p-2.5 rounded-xl bg-[#07090E] border border-white/[0.06]">
                 <span class="text-[9px] uppercase font-bold text-slate-400 block">4. Exit Drive</span>
-                <span id="apexExitSpeedVal" class="text-base font-black text-amber-300 font-mono-numbers block mt-0.5">81.3 km/h</span>
+                <span id="apexExitSpeedVal" class="text-base font-black text-amber-300 font-mono-numbers block mt-0.5">-- km/h</span>
                 <span class="text-[9px] text-slate-500 block">Throttle Roll-On</span>
               </div>
             </div>
@@ -1219,7 +1219,7 @@
                 <span>AI Apex Cornering Coach</span>
               </div>
               <p id="apexCoachTipText" class="text-[11px] text-slate-300 leading-relaxed">
-                Trail-braking transition optimal. Apex clipped with high chassis stability. Throttle roll-on initiated 1.2m before apex exit.
+                No corner telemetry recorded yet. Mount your device firmly and lean through curves during an active ride to log entry speed, apex roll angle, lateral G-load, and exit acceleration.
               </p>
             </div>
           </div>
@@ -1295,7 +1295,7 @@
                   <span class="text-[10px] text-slate-400">Highway shear &amp; drag resistance</span>
                 </div>
               </div>
-              <span id="crosswindRiskBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30">MODERATE SHEAR</span>
+              <span id="crosswindRiskBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-white/10">GPS WEATHER SYNC</span>
             </div>
 
             <!-- Compass Wind Vector Display -->
@@ -1307,7 +1307,7 @@
                 <span class="absolute right-1 text-[8px] font-mono text-slate-500">E</span>
                 
                 <!-- Rotating Wind Vector Arrow -->
-                <div id="crosswindArrow" class="w-10 h-10 flex items-center justify-center transition-transform duration-500 transform rotate-45 text-amber-400">
+                <div id="crosswindArrow" class="w-10 h-10 flex items-center justify-center transition-transform duration-500 transform rotate-0 text-amber-400">
                   <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
                 </div>
               </div>
@@ -1315,11 +1315,11 @@
               <div class="space-y-1.5 text-xs">
                 <div>
                   <span class="text-[10px] uppercase font-bold text-slate-400 block">Relative Wind Velocity</span>
-                  <span id="crosswindSpeedVal" class="text-lg font-black text-white font-mono-numbers">24.5 km/h @ 48&deg;</span>
+                  <span id="crosswindSpeedVal" class="text-lg font-black text-white font-mono-numbers">-- km/h</span>
                 </div>
                 <div>
                   <span class="text-[10px] uppercase font-bold text-slate-400 block">Counter-Steer Lean</span>
-                  <span id="crosswindLeanCompVal" class="text-xs font-bold text-cyan-300 font-mono-numbers">+3.2&deg; Left Counter-Lean</span>
+                  <span id="crosswindLeanCompVal" class="text-xs font-bold text-cyan-300 font-mono-numbers">--&deg; Counter-Lean</span>
                 </div>
               </div>
             </div>
@@ -1328,7 +1328,7 @@
             <div class="p-2.5 rounded-xl bg-[#07090E] border border-white/[0.06] flex items-center justify-between text-xs mt-1">
               <div>
                 <span class="text-[9px] uppercase text-slate-400 block font-bold">Aerodynamic Drag Penalty</span>
-                <span id="crosswindDragPenaltyVal" class="text-sm font-black text-rose-400 font-mono-numbers">+12.8% Resistance</span>
+                <span id="crosswindDragPenaltyVal" class="text-sm font-black text-rose-400 font-mono-numbers">--% Resistance</span>
               </div>
               <button onclick="triggerCrashDetection(4.2, 78.5)" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition flex items-center space-x-1" title="Test Autonomous Fall & Impact Detection">
                 <svg class="w-3 h-3 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>

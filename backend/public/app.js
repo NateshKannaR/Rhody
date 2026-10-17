@@ -1624,6 +1624,42 @@ function handleRealGpsFix(position) {
   if (mapDist) mapDist.textContent = activeTripDistanceKm.toFixed(2) + ' km';
   if (mapAlt && alt !== null) mapAlt.textContent = alt + ' m';
 
+  // Update Real GPS & IMU Sensors Radar in Dashboard
+  const gpsFixBadge = document.getElementById('gpsFixStatusBadge');
+  const gpsFixVal = document.getElementById('gpsFixStatusVal');
+  const gpsAccVal = document.getElementById('gpsAccuracyVal');
+  const gpsGndSpd = document.getElementById('gpsGroundSpeedVal');
+  const gpsCourse = document.getElementById('gpsCompassCourseVal');
+
+  if (gpsFixBadge) {
+    gpsFixBadge.textContent = 'GPS LIVE (3D)';
+    gpsFixBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+  }
+  if (gpsFixVal) {
+    gpsFixVal.textContent = 'LOCKED (3D FIX)';
+  }
+  if (gpsAccVal && position.coords && position.coords.accuracy) {
+    gpsAccVal.textContent = `Accuracy: \u00B1${position.coords.accuracy.toFixed(1)}m`;
+  }
+  if (gpsGndSpd) {
+    gpsGndSpd.textContent = `${speedKmh.toFixed(1)} KM/H`;
+  }
+  if (gpsCourse) {
+    if (position.coords && position.coords.heading != null && !isNaN(position.coords.heading)) {
+      gpsCourse.textContent = `Heading: ${Math.round(position.coords.heading)}\u00B0`;
+    } else {
+      gpsCourse.textContent = speedKmh > 2.0 ? 'Vector: Tracking' : 'Heading: Stationary';
+    }
+  }
+
+  // Periodic weather refresh for real atmospheric wind & rain grip
+  if (typeof fetchRoadWeather === 'function') {
+    if (!window._lastWeatherFetch || (Date.now() - window._lastWeatherFetch) > 120000) {
+      window._lastWeatherFetch = Date.now();
+      fetchRoadWeather(lat, lng, 'Current Location');
+    }
+  }
+
   // Redraw gauges
   drawSpeedGauge('tripsSpeedCanvas', speedKmh);
 
@@ -2515,6 +2551,12 @@ function fetchRoadWeather(lat, lng, label) {
         } else {
           gripBadge.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-amber-400 mr-1.5 shadow-[0_0_8px_#F59E0B]"></span><strong>OPTIMAL ROAD (${cw.temperature}&deg;C)</strong> &bull; ${label}`;
         }
+      }
+
+      // Connect genuine atmospheric wind data to Crosswind Radar
+      if (typeof updateCrosswindRadar === 'function' && cw.windspeed != null) {
+        const heading = (lastKnownGpsFix && lastKnownGpsFix.heading != null && !isNaN(lastKnownGpsFix.heading)) ? lastKnownGpsFix.heading : 0;
+        updateCrosswindRadar(cw.windspeed, cw.winddirection || 0, heading);
       }
     })
     .catch(() => {});
@@ -4252,15 +4294,20 @@ function updateHudDisplay() {
   if (leanLeft) leanLeft.textContent = lean < -1 ? `${Math.abs(lean).toFixed(1)}\u00B0` : '0.0\u00B0';
   if (leanRight) leanRight.textContent = lean > 1 ? `${Math.abs(lean).toFixed(1)}\u00B0` : '0.0\u00B0';
 
-  // Compass Bearing from GPS or fallback
+  // Compass Bearing from GPS (Zero Mock Fallback)
   const compassHeading = document.getElementById('hudCompassHeadingVal');
   const compassDeg = document.getElementById('hudCompassDegVal');
   if (compassHeading && compassDeg) {
-    const heading = (lastKnownGpsFix && lastKnownGpsFix.heading != null) ? Math.round(lastKnownGpsFix.heading) : 48;
-    compassDeg.textContent = `${heading}\u00B0`;
-    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    const idx = Math.round(heading / 45) % 8;
-    compassHeading.textContent = dirs[idx];
+    if (lastKnownGpsFix && lastKnownGpsFix.heading != null && !isNaN(lastKnownGpsFix.heading)) {
+      const heading = Math.round(lastKnownGpsFix.heading);
+      compassDeg.textContent = `${heading}\u00B0`;
+      const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const idx = Math.round(heading / 45) % 8;
+      compassHeading.textContent = dirs[idx];
+    } else {
+      compassDeg.textContent = '--\u00B0';
+      compassHeading.textContent = 'STANDBY';
+    }
   }
 
   // HUD Real Footer: Peak Speed, Trip Distance, GPS Altitude, IMU Status
@@ -4473,41 +4520,63 @@ async function analyzeCornerTelemetry() {
     const exitEl = document.getElementById('apexExitSpeedVal');
     const tipEl = document.getElementById('apexCoachTipText');
 
-    // Fetch latest telemetry or compute dynamic values based on current/peak lean
-    let metrics = null;
-    try {
-      const res = await fetch('/api/telemetry/advanced-metrics');
-      if (res.ok) {
-        metrics = await res.json();
+    // Genuine Sensor Telemetry Check: Zero Fabricated Numbers
+    const hasActiveData = (Array.isArray(activeTripPoints) && activeTripPoints.length >= 3) || (peakTripLean && peakTripLean > 5);
+
+    if (!hasActiveData) {
+      if (entryEl) entryEl.textContent = '-- km/h';
+      if (leanEl) leanEl.textContent = '--\u00B0 Roll';
+      if (lateralEl) lateralEl.textContent = '-- G';
+      if (exitEl) exitEl.textContent = '-- km/h';
+      if (badge) {
+        badge.textContent = 'AWAITING CORNER PULL';
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-white/10';
       }
-    } catch (e) {
-      console.warn('Telemetry metrics fetch fallback:', e);
+      if (tipEl) {
+        tipEl.textContent = 'No corner telemetry recorded yet. Mount phone firmly and start an active ride to log entry speed, apex roll angle, lateral G-load, and exit acceleration.';
+      }
+      showToast('No corner telemetry recorded yet. Mount phone and start a ride to analyze apex performance.', 'info');
+      return;
     }
 
-    const currentApexLean = Math.max(38.0, peakTripLean || 44.2);
-    const entrySpeed = (68.0 + Math.random() * 8.0).toFixed(1);
-    const apexLean = currentApexLean.toFixed(1);
-    const lateralG = (1.05 + (currentApexLean / 50.0) * 0.25).toFixed(2);
-    const exitSpeed = (parseFloat(entrySpeed) + 8.5 + Math.random() * 4.0).toFixed(1);
+    // Derive genuine statistics from real sensor stream
+    let maxLean = peakTripLean || 0;
+    let entrySpeed = liveSpeedKmh || 0;
+    let exitSpeed = liveSpeedKmh || 0;
 
-    if (entryEl) entryEl.textContent = `${entrySpeed} km/h`;
-    if (leanEl) leanEl.textContent = `${apexLean}\u00B0 Roll`;
+    if (Array.isArray(activeTripPoints) && activeTripPoints.length > 0) {
+      const recordedLeans = activeTripPoints.map(p => Math.abs(p.leanAngleDeg || 0));
+      maxLean = Math.max(maxLean, ...recordedLeans);
+      const movingSpeeds = activeTripPoints.map(p => p.speedKmh || 0).filter(s => s > 3);
+      if (movingSpeeds.length > 0) {
+        entrySpeed = movingSpeeds[0];
+        exitSpeed = movingSpeeds[movingSpeeds.length - 1];
+      }
+    }
+
+    // Physical lateral acceleration: a_lat = tan(lean) * 1.0 G
+    const rad = (maxLean * Math.PI) / 180;
+    const lateralG = Math.min(1.5, Math.abs(Math.tan(rad))).toFixed(2);
+    const apexLeanStr = maxLean.toFixed(1);
+
+    if (entryEl) entryEl.textContent = `${entrySpeed.toFixed(1)} km/h`;
+    if (leanEl) leanEl.textContent = `${apexLeanStr}\u00B0 Roll`;
     if (lateralEl) lateralEl.textContent = `${lateralG} G`;
-    if (exitEl) exitEl.textContent = `${exitSpeed} km/h`;
+    if (exitEl) exitEl.textContent = `${exitSpeed.toFixed(1)} km/h`;
 
-    const score = Math.min(99, Math.round(86 + (currentApexLean / 50.0) * 12));
-    let tier = 'A-TIER';
-    let badgeClass = 'px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40';
-    let tip = 'Good chassis roll rate. Apex clipped cleanly with stable line holding.';
+    const score = Math.min(99, Math.max(50, Math.round(55 + (maxLean / 50.0) * 40)));
+    let tier = 'B-TIER';
+    let badgeClass = 'px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-400/40';
+    let tip = `Corner completed with ${apexLeanStr}\u00B0 lean. Smooth out counter-steer pressure to preserve momentum through apex.`;
 
-    if (score >= 95) {
+    if (score >= 90) {
       tier = 'S-TIER';
       badgeClass = 'px-2 py-0.5 rounded text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-400/40';
-      tip = 'Optimal trail-braking transition. Apex clipped with high chassis stability. Throttle roll-on initiated 1.2m before apex exit.';
-    } else if (score < 80) {
-      tier = 'B-TIER';
-      badgeClass = 'px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-400/40';
-      tip = 'Slight mid-corner hesitation detected. Smooth out counter-steer pressure to preserve momentum through apex.';
+      tip = `High lean angle recorded (${apexLeanStr}\u00B0). Optimal chassis stability with progressive throttle roll-on at corner exit.`;
+    } else if (score >= 75) {
+      tier = 'A-TIER';
+      badgeClass = 'px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40';
+      tip = `Solid cornering geometry at ${apexLeanStr}\u00B0 roll. Apex clipped cleanly with stable line holding.`;
     }
 
     if (badge) {
@@ -4518,7 +4587,7 @@ async function analyzeCornerTelemetry() {
       tipEl.textContent = tip;
     }
 
-    showToast(`Corner Telemetry Analyzed: ${tier} (${score}/100)`, 'success');
+    showToast(`Corner Telemetry Analyzed: ${tier} (${score}/100) from genuine sensors`, 'success');
   } catch (err) {
     console.error('analyzeCornerTelemetry error:', err);
   }
@@ -4625,12 +4694,12 @@ function renderElevationProfile() {
 
   const history = gpsAltitudeHistory.length > 0
     ? gpsAltitudeHistory.map(function(p) { return p.alt; })
-    : [gpsCurrentAltM || 600];
+    : (gpsCurrentAltM !== null ? [gpsCurrentAltM] : []);
 
   if (history.length < 2) {
     // Single baseline line
     ctx.strokeStyle = '#00F0FF';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(0, height - 20);
     ctx.lineTo(width, height - 20);
@@ -4638,7 +4707,7 @@ function renderElevationProfile() {
 
     ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
     ctx.font = '10px monospace';
-    ctx.fillText(gpsCurrentAltM ? `${gpsCurrentAltM}m ASL` : 'Awaiting GPS Fix...', 10, height - 30);
+    ctx.fillText(gpsCurrentAltM !== null ? `${gpsCurrentAltM}m ASL` : 'Awaiting GPS Fix...', 10, height - 30);
     return;
   }
 
@@ -4701,8 +4770,7 @@ function syncGpsElevation() {
         updateElevationUI(alt);
         showToast(`GPS Altimeter calibrated to ${alt}m ASL (\u00B1${Math.round(pos.coords.altitudeAccuracy || 5)}m)`, 'success');
       } else {
-        showToast('GPS 3D Lock acquired (altitude accuracy nominal)', 'info');
-        if (gpsCurrentAltM === null) updateElevationUI(540);
+        showToast('GPS 3D Lock acquired (altitude pending satellite triangulation)', 'info');
       }
     },
     function(err) {
@@ -4726,18 +4794,30 @@ function resetElevationGain() {
 // ----------------------------------------------------
 // 5. AERODYNAMIC CROSSWIND SHEAR & WIND VECTOR RADAR
 // ----------------------------------------------------
-function updateCrosswindRadar(windKmh = 24.5, windBearingDeg = 48, bikeHeadingDeg = 0) {
+function updateCrosswindRadar(windKmh, windBearingDeg, bikeHeadingDeg = 0) {
   const arrow = document.getElementById('crosswindArrow');
   const speedEl = document.getElementById('crosswindSpeedVal');
   const leanCompEl = document.getElementById('crosswindLeanCompVal');
   const dragEl = document.getElementById('crosswindDragPenaltyVal');
   const badge = document.getElementById('crosswindRiskBadge');
 
+  if (windKmh == null || isNaN(windKmh) || windKmh === undefined) {
+    if (arrow) arrow.style.transform = 'rotate(0deg)';
+    if (speedEl) speedEl.textContent = '-- km/h';
+    if (leanCompEl) leanCompEl.textContent = '--\u00B0 Counter-Lean';
+    if (dragEl) dragEl.textContent = '--% Resistance';
+    if (badge) {
+      badge.textContent = 'GPS WEATHER SYNC';
+      badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-white/10';
+    }
+    return;
+  }
+
   // Relative angle between wind approach and motorcycle travel vector
-  const relativeAngle = ((windBearingDeg - bikeHeadingDeg) + 360) % 360;
+  const relativeAngle = (((windBearingDeg || 0) - (bikeHeadingDeg || 0)) + 360) % 360;
 
   if (arrow) {
-    arrow.style.transform = `rotate(${relativeAngle}deg)`;
+    arrow.style.transform = `rotate(${Math.round(relativeAngle)}deg)`;
   }
   if (speedEl) {
     speedEl.innerHTML = `${windKmh.toFixed(1)} km/h @ ${Math.round(relativeAngle)}&deg;`;
@@ -4755,7 +4835,7 @@ function updateCrosswindRadar(windKmh = 24.5, windBearingDeg = 48, bikeHeadingDe
 
   // Aerodynamic drag resistance penalty
   const headwindComponent = Math.cos(rad) * windKmh;
-  const dragPenaltyPercent = Math.max(2.0, (10.0 + (headwindComponent / 30.0) * 8.0)).toFixed(1);
+  const dragPenaltyPercent = Math.max(0, (headwindComponent / 30.0) * 8.0).toFixed(1);
   if (dragEl) {
     dragEl.textContent = `+${dragPenaltyPercent}% Resistance`;
   }
@@ -4779,17 +4859,23 @@ function updateCrosswindRadar(windKmh = 24.5, windBearingDeg = 48, bikeHeadingDe
 // ----------------------------------------------------
 function initAdvancedMotorsportModules() {
   initElevationCanvas();
-  updateCrosswindRadar(24.5, 48, 0);
+  // Standby initial state for crosswind radar - zero mock values
+  updateCrosswindRadar(null, null, 0);
 
-  // Optional: load initial server telemetry snapshot
+  // If previous GPS fix exists, fetch real weather for location
+  if (lastKnownGpsFix && lastKnownGpsFix.lat && lastKnownGpsFix.lng) {
+    fetchRoadWeather(lastKnownGpsFix.lat, lastKnownGpsFix.lng, 'Live Fix');
+  }
+
+  // Optional: load genuine server telemetry snapshot
   fetch('/api/telemetry/advanced-metrics')
     .then(function(res) { return res.json(); })
     .then(function(data) {
       if (!data || !data.success) return;
-      if (data.elevationProfile && typeof updateElevationUI === 'function') {
+      if (data.elevationProfile && data.elevationProfile.currentAltM && typeof updateElevationUI === 'function') {
         updateElevationUI(data.elevationProfile.currentAltM);
       }
-      if (data.crosswindRadar) {
+      if (data.crosswindRadar && data.crosswindRadar.windSpeedKmh) {
         updateCrosswindRadar(
           data.crosswindRadar.windSpeedKmh,
           data.crosswindRadar.relativeWindAngleDeg,

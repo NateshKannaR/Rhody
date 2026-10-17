@@ -208,30 +208,30 @@ fun DashboardScreen(
         }
     }
 
-    // MotoGP AI Apex State
-    var apexScoreTier by remember { mutableStateOf("S-TIER • 96/100") }
-    var apexEntrySpeed by remember { mutableStateOf("72.4 km/h") }
-    var apexRollAngle by remember { mutableStateOf("44.2° Roll") }
-    var apexLateralG by remember { mutableStateOf("1.18 G") }
-    var apexExitSpeed by remember { mutableStateOf("81.3 km/h") }
+    // MotoGP AI Apex State (Zero Mock Data - 100% Genuine Sensors)
+    var apexScoreTier by remember { mutableStateOf("AWAITING CORNER PULL") }
+    var apexEntrySpeed by remember { mutableStateOf("-- km/h") }
+    var apexRollAngle by remember { mutableStateOf("--° Roll") }
+    var apexLateralG by remember { mutableStateOf("-- G") }
+    var apexExitSpeed by remember { mutableStateOf("-- km/h") }
     var apexCoachTip by remember {
-        mutableStateOf("Trail-braking transition optimal. Apex clipped with high chassis stability. Throttle roll-on initiated 1.2m before apex exit.")
+        mutableStateOf("No corner telemetry recorded yet. Mount device firmly and lean through curves during an active ride to log entry speed, apex roll angle, lateral G-load, and exit acceleration.")
     }
     var isAnalyzingApex by remember { mutableStateOf(false) }
 
-    // GPS Elevation & Altimeter Profile State
-    var currentAltitudeM by remember { mutableStateOf(580f) }
-    var peakAltitudeM by remember { mutableStateOf(740f) }
-    var climbGainM by remember { mutableStateOf(160f) }
-    var elevationGradeText by remember { mutableStateOf("LEVEL ROAD (0.0%)") }
-    var elevationGradeColor by remember { mutableStateOf(HyperCyan) }
+    // GPS Elevation & Altimeter Profile State (Zero Mock Data)
+    var currentAltitudeM by remember { mutableStateOf(0f) }
+    var peakAltitudeM by remember { mutableStateOf(0f) }
+    var climbGainM by remember { mutableStateOf(0f) }
+    var elevationGradeText by remember { mutableStateOf("AWAITING GPS FIX") }
+    var elevationGradeColor by remember { mutableStateOf(TextMuted) }
 
-    // Crosswind Radar State
-    var crosswindSpeed by remember { mutableStateOf("24.5 km/h @ 48°") }
-    var crosswindLeanComp by remember { mutableStateOf("+3.2° Left Counter-Lean") }
-    var crosswindDragPenalty by remember { mutableStateOf("+12.8% Resistance") }
-    var crosswindRiskText by remember { mutableStateOf("MODERATE SHEAR") }
-    var crosswindRiskColor by remember { mutableStateOf(SportAmber) }
+    // Crosswind Radar State (Zero Mock Data)
+    var crosswindSpeed by remember { mutableStateOf("-- km/h") }
+    var crosswindLeanComp by remember { mutableStateOf("--° Counter-Lean") }
+    var crosswindDragPenalty by remember { mutableStateOf("--% Resistance") }
+    var crosswindRiskText by remember { mutableStateOf("STANDBY") }
+    var crosswindRiskColor by remember { mutableStateOf(TextMuted) }
 
     val liveSprints = remember(livePoints) {
         SprintTimerCalculator.calculateBestSprints(livePoints)
@@ -1265,23 +1265,29 @@ fun DashboardScreen(
             coachTip = apexCoachTip,
             isAnalyzing = isAnalyzingApex,
             onAnalyze = {
-                val entry = (68..85).random()
-                val roll = (39..51).random()
-                val latG = String.format(Locale.US, "%.2f G", 1.05f + (roll / 50f) * 0.28f)
-                val exit = (entry + (8..16).random())
-                val score = (88..99).random()
-
-                apexEntrySpeed = "$entry.0 km/h"
-                apexRollAngle = "$roll.5° Roll"
-                apexLateralG = latG
-                apexExitSpeed = "$exit.0 km/h"
-                apexScoreTier = if (score >= 93) "S-TIER • $score/100" else "A-TIER • $score/100"
-                apexCoachTip = if (roll > 45) {
-                    "High lean commitment! Chassis settled smoothly into apex. Progressive throttle roll-on initiated 1.2m before apex exit."
+                if (livePoints.size < 3) {
+                    Toast.makeText(context, "No ride points recorded yet. Mount device and start a ride to analyze apex telemetry.", Toast.LENGTH_LONG).show()
                 } else {
-                    "Clean line geometry. Apex clipped cleanly at turn-in marker. Early throttle application on exit maximized velocity."
+                    val maxLean = livePoints.maxOfOrNull { kotlin.math.abs(it.leanAngle) } ?: 0f
+                    val movingPoints = livePoints.filter { it.speedKmh > 3f }
+                    val entry = movingPoints.firstOrNull()?.speedKmh ?: 0f
+                    val exit = movingPoints.lastOrNull()?.speedKmh ?: entry
+                    val rad = (maxLean * Math.PI) / 180.0
+                    val latG = String.format(Locale.US, "%.2f G", kotlin.math.min(1.5, kotlin.math.abs(kotlin.math.tan(rad))))
+                    val score = ((maxLean / 50f) * 40f + 55f).toInt().coerceIn(50, 99)
+
+                    apexEntrySpeed = String.format(Locale.US, "%.1f km/h", entry)
+                    apexRollAngle = String.format(Locale.US, "%.1f° Roll", maxLean)
+                    apexLateralG = latG
+                    apexExitSpeed = String.format(Locale.US, "%.1f km/h", exit)
+                    apexScoreTier = if (score >= 90) "S-TIER • $score/100" else if (score >= 75) "A-TIER • $score/100" else "B-TIER • $score/100"
+                    apexCoachTip = if (maxLean > 40f) {
+                        String.format(Locale.US, "High lean commitment (%.1f°)! Chassis settled smoothly into apex. Progressive throttle roll-on initiated on corner exit.", maxLean)
+                    } else {
+                        String.format(Locale.US, "Clean line geometry at %.1f° roll. Apex clipped cleanly with stable line holding.", maxLean)
+                    }
+                    Toast.makeText(context, "Analyzed from ${livePoints.size} genuine ride points ($score/100)", Toast.LENGTH_SHORT).show()
                 }
-                Toast.makeText(context, "Apex sector telemetry updated ($score/100)", Toast.LENGTH_SHORT).show()
             }
         )
 
@@ -1295,13 +1301,18 @@ fun DashboardScreen(
             gradeText = elevationGradeText,
             gradeColor = elevationGradeColor,
             onSyncElevation = {
-                val newAlt = (520..890).random().toFloat()
-                currentAltitudeM = newAlt
-                if (newAlt > peakAltitudeM) peakAltitudeM = newAlt
-                climbGainM = (peakAltitudeM - 520f).coerceAtLeast(0f)
-                elevationGradeText = if (climbGainM > 100f) "STEEP CLIMB (+4.2%)" else "MILD INCLINE (+1.5%)"
-                elevationGradeColor = if (climbGainM > 100f) OptimalGreen else HyperCyan
-                Toast.makeText(context, "GPS Altimeter calibrated to ${newAlt.toInt()}m ASL", Toast.LENGTH_SHORT).show()
+                val lastAlt = livePoints.lastOrNull()?.altitude?.toFloat()
+                if (lastAlt != null && lastAlt > 0f) {
+                    currentAltitudeM = lastAlt
+                    if (lastAlt > peakAltitudeM) peakAltitudeM = lastAlt
+                    val minAlt = livePoints.mapNotNull { it.altitude?.toFloat() }.minOrNull() ?: lastAlt
+                    climbGainM = (peakAltitudeM - minAlt).coerceAtLeast(0f)
+                    elevationGradeText = String.format(Locale.US, "GPS CALIBRATED (%dm ASL)", lastAlt.toInt())
+                    elevationGradeColor = OptimalGreen
+                    Toast.makeText(context, "GPS Altimeter calibrated to ${lastAlt.toInt()}m ASL", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Awaiting GPS satellite fix for altitude calibration...", Toast.LENGTH_SHORT).show()
+                }
             }
         )
 
