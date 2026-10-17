@@ -233,12 +233,12 @@ app.get('/api/auth/me', async (req, res) => {
       name: user.name || 'Natesh',
       avatar: user.avatar || '',
       bio: user.bio || '',
-      bikeModel: user.bikeModel || 'Yamaha MT-09 SP',
-      bikeSpecs: user.bikeSpecs || '890cc Triple Cylinder • 119 BHP',
-      bikePlate: user.bikePlate || 'TN-38-RH-0909',
-      tireSetup: user.tireSetup || 'Pirelli Diablo Rosso IV',
-      emergencyContactName: user.emergencyContactName || 'Family Guardian (Mom & Dad)',
-      emergencyContactPhone: user.emergencyContactPhone || '+91 98765 43210',
+      bikeModel: user.bikeModel || '',
+      bikeSpecs: user.bikeSpecs || '',
+      bikePlate: user.bikePlate || '',
+      tireSetup: user.tireSetup || '',
+      emergencyContactName: user.emergencyContactName || '',
+      emergencyContactPhone: user.emergencyContactPhone || '',
       speedUnit: user.speedUnit || 'kmh'
     });
   } catch (err) {
@@ -248,16 +248,16 @@ app.get('/api/auth/me', async (req, res) => {
 
 let guestProfileCache = {
   id: 'guest',
-  name: 'Natesh',
-  email: 'pilot@rhody.io',
+  name: 'Pilot',
+  email: '',
   avatar: '',
-  bio: 'Weekend canyon carver & telemetry enthusiast. Western Ghats apex seeker.',
-  bikeModel: 'Yamaha MT-15 V2',
-  bikeSpecs: '155cc Liquid VVA • 18.4 PS',
-  bikePlate: 'KA-01-EQ-1550',
-  tireSetup: 'MRF Nylogrip Zapper (Cold PSI: F 32 / R 34)',
-  emergencyContactName: 'Family Guardian (Mom & Dad)',
-  emergencyContactPhone: '+91 98765 43210',
+  bio: 'Precision motorcycle telemetry & dynamic apex trajectory tracking.',
+  bikeModel: '',
+  bikeSpecs: '',
+  bikePlate: '',
+  tireSetup: '',
+  emergencyContactName: '',
+  emergencyContactPhone: '',
   speedUnit: 'kmh'
 };
 
@@ -865,7 +865,7 @@ function escapeXml(str) {
 
 // Real YouTube Search API (Resolves real playable video IDs, titles, thumbnails)
 app.get('/api/youtube/search', async (req, res) => {
-  const query = req.query.q || 'Yamaha MT-09 review';
+  const query = req.query.q || 'motorcycle telemetry review';
   try {
     const response = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
       headers: {
@@ -922,55 +922,10 @@ app.get('/api/youtube/search', async (req, res) => {
 // ----------------------------------------------------
 // PARENT / GUARDIAN PORTAL ENDPOINTS & NOTIFICATIONS
 // ----------------------------------------------------
-let parentNotifications = [
-  {
-    id: 'notif_welcome',
-    riderEmail: 'pilot@rhody.io',
-    riderName: 'Natesh',
-    type: 'info',
-    title: 'Guardian Safety Radar Active',
-    message: 'Your parent account is now securely linked to rider Natesh (Yamaha MT-15 V2). Real-time speed, telemetry, and live emergency notifications are enabled.',
-    timestamp: new Date(Date.now() - 1800000).toISOString(),
-    severity: 'info',
-    read: false
-  },
-  {
-    id: 'notif_overspeed_demo',
-    riderEmail: 'pilot@rhody.io',
-    riderName: 'Natesh',
-    type: 'overspeed',
-    title: 'Speed Threshold Alert (98.4 km/h)',
-    message: 'Rider crossed safe threshold (limit: 95 km/h) on Outer Ring Road Expressway.',
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    severity: 'warning',
-    speedKmh: 98.4,
-    read: false
-  },
-  {
-    id: 'notif_doc_check',
-    riderEmail: 'pilot@rhody.io',
-    riderName: 'Natesh',
-    type: 'compliance',
-    title: 'Legal Compliance Verified',
-    message: 'All 4 statutory motorcycle documents (RC, Driving Licence, Insurance, and PUC) are active.',
-    timestamp: new Date(Date.now() - 7200000).toISOString(),
-    severity: 'info',
-    read: true
-  }
-];
+let parentNotifications = [];
 
 // Two-Way Guardian Consent & Connection State
 let guardianConnections = new Map();
-// Initialize demo guardian connection in pending_approval state
-guardianConnections.set('guardian@family.io', {
-  id: 'req_demo_01',
-  parentEmail: 'guardian@family.io',
-  parentName: 'Family Guardian (Dad & Mom)',
-  riderEmail: 'pilot@rhody.io',
-  status: 'pending_approval',
-  requestedAt: new Date(Date.now() - 3600000).toISOString(),
-  approvedAt: null
-});
 
 // POST /api/parent/login
 app.post('/api/parent/login', async (req, res) => {
@@ -1206,10 +1161,8 @@ app.get('/api/parent/rider-status', async (req, res) => {
         name: profile.name || 'Natesh',
         email: riderEmail,
         avatar: profile.avatar || '',
-        phone: profile.emergencyContactPhone || '+91 98765 43210',
-        emergencyContactName: profile.emergencyContactName || 'Family Guardian',
-        bikeModel: profile.bikeModel || (bikeMgmt.specs && bikeMgmt.specs.makeModel) || 'Yamaha MT-15 V2',
-        bikePlate: profile.bikePlate || (bikeMgmt.documents && (bikeMgmt.documents.rcNumber || (bikeMgmt.documents.rc && bikeMgmt.documents.rc.number))) || 'KA-01-EQ-1550',
+        bikeModel: profile.bikeModel || (bikeMgmt.specs && bikeMgmt.specs.makeModel) || '',
+        bikePlate: profile.bikePlate || (bikeMgmt.documents && (bikeMgmt.documents.rcNumber || (bikeMgmt.documents.rc && bikeMgmt.documents.rc.number))) || '',
         odometer: (bikeMgmt.specs && bikeMgmt.specs.currentOdometer) || 0
       },
       documents: bikeMgmt.documents || {},

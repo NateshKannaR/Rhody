@@ -110,13 +110,13 @@ var bikeManagementData = {
 
 // Guardian Parent Alert Configuration & Portal State
 var guardianParentConfig = {
-  guardianName: 'Family Guardian (Dad & Mom)',
-  guardianPhone: '+91 98765 43210',
+  guardianName: "",
+  guardianPhone: "",
   speedLimitKmh: 95
 };
 
 var currentRole = 'rider'; // 'rider' | 'parent'
-var parentConnectedRider = 'pilot@rhody.io';
+var parentConnectedRider = "";
 var parentTelemetryPollTimer = null;
 var parentMapInstance = null;
 var parentMapMarker = null;
@@ -271,6 +271,15 @@ function loadProfileFromStorage() {
     try {
       const parsed = JSON.parse(cached);
       riderProfile = Object.assign({}, riderProfile, parsed);
+      if (riderProfile.bikeModel === "Yamaha MT-15 V2" || riderProfile.bikeModel === "Yamaha MT-09 SP") {
+        riderProfile.bikeModel = "";
+      }
+      if (riderProfile.bikePlate === "KA-01-EQ-1550") {
+        riderProfile.bikePlate = "";
+      }
+      if (riderProfile.tireSetup && riderProfile.tireSetup.includes("MRF Nylogrip")) {
+        riderProfile.tireSetup = "";
+      }
     } catch (e) {}
   }
 
@@ -319,12 +328,12 @@ function renderDashboardProfile() {
   const removeBtn = document.getElementById('btnRemovePhoto');
   const navProfileName = document.getElementById('navProfileName');
 
-  if (greeting) greeting.textContent = riderProfile.name || 'Natesh';
-  if (handle) handle.textContent = riderProfile.handle || '@natesh_pilot';
+  if (greeting) greeting.textContent = riderProfile.name || "Pilot";
+  if (handle) handle.textContent = riderProfile.handle || "@pilot";
   if (bio) bio.textContent = riderProfile.bio || 'Weekend canyon carver & telemetry enthusiast.';
-  if (navProfileName) navProfileName.textContent = riderProfile.name || 'Natesh';
+  if (navProfileName) navProfileName.textContent = riderProfile.name || "Pilot";
 
-  const initial = (riderProfile.name || 'N').charAt(0).toUpperCase();
+  const initial = (riderProfile.name || "P").charAt(0).toUpperCase();
 
   // Check backup avatar if state is missing it
   const activeAvatar = riderProfile.avatar || localStorage.getItem('rhody_user_avatar') || '';
@@ -1219,7 +1228,7 @@ function searchCustomYoutube() {
 }
 
 function searchYoutubeForBike() {
-  const bike = riderProfile.bikeModel || 'Yamaha MT-09 SP';
+  const bike = riderProfile.bikeModel || "Motorcycle";
   executeYoutubeSearch(`${bike} motorcycle review pure exhaust sound`);
 }
 
@@ -1635,7 +1644,7 @@ function startRealLiveBeaconBroadcast() {
 
     const payload = {
       tripId: activeTripId,
-      riderName: riderProfile.name || 'Natesh',
+      riderName: riderProfile.name || "Pilot",
       status: isTripPaused ? 'PAUSED' : 'RECORDING',
       isMoving: liveSpeedKmh >= 2.0,
       currentSpeedKmh: liveSpeedKmh,
@@ -1782,7 +1791,7 @@ function finishTripSession() {
 function shareTripWithParents() {
   const tripId = activeTripId || (allTripsCache[0] && allTripsCache[0]._id) || 'live_ride';
   const liveUrl = `${window.location.origin}/?live=${tripId}`;
-  const riderName = riderProfile.name || 'Natesh';
+  const riderName = riderProfile.name || "Pilot";
   const text = encodeURIComponent(`Hi! ${riderName} has started a motorcycle ride on Rhody. Track real live speed, motion status & GPS location here: ${liveUrl}`);
   window.open(`https://wa.me/?text=${text}`, '_blank');
   showToast('Generated WhatsApp Parent Live Safety Link', 'success');
@@ -2525,109 +2534,305 @@ function showToast(message, type = 'info') {
 }
 
 // ========================================================
-// ONBOARDING WIZARD HANDLERS (FIRST TIME RIDER SETUP)
+// UNIFIED PLATFORM ENTRY & ONBOARDING WIZARD
+// Flow: Role -> 1. Rider Identity -> 2. Machine Hardware -> Cockpit
+// Or: Role -> Parent Connection -> Guardian Radar
 // ========================================================
+var currentEntryStep = "role";
+var entryUploadedAvatar = "";
+
 function checkOnboardingStatus() {
-  const isConfigured = bikeManagementData && bikeManagementData.isConfigured;
-  const skipped = localStorage.getItem('rhody_onboarding_completed') === 'true';
-  // If not configured and not explicitly completed/skipped, prompt user
-  if (!isConfigured && !skipped) {
-    if (currentRole === 'rider') {
-      setTimeout(() => {
-        openOnboardingModal();
-      }, 700);
-    }
+  const isCompleted = localStorage.getItem("rhody_onboarding_completed") === "true";
+  const savedRole = localStorage.getItem("rhody_user_role");
+
+  if (!isCompleted || !savedRole) {
+    setTimeout(() => {
+      openPlatformEntryModal("role");
+    }, 400);
   }
 }
 
-function openOnboardingModal() {
-  const modal = document.getElementById('onboardingModal');
+function openPlatformEntryModal(step = "role") {
+  const modal = document.getElementById("platformEntryModal");
   if (!modal) return;
-  const specs = (bikeManagementData && bikeManagementData.specs) || {};
-  const docs = (bikeManagementData && bikeManagementData.documents) || {};
-
-  const makeModel = document.getElementById('obMakeModel');
-  const plate = document.getElementById('obPlateNumber');
-  const odo = document.getElementById('obOdometer');
-  const specField = document.getElementById('obSpecs');
-  const insExp = document.getElementById('obInsuranceExpiry');
-  const pucExp = document.getElementById('obPucExpiry');
-  const dlExp = document.getElementById('obDlExpiry');
-
-  if (makeModel) makeModel.value = specs.makeModel || riderProfile.bikeModel || '';
-  if (plate) plate.value = (docs.rc && docs.rc.number) || docs.rcNumber || riderProfile.bikePlate || '';
-  if (odo) odo.value = specs.currentOdometer || '';
-  if (specField) specField.value = specs.engine || riderProfile.bikeSpecs || '';
-  if (insExp) insExp.value = (docs.insurance && docs.insurance.expiry) || docs.insuranceExpiry || '';
-  if (pucExp) pucExp.value = (docs.puc && docs.puc.expiry) || docs.pucExpiry || '';
-  if (dlExp) dlExp.value = (docs.dl && docs.dl.expiry) || docs.dlExpiry || '';
-
-  modal.classList.remove('hidden');
+  modal.classList.remove("hidden");
+  goToEntryStep(step);
 }
 
-function closeOnboardingModal() {
-  const modal = document.getElementById('onboardingModal');
-  if (modal) modal.classList.add('hidden');
+function closePlatformEntryModal() {
+  const modal = document.getElementById("platformEntryModal");
+  if (modal) modal.classList.add("hidden");
 }
 
-function skipOnboarding() {
-  localStorage.setItem('rhody_onboarding_completed', 'true');
-  closeOnboardingModal();
-  showToast('Entered as Guest. You can configure bike specs & upload documents anytime.', 'info');
+function goToEntryStep(step) {
+  currentEntryStep = step;
+  const stepRole = document.getElementById("entryStepRole");
+  const stepRider = document.getElementById("entryStepRider");
+  const stepBike = document.getElementById("entryStepBike");
+  const stepParent = document.getElementById("entryStepParent");
+  const modalTitle = document.getElementById("entryModalTitle");
+  const modalSubtitle = document.getElementById("entryModalSubtitle");
+
+  [stepRole, stepRider, stepBike, stepParent].forEach(el => {
+    if (el) el.classList.add("hidden");
+  });
+
+  if (step === "role") {
+    if (stepRole) stepRole.classList.remove("hidden");
+    if (modalTitle) modalTitle.textContent = "Rhody Precision Telemetry";
+    if (modalSubtitle) modalSubtitle.textContent = "Configure your operational profile to enter the platform";
+  } else if (step === "rider") {
+    if (stepRider) stepRider.classList.remove("hidden");
+    if (modalTitle) modalTitle.textContent = "Rider Setup — Step 1 of 2";
+    if (modalSubtitle) modalSubtitle.textContent = "Tell us who is commanding the machine";
+
+    const nameInp = document.getElementById("entryRiderName");
+    const handleInp = document.getElementById("entryRiderHandle");
+    const emailInp = document.getElementById("entryRiderEmail");
+    const phoneInp = document.getElementById("entryRiderEmergencyPhone");
+    const bioInp = document.getElementById("entryRiderBio");
+    const avatarImg = document.getElementById("entryAvatarImg");
+    const avatarInit = document.getElementById("entryAvatarInitial");
+
+    if (nameInp) nameInp.value = (riderProfile.name && riderProfile.name !== "Pilot") ? riderProfile.name : "";
+    if (handleInp) handleInp.value = (riderProfile.handle && riderProfile.handle !== "@pilot") ? riderProfile.handle : "";
+    if (emailInp) emailInp.value = riderProfile.email || "";
+    if (phoneInp) phoneInp.value = guardianParentConfig.guardianPhone || riderProfile.emergencyContactPhone || "";
+    if (bioInp) bioInp.value = riderProfile.bio || "";
+
+    const avatar = entryUploadedAvatar || riderProfile.avatar || localStorage.getItem("rhody_user_avatar") || "";
+    if (avatar && avatarImg && avatarInit) {
+      avatarImg.src = avatar;
+      avatarImg.classList.remove("hidden");
+      avatarInit.classList.add("hidden");
+    }
+  } else if (step === "bike") {
+    if (stepBike) stepBike.classList.remove("hidden");
+    if (modalTitle) modalTitle.textContent = "Machine Hardware — Step 2 of 2";
+    if (modalSubtitle) modalSubtitle.textContent = "Pair your motorcycle specifications";
+
+    const bikeModelInp = document.getElementById("entryBikeModel");
+    const bikePlateInp = document.getElementById("entryBikePlate");
+    const bikeOdoInp = document.getElementById("entryBikeOdo");
+    const bikeSpecsInp = document.getElementById("entryBikeSpecs");
+    const bikeTiresInp = document.getElementById("entryBikeTires");
+
+    const specs = (bikeManagementData && bikeManagementData.specs) || {};
+    const docs = (bikeManagementData && bikeManagementData.documents) || {};
+
+    if (bikeModelInp) bikeModelInp.value = specs.makeModel || riderProfile.bikeModel || "";
+    if (bikePlateInp) bikePlateInp.value = (docs.rc && docs.rc.number) || docs.rcNumber || riderProfile.bikePlate || "";
+    if (bikeOdoInp) bikeOdoInp.value = specs.currentOdometer || "";
+    if (bikeSpecsInp) bikeSpecsInp.value = specs.engine || riderProfile.bikeSpecs || "";
+    if (bikeTiresInp) bikeTiresInp.value = riderProfile.tireSetup || "";
+  } else if (step === "parent") {
+    if (stepParent) stepParent.classList.remove("hidden");
+    if (modalTitle) modalTitle.textContent = "Guardian Safety Radar Login";
+    if (modalSubtitle) modalSubtitle.textContent = "Connect to monitor live location & emergency crash SOS";
+
+    const gName = document.getElementById("entryGuardianName");
+    const gEmail = document.getElementById("entryGuardianEmail");
+    const gCode = document.getElementById("entryGuardianRiderCode");
+
+    if (gName) gName.value = guardianParentConfig.guardianName || "";
+    if (gEmail) gEmail.value = localStorage.getItem("rhody_parent_email") || "";
+    if (gCode) gCode.value = localStorage.getItem("rhody_parent_rider_code") || (riderProfile.handle ? riderProfile.handle.replace("@", "") : "") || "";
+  }
 }
 
-function handleOnboardingSubmit(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  const makeModel = (document.getElementById('obMakeModel')?.value || '').trim();
-  const plate = (document.getElementById('obPlateNumber')?.value || '').trim();
-  const odoVal = parseFloat(document.getElementById('obOdometer')?.value) || 0;
-  const specText = (document.getElementById('obSpecs')?.value || '').trim();
-  const insExpiry = (document.getElementById('obInsuranceExpiry')?.value || '').trim();
-  const pucExpiry = (document.getElementById('obPucExpiry')?.value || '').trim();
-  const dlExpiry = (document.getElementById('obDlExpiry')?.value || '').trim();
+function handleEntryPhotoUpload(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const base64 = evt.target.result;
+    entryUploadedAvatar = base64;
+    riderProfile.avatar = base64;
+    try {
+      localStorage.setItem("rhody_user_avatar", base64);
+    } catch (err) {}
+
+    const avatarImg = document.getElementById("entryAvatarImg");
+    const avatarInit = document.getElementById("entryAvatarInitial");
+    if (avatarImg && avatarInit) {
+      avatarImg.src = base64;
+      avatarImg.classList.remove("hidden");
+      avatarInit.classList.add("hidden");
+    }
+    showToast("Profile photo attached!", "success");
+  };
+  reader.readAsDataURL(file);
+}
+
+function submitEntryRiderStep() {
+  const nameInp = document.getElementById("entryRiderName");
+  const handleInp = document.getElementById("entryRiderHandle");
+  const emailInp = document.getElementById("entryRiderEmail");
+  const phoneInp = document.getElementById("entryRiderEmergencyPhone");
+  const bioInp = document.getElementById("entryRiderBio");
+
+  const nameVal = (nameInp ? nameInp.value : "").trim();
+  if (!nameVal) {
+    showToast("Please enter your rider name to continue", "error");
+    if (nameInp) nameInp.focus();
+    return;
+  }
+
+  riderProfile.name = nameVal;
+  localStorage.setItem("rhody_rider_explicit_name", nameVal);
+  if (handleInp && handleInp.value.trim()) {
+    let h = handleInp.value.trim();
+    if (!h.startsWith("@")) h = "@" + h;
+    riderProfile.handle = h;
+  } else {
+    riderProfile.handle = "@" + nameVal.toLowerCase().replace(/\s+/g, "_");
+  }
+
+  if (emailInp && emailInp.value.trim()) {
+    riderProfile.email = emailInp.value.trim();
+  }
+  if (bioInp && bioInp.value.trim()) {
+    riderProfile.bio = bioInp.value.trim();
+  }
+  if (phoneInp && phoneInp.value.trim()) {
+    guardianParentConfig.guardianPhone = phoneInp.value.trim();
+    riderProfile.emergencyContactPhone = phoneInp.value.trim();
+  }
+  if (entryUploadedAvatar) {
+    riderProfile.avatar = entryUploadedAvatar;
+  }
+
+  saveProfile();
+  renderDashboardProfile();
+
+  // Advance to Step 2: Machine Hardware
+  goToEntryStep("bike");
+}
+
+function submitEntryBikeStep() {
+  const model = (document.getElementById("entryBikeModel") ? document.getElementById("entryBikeModel").value : "").trim();
+  const plate = (document.getElementById("entryBikePlate") ? document.getElementById("entryBikePlate").value : "").trim();
+  const odo = parseFloat(document.getElementById("entryBikeOdo") ? document.getElementById("entryBikeOdo").value : 0) || 0;
+  const specs = (document.getElementById("entryBikeSpecs") ? document.getElementById("entryBikeSpecs").value : "").trim();
+  const tires = (document.getElementById("entryBikeTires") ? document.getElementById("entryBikeTires").value : "").trim();
 
   if (!bikeManagementData.specs) bikeManagementData.specs = {};
   if (!bikeManagementData.documents) bikeManagementData.documents = {};
 
-  bikeManagementData.isConfigured = true;
-  if (makeModel) bikeManagementData.specs.makeModel = makeModel;
-  if (specText) bikeManagementData.specs.engine = specText;
-  bikeManagementData.specs.currentOdometer = odoVal;
-
+  if (model) {
+    bikeManagementData.isConfigured = true;
+    bikeManagementData.specs.makeModel = model;
+    bikeManagementData.specs.currentOdometer = odo;
+    bikeManagementData.specs.engine = specs;
+    riderProfile.bikeModel = model;
+    riderProfile.bikeSpecs = specs;
+  }
   if (plate) {
     bikeManagementData.documents.rcNumber = plate;
     if (!bikeManagementData.documents.rc) bikeManagementData.documents.rc = {};
     bikeManagementData.documents.rc.number = plate;
+    riderProfile.bikePlate = plate;
   }
-  if (insExpiry) {
-    bikeManagementData.documents.insuranceExpiry = insExpiry;
-    if (!bikeManagementData.documents.insurance) bikeManagementData.documents.insurance = {};
-    bikeManagementData.documents.insurance.expiry = insExpiry;
-  }
-  if (pucExpiry) {
-    bikeManagementData.documents.pucExpiry = pucExpiry;
-    if (!bikeManagementData.documents.puc) bikeManagementData.documents.puc = {};
-    bikeManagementData.documents.puc.expiry = pucExpiry;
-  }
-  if (dlExpiry) {
-    bikeManagementData.documents.dlExpiry = dlExpiry;
-    if (!bikeManagementData.documents.dl) bikeManagementData.documents.dl = {};
-    bikeManagementData.documents.dl.expiry = dlExpiry;
+  if (tires) {
+    riderProfile.tireSetup = tires;
   }
 
-  // Update profile
-  if (makeModel) riderProfile.bikeModel = makeModel;
-  if (plate) riderProfile.bikePlate = plate;
-  if (specText) riderProfile.bikeSpecs = specText;
+  localStorage.setItem("rhody_onboarding_completed", "true");
+  localStorage.setItem("rhody_user_role", "rider");
   saveProfile();
-
-  localStorage.setItem('rhody_onboarding_completed', 'true');
   saveBikeManagementToStorage(true);
+
+  closePlatformEntryModal();
+  switchRole("rider");
+  renderDashboardProfile();
   renderDashboardBike();
   renderBikeManagement();
   populateSettingsForm();
-  closeOnboardingModal();
-  showToast('Motorcycle Cockpit configured successfully!', 'success');
+  showToast("Rider profile and machine configured successfully!", "success");
+}
+
+function completeEntryWithoutBike() {
+  localStorage.setItem("rhody_onboarding_completed", "true");
+  localStorage.setItem("rhody_user_role", "rider");
+  bikeManagementData.isConfigured = false;
+  saveProfile();
+  saveBikeManagementToStorage(true);
+
+  closePlatformEntryModal();
+  switchRole("rider");
+  renderDashboardProfile();
+  renderDashboardBike();
+  renderBikeManagement();
+  populateSettingsForm();
+  showToast("Entered as Rider. You can register your motorcycle anytime from Cockpit.", "info");
+}
+
+function skipEntryToCockpit() {
+  localStorage.setItem("rhody_onboarding_completed", "true");
+  localStorage.setItem("rhody_user_role", "rider");
+  closePlatformEntryModal();
+  switchRole("rider");
+  showToast("Entered as Guest Rider", "info");
+}
+
+function submitEntryParentStep() {
+  const gName = (document.getElementById("entryGuardianName") ? document.getElementById("entryGuardianName").value : "").trim();
+  const gEmail = (document.getElementById("entryGuardianEmail") ? document.getElementById("entryGuardianEmail").value : "").trim() || "guardian@family.io";
+  const gCode = (document.getElementById("entryGuardianRiderCode") ? document.getElementById("entryGuardianRiderCode").value : "").trim() || "RHODY-8821";
+
+  if (gName) guardianParentConfig.guardianName = gName;
+  localStorage.setItem("rhody_parent_logged_in", "true");
+  localStorage.setItem("rhody_parent_email", gEmail);
+  localStorage.setItem("rhody_parent_rider_code", gCode);
+  localStorage.setItem("rhody_user_role", "parent");
+  localStorage.setItem("rhody_onboarding_completed", "true");
+
+  closePlatformEntryModal();
+  switchRole("parent");
+
+  fetch("/api/parent/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: gEmail, riderCode: gCode, guardianName: gName })
+  })
+    .then(r => r.json())
+    .then(data => {
+      parentConnectedRider = (data && data.profile && data.profile.connectedRiderEmail) || gCode;
+      fetchParentRiderStatus();
+      showToast("Guardian Safety Radar connected!", "success");
+    })
+    .catch(() => {
+      fetchParentRiderStatus();
+      showToast("Connected to Guardian Safety Radar", "info");
+    });
+}
+
+function entryParentDemoConnect() {
+  localStorage.setItem("rhody_parent_logged_in", "true");
+  localStorage.setItem("rhody_parent_email", "guardian@family.io");
+  localStorage.setItem("rhody_user_role", "parent");
+  localStorage.setItem("rhody_onboarding_completed", "true");
+  closePlatformEntryModal();
+  switchRole("parent");
+  showToast("Guardian Safety Radar Connected (Demo)", "success");
+}
+
+// Aliases for seamless backward compatibility across the app
+function openRoleGatewayModal() { openPlatformEntryModal("role"); }
+function closeRoleGatewayModal() { closePlatformEntryModal(); }
+function openOnboardingModal() { openPlatformEntryModal("bike"); }
+function closeOnboardingModal() { closePlatformEntryModal(); }
+function openParentLoginModal() { openPlatformEntryModal("parent"); }
+function closeParentLoginModal() { closePlatformEntryModal(); }
+function skipOnboarding() { completeEntryWithoutBike(); }
+function selectRoleFromGateway(role, notify = true) {
+  closePlatformEntryModal();
+  if (role === "parent") {
+    submitEntryParentStep();
+  } else {
+    openPlatformEntryModal("rider");
+  }
 }
 
 // ========================================================
@@ -3087,28 +3292,36 @@ function handleParentLoginSubmit(e) {
 
 function switchRole(role) {
   currentRole = role;
-  const parentView = document.getElementById('viewParentPortal');
-  const btnRoleSwitcher = document.getElementById('btnRoleSwitcher');
-  const roleGatewayNavLabel = document.getElementById('roleGatewayNavLabel');
-  const btnRoleSwitcherText = document.getElementById('btnRoleSwitcherText');
-  const btnRoleRider = document.getElementById('btnRoleRider');
-  const btnRoleParent = document.getElementById('btnRoleParent');
+  const parentView = document.getElementById("viewParentPortal");
+  const btnRoleSwitcher = document.getElementById("btnRoleSwitcher");
+  const roleGatewayNavLabel = document.getElementById("roleGatewayNavLabel");
+  const btnRoleSwitcherText = document.getElementById("btnRoleSwitcherText");
+  const btnRoleRider = document.getElementById("btnRoleRider");
+  const btnRoleParent = document.getElementById("btnRoleParent");
 
-  if (role === 'parent') {
-    if (btnRoleParent) btnRoleParent.className = 'px-2.5 py-1 rounded-lg font-bold bg-purple-500/20 text-purple-300 border border-purple-400/30 transition flex items-center space-x-1.5';
-    if (btnRoleRider) btnRoleRider.className = 'px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5';
+  const btnHeaderToggleText = document.getElementById("btnHeaderPortalText");
+  const mobileTabPortalText = document.getElementById("mobileTabPortalText");
+  const headerPortalIcon = document.getElementById("headerPortalIcon");
+
+  if (role === "parent") {
+    if (btnRoleParent) btnRoleParent.className = "px-2.5 py-1 rounded-lg font-bold bg-purple-500/20 text-purple-300 border border-purple-400/30 transition flex items-center space-x-1.5";
+    if (btnRoleRider) btnRoleRider.className = "px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5";
+
+    // Header switcher state
+    if (btnHeaderToggleText) btnHeaderToggleText.textContent = "Rider Cockpit";
+    if (mobileTabPortalText) mobileTabPortalText.textContent = "Cockpit";
 
     // Hide rider view tabs
-    ['dashboard', 'trips', 'parenting', 'settings', 'analysis'].forEach(v => {
-      const el = document.getElementById('view' + capitalizeFirst(v));
-      if (el) el.classList.add('hidden');
+    ["dashboard", "trips", "parenting", "settings", "analysis"].forEach(v => {
+      const el = document.getElementById("view" + capitalizeFirst(v));
+      if (el) el.classList.add("hidden");
     });
 
-    if (parentView) parentView.classList.remove('hidden');
-    if (roleGatewayNavLabel) roleGatewayNavLabel.textContent = 'Role: Parent Radar';
-    if (btnRoleSwitcherText) btnRoleSwitcherText.textContent = 'Rider Cockpit';
+    if (parentView) parentView.classList.remove("hidden");
+    if (roleGatewayNavLabel) roleGatewayNavLabel.textContent = "Role: Parent Radar";
+    if (btnRoleSwitcherText) btnRoleSwitcherText.textContent = "Rider Cockpit";
     if (btnRoleSwitcher) {
-      btnRoleSwitcher.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] transition flex items-center space-x-1.5';
+      btnRoleSwitcher.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] transition flex items-center space-x-1.5";
     }
 
     if (riderGuardianPollTimer) {
@@ -3121,24 +3334,28 @@ function switchRole(role) {
     });
     fetchParentRiderStatus();
     startParentTelemetryPolling();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   } else {
-    if (btnRoleRider) btnRoleRider.className = 'px-2.5 py-1 rounded-lg font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 transition flex items-center space-x-1.5';
-    if (btnRoleParent) btnRoleParent.className = 'px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5';
+    if (btnRoleRider) btnRoleRider.className = "px-2.5 py-1 rounded-lg font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 transition flex items-center space-x-1.5";
+    if (btnRoleParent) btnRoleParent.className = "px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5";
+
+    // Header switcher state
+    if (btnHeaderToggleText) btnHeaderToggleText.textContent = "Guardian Portal";
+    if (mobileTabPortalText) mobileTabPortalText.textContent = "Guardian";
 
     // Return to rider mode
     if (parentTelemetryPollTimer) {
       clearInterval(parentTelemetryPollTimer);
       parentTelemetryPollTimer = null;
     }
-    if (parentView) parentView.classList.add('hidden');
-    if (roleGatewayNavLabel) roleGatewayNavLabel.textContent = 'Role: Rider Cockpit';
-    if (btnRoleSwitcherText) btnRoleSwitcherText.textContent = 'Parent Portal';
+    if (parentView) parentView.classList.add("hidden");
+    if (roleGatewayNavLabel) roleGatewayNavLabel.textContent = "Role: Rider Cockpit";
+    if (btnRoleSwitcherText) btnRoleSwitcherText.textContent = "Parent Portal";
     if (btnRoleSwitcher) {
-      btnRoleSwitcher.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(168,85,247,0.2)]';
+      btnRoleSwitcher.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(168,85,247,0.2)]";
     }
 
-    switchMainView(currentView || 'dashboard');
+    switchMainView(currentView || "dashboard");
 
     checkRiderGuardianRequests();
     if (!riderGuardianPollTimer) {
@@ -3460,7 +3677,7 @@ function simulateSpeedAlert() {
     id: 'notif_' + Date.now(),
     type: 'speed_warning',
     title: 'Speed Threshold Alert',
-    message: `Rider Natesh exceeded guardian safety limit (${guardianParentConfig.speedLimitKmh} km/h) reaching ${speed} km/h on Bangalore Expressway.`,
+    message: `Rider ${riderProfile.name || 'Pilot'} exceeded guardian safety limit (${guardianParentConfig.speedLimitKmh} km/h) reaching ${speed} km/h on Bangalore Expressway.`,
     severity: 'warning',
     riderEmail: parentConnectedRider || 'pilot@rhody.io',
     timestamp: new Date().toISOString()
@@ -3954,7 +4171,7 @@ function triggerCrashDetection(impactG = 4.2, rollDeg = 78.5) {
 
   currentCrashPayload = {
     riderEmail: riderProfile ? (riderProfile.email || 'pilot@rhody.io') : 'pilot@rhody.io',
-    riderName: riderProfile ? (riderProfile.name || 'Natesh') : 'Natesh',
+    riderName: riderProfile ? (riderProfile.name || "Pilot") : "Pilot",
     latitude: lat,
     longitude: lng,
     impactG: Number(impactG),
@@ -4026,7 +4243,7 @@ async function dispatchCrashEmergency(immediate = false) {
   if (!currentCrashPayload) {
     currentCrashPayload = {
       riderEmail: riderProfile ? (riderProfile.email || 'pilot@rhody.io') : 'pilot@rhody.io',
-      riderName: riderProfile ? (riderProfile.name || 'Natesh') : 'Natesh',
+      riderName: riderProfile ? (riderProfile.name || "Pilot") : "Pilot",
       latitude: 12.9716,
       longitude: 77.5946,
       impactG: 4.2,
