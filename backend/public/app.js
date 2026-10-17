@@ -13,6 +13,12 @@ var analysisMapInstance = null;
 var esriDarkLayerUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 var osmLayerUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 var satLayerUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+var cartoLightLayerUrl = 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png';
+
+var tripsTileLayer = null;
+var analysisTileLayer = null;
+var currentTheme = 'dark';
+var currentLanguage = 'en';
 
 var allTripsCache = [];
 var activeAnalysisTrip = null;
@@ -128,10 +134,260 @@ var activeDocFileName = '';
 // Real YouTube Active Query
 var currentYoutubeQuery = 'motorcycle periodic service maintenance ownership guide';
 
+// ========================================================
+// THEME MANAGER (LiveSpeedTracker High-Contrast Dual Mode)
+// ========================================================
+function initTheme() {
+  var savedTheme = localStorage.getItem('rhody_theme');
+  if (!savedTheme) {
+    savedTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  applyTheme(savedTheme);
+}
+
+function toggleTheme() {
+  var nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  applyTheme(nextTheme);
+  localStorage.setItem('rhody_theme', nextTheme);
+}
+
+function applyTheme(theme) {
+  currentTheme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  if (theme === 'light') {
+    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.add('light');
+  } else {
+    document.documentElement.classList.remove('light');
+    document.documentElement.classList.add('dark');
+  }
+
+  // Update theme toggle icons
+  var sun = document.getElementById('themeIconSun');
+  var moon = document.getElementById('themeIconMoon');
+  if (sun && moon) {
+    if (theme === 'light') {
+      sun.classList.remove('hidden');
+      moon.classList.add('hidden');
+    } else {
+      sun.classList.add('hidden');
+      moon.classList.remove('hidden');
+    }
+  }
+
+  // Swap Map Tiles if Leaflet is active
+  var activeTileUrl = theme === 'light' ? cartoLightLayerUrl : esriDarkLayerUrl;
+  if (tripsMapInstance && tripsTileLayer) {
+    try {
+      tripsMapInstance.removeLayer(tripsTileLayer);
+      tripsTileLayer = L.tileLayer(activeTileUrl, { maxZoom: 19, attribution: '&copy; Rhody Telemetry Canvas' }).addTo(tripsMapInstance);
+    } catch (e) {}
+  }
+  if (analysisMapInstance && analysisTileLayer) {
+    try {
+      analysisMapInstance.removeLayer(analysisTileLayer);
+      analysisTileLayer = L.tileLayer(activeTileUrl, { maxZoom: 19, attribution: '&copy; Rhody Telemetry Canvas' }).addTo(analysisMapInstance);
+    } catch (e) {}
+  }
+
+  // Redraw gauges for contrast
+  try {
+    drawSpeedGauge('tripsSpeedCanvas', liveSpeedKmh || 0);
+    drawGForceReticle('tripsGforceCanvas', 0, 0);
+  } catch (e) {}
+}
+
+// ========================================================
+// MULTI-LANGUAGE (i18n) ENGINE (8 LANGUAGES)
+// ========================================================
+var i18nTranslations = {
+  nav_cockpit: {
+    en: "Cockpit", es: "Cabina", fr: "Cockpit", de: "Cockpit",
+    it: "Cabina", ja: "コックピット", hi: "कॉकपिट", ta: "காக்பிட்"
+  },
+  nav_trips: {
+    en: "Telemetry & Trips", es: "Telemetría y Viajes", fr: "Télémétrie & Trajets", de: "Telemetrie & Fahrten",
+    it: "Telemetria e Viaggi", ja: "テレメトリ＆走行", hi: "टेलीमेट्री और यात्राएं", ta: "தொலைத்தொடர்பு & பயணங்கள்"
+  },
+  nav_specs: {
+    en: "Specs & Vault", es: "Especificaciones y Bóveda", fr: "Spécifications & Coffre", de: "Spezifikationen & Tresor",
+    it: "Specifiche e Cassaforte", ja: "仕様＆保管庫", hi: "विशेषताएं और वॉल्ट", ta: "விவரக்குறிப்புகள் & பெட்டகம்"
+  },
+  nav_hud: {
+    en: "HUD", es: "HUD", fr: "HUD", de: "HUD",
+    it: "HUD", ja: "HUD", hi: "एचयूडी", ta: "ஹெட்ஸ்-அப்"
+  },
+  nav_app: {
+    en: "App", es: "App", fr: "App", de: "App",
+    it: "App", ja: "アプリ", hi: "ऐप", ta: "செயலி"
+  },
+  nav_logout: {
+    en: "Log Out", es: "Cerrar Sesión", fr: "Déconnexion", de: "Abmelden",
+    it: "Disconnetti", ja: "ログアウト", hi: "लॉग आउट", ta: "வெளியேறு"
+  },
+  career_distance: {
+    en: "CAREER DISTANCE", es: "DISTANCIA TOTAL", fr: "DISTANCE TOTALE", de: "GESAMTSTRECKE",
+    it: "DISTANZA TOTALE", ja: "総走行距離", hi: "कुल दूरी", ta: "மொத்த தூரம்"
+  },
+  peak_velocity: {
+    en: "PEAK VELOCITY", es: "VELOCIDAD MÁXIMA", fr: "VITESSE MAXIMALE", de: "SPITZENGESCHWINDIGKEIT",
+    it: "VELOCITÀ MASSIMA", ja: "最高速度", hi: "अधिकतम गति", ta: "அதிவேகம்"
+  },
+  max_lean: {
+    en: "MAX APEX LEAN", es: "INCLINACIÓN MÁXIMA", fr: "INCLINAISON MAX", de: "MAX. SCHRÄGLAGE",
+    it: "PIEGA MASSIMA", ja: "最大バンク角", hi: "अधिकतम झुकाव", ta: "அதிகபட்ச சாய்வு"
+  },
+  runs_logged: {
+    en: "RUNS LOGGED", es: "VIAJES REGISTRADOS", fr: "TRAJETS ENREGISTRÉS", de: "AUFGEZEICHNETE FAHRTEN",
+    it: "CORSE REGISTRATE", ja: "記録済み走行数", hi: "दर्ज की गई यात्राएं", ta: "பதிவுசெய்த சவாரிகள்"
+  },
+  telemetry_ready: {
+    en: "Telemetry Ready", es: "Telemetría Lista", fr: "Télémétrie Prête", de: "Telemetrie Bereit",
+    it: "Telemetria Pronta", ja: "テレメトリ準備完了", hi: "टेलीमेट्री तैयार", ta: "தயார் நிலை"
+  },
+  gps_clocked: {
+    en: "GPS Clocked", es: "Medido por GPS", fr: "Mesuré par GPS", de: "GPS Gemessen",
+    it: "Rilevato da GPS", ja: "GPS測定済み", hi: "जीपीएस मापा", ta: "ஜிபிஎஸ் பதிவு"
+  },
+  gyro_calibrated: {
+    en: "Gyro Calibrated", es: "Giroscopio Calibrado", fr: "Gyroscope Calibré", de: "Gyroskop Kalibriert",
+    it: "Giroscopio Calibrato", ja: "ジャイロ調整済み", hi: "जाइरो कैलिब्रेटेड", ta: "கைரோ அளவீடு"
+  },
+  awaiting_ride: {
+    en: "Awaiting Ride", es: "Esperando Viaje", fr: "En attente de trajet", de: "Wartet auf Fahrt",
+    it: "In attesa di corsa", ja: "走行待機中", hi: "सवारी की प्रतीक्षा", ta: "பயணக் காத்திருப்பு"
+  },
+  trip_recorder_title: {
+    en: "Active Trip Telemetry Recorder", es: "Grabador de Telemetría de Viaje", fr: "Enregistreur de Télémétrie en Direct", de: "Aktiver Fahrt-Telemetrie-Rekorder",
+    it: "Registratore Telemetria Corsa Attiva", ja: "アクティブ走行テレメトリ記録", hi: "सक्रिय यात्रा टेलीमेट्री रिकॉर्डर", ta: "நேரடி பயண ரெக்கார்டர்"
+  },
+  trip_ready: {
+    en: "READY TO RIDE", es: "LISTO PARA RODAR", fr: "PRÊT À ROULER", de: "FAHRTBEREIT",
+    it: "PRONTO A PARTIRE", ja: "走行準備完了", hi: "सवारी के लिए तैयार", ta: "சவாரிக்கு தயார்"
+  },
+  trip_start: {
+    en: "START RECORDING TRIP", es: "INICIAR GRABACIÓN", fr: "DÉMARRER LE TRAJET", de: "FAHRT STARTEN",
+    it: "AVVIA REGISTRAZIONE", ja: "走行記録開始", hi: "यात्रा रिकॉर्डिंग शुरू करें", ta: "பயணத்தை தொடங்கு"
+  },
+  trip_pause: {
+    en: "Pause Recording", es: "Pausar Grabación", fr: "Mettre en pause", de: "Aufnahme pausieren",
+    it: "Pausa Registrazione", ja: "一時停止", hi: "रिकॉर्डिंग रोकें", ta: "இடைநிறுத்து"
+  },
+  trip_finish: {
+    en: "FINISH & SAVE RUN", es: "FINALIZAR Y GUARDAR", fr: "TERMINER & ENREGISTRER", de: "BEENDEN & SPEICHERN",
+    it: "TERMINA E SALVA", ja: "終了して保存", hi: "समाप्त करें और सहेजें", ta: "முடித்து சேமிக்கவும்"
+  },
+  trip_start_hint: {
+    en: "Tap \"START RECORDING TRIP\" below when mounted. Rhody connects directly to your device's high-precision GPS and IMU gyroscope.",
+    es: "Toca \"INICIAR GRABACIÓN\" abajo al montar. Rhody se conecta al GPS y giroscopio.",
+    fr: "Appuyez sur \"DÉMARRER LE TRAJET\" ci-dessous une fois en selle.",
+    de: "Tippen Sie unten auf \"FAHRT STARTEN\", sobald Sie aufgesessen sind.",
+    it: "Tocca \"AVVIA REGISTRAZIONE\" sotto quando sei in sella.",
+    ja: "乗車時に下の「走行記録開始」をタップしてください。高精度GPSとジャイロに直接接続します。",
+    hi: "सवारी शुरू करने के लिए नीचे \"यात्रा रिकॉर्डिंग शुरू करें\" पर टैप करें।",
+    ta: "சவாரி தொடங்க கீழே உள்ள \"பயணத்தை தொடங்கு\" என்பதைத் தட்டவும்."
+  },
+  elapsed_timer: {
+    en: "Elapsed Stopwatch", es: "Cronómetro Transcurrido", fr: "Chronomètre", de: "Verstrichene Zeit",
+    it: "Cronometro Trascorso", ja: "経過時間ストップウォッチ", hi: "बीता हुआ समय", ta: "கடந்த நேரம்"
+  },
+  gps_speed: {
+    en: "Real GPS Speed", es: "Velocidad GPS Real", fr: "Vitesse GPS Réelle", de: "Echte GPS-Geschwindigkeit",
+    it: "Velocità GPS Reale", ja: "実GPS速度", hi: "वास्तविक जीपीएस गति", ta: "நேரடி ஜிபிஎஸ் வேகம்"
+  },
+  distance_covered: {
+    en: "Distance Covered", es: "Distancia Recorrida", fr: "Distance Parcourue", de: "Zurückgelegte Strecke",
+    it: "Distanza Percorsa", ja: "走行距離", hi: "तय की गई दूरी", ta: "கடந்த தூரம்"
+  },
+  lean_angle: {
+    en: "Apex Lean Angle", es: "Ángulo de Inclinación", fr: "Angle d'Inclinaison", de: "Schräglagenwinkel",
+    it: "Angolo di Piega", ja: "バンク角", hi: "झुकाव कोण", ta: "சாய்வு கோணம்"
+  },
+  realtime_counter: {
+    en: "Real-time counter", es: "Contador en tiempo real", fr: "Compteur temps réel", de: "Echtzeitzähler",
+    it: "Contatore tempo reale", ja: "リアルタイム計測", hi: "रीयल-टाइम काउंटर", ta: "நேரடி கணக்கீடு"
+  },
+  haversine_gps: {
+    en: "Haversine GPS sum", es: "Suma GPS Haversine", fr: "Somme GPS Haversine", de: "Haversine GPS Summe",
+    it: "Somma GPS Haversine", ja: "GPS積算距離", hi: "जीपीएस दूरी योग", ta: "ஜிபிஎஸ் தூரக் கூட்டு"
+  },
+  device_gyro: {
+    en: "Device gyroscope", es: "Giroscopio del dispositivo", fr: "Gyroscope de l'appareil", de: "Geräte-Gyroskop",
+    it: "Giroscopio dispositivo", ja: "端末ジャイロスコープ", hi: "डिवाइस जाइरोस्कोप", ta: "சாதன கைரோஸ்கோப்"
+  }
+};
+
+function initLanguage() {
+  var savedLang = localStorage.getItem('rhody_lang') || 'en';
+  setLanguage(savedLang);
+
+  // Close language dropdown if clicked outside
+  window.addEventListener('click', function(e) {
+    var wrapper = document.getElementById('langSelectorWrapper');
+    var menu = document.getElementById('langDropdownMenu');
+    if (wrapper && menu && !wrapper.contains(e.target)) {
+      menu.classList.add('hidden');
+    }
+  });
+}
+
+function toggleLanguageMenu() {
+  var menu = document.getElementById('langDropdownMenu');
+  if (menu) {
+    menu.classList.toggle('hidden');
+  }
+}
+
+function selectLanguage(lang) {
+  setLanguage(lang);
+  var menu = document.getElementById('langDropdownMenu');
+  if (menu) {
+    menu.classList.add('hidden');
+  }
+}
+
+function setLanguage(lang) {
+  currentLanguage = lang;
+  localStorage.setItem('rhody_lang', lang);
+
+  // Update dropdown label
+  var label = document.getElementById('currentLangLabel');
+  if (label) {
+    label.textContent = lang.toUpperCase();
+  }
+
+  // Translate all [data-i18n] nodes
+  var i18nNodes = document.querySelectorAll('[data-i18n]');
+  i18nNodes.forEach(function(node) {
+    var key = node.getAttribute('data-i18n');
+    if (i18nTranslations[key] && i18nTranslations[key][lang]) {
+      node.textContent = i18nTranslations[key][lang];
+    }
+  });
+
+  // Translate [data-i18n-placeholder] nodes
+  var placeholderNodes = document.querySelectorAll('[data-i18n-placeholder]');
+  placeholderNodes.forEach(function(node) {
+    var key = node.getAttribute('data-i18n-placeholder');
+    if (i18nTranslations[key] && i18nTranslations[key][lang]) {
+      node.setAttribute('placeholder', i18nTranslations[key][lang]);
+    }
+  });
+}
+
+function t(key, fallback) {
+  if (i18nTranslations[key] && i18nTranslations[key][currentLanguage]) {
+    return i18nTranslations[key][currentLanguage];
+  }
+  return fallback || key;
+}
+
 // ----------------------------------------------------
 // INITIALIZATION
 // ----------------------------------------------------
 document.addEventListener('DOMContentLoaded', function() {
+  initTheme();
+  initLanguage();
   loadProfileFromStorage();
   loadBikeManagementFromStorage();
   renderDashboardProfile();
@@ -1356,10 +1612,11 @@ function initTripsMap() {
     zoom: 14
   });
 
-  L.tileLayer(esriDarkLayerUrl, {
-    maxNativeZoom: 16,
+  var activeTileUrl = currentTheme === 'light' ? cartoLightLayerUrl : esriDarkLayerUrl;
+  tripsTileLayer = L.tileLayer(activeTileUrl, {
+    maxNativeZoom: 18,
     maxZoom: 19,
-    attribution: '&copy; Esri &mdash; Rhody Dark Canvas'
+    attribution: '&copy; Rhody Telemetry Canvas'
   }).addTo(tripsMapInstance);
 
   activeTripPolyline = L.polyline([], {
@@ -2018,10 +2275,11 @@ function initAnalysisMap() {
     zoom: 12
   });
 
-  L.tileLayer(esriDarkLayerUrl, {
-    maxNativeZoom: 16,
+  var activeTileUrl = currentTheme === 'light' ? cartoLightLayerUrl : esriDarkLayerUrl;
+  analysisTileLayer = L.tileLayer(activeTileUrl, {
+    maxNativeZoom: 18,
     maxZoom: 19,
-    attribution: '&copy; Esri &mdash; Rhody Dark Canvas'
+    attribution: '&copy; Rhody Telemetry Canvas'
   }).addTo(analysisMapInstance);
 }
 
@@ -2471,7 +2729,7 @@ function drawSpeedGauge(canvasId, speedKmh) {
   // Background Bezel Track (240 deg arc)
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0.75 * Math.PI, 2.25 * Math.PI);
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.strokeStyle = currentTheme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.08)';
   ctx.lineWidth = 10;
   ctx.lineCap = 'round';
   ctx.stroke();
@@ -2511,7 +2769,7 @@ function drawGForceReticle(canvasId, latG, longG) {
   [0.33, 0.66, 1.0].forEach(frac => {
     ctx.beginPath();
     ctx.arc(cx, cy, r * frac, 0, 2 * Math.PI);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.strokeStyle = currentTheme === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
     ctx.lineWidth = 1;
     ctx.stroke();
   });
@@ -2520,7 +2778,7 @@ function drawGForceReticle(canvasId, latG, longG) {
   ctx.beginPath();
   ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r);
   ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy);
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+  ctx.strokeStyle = currentTheme === 'light' ? 'rgba(0, 0, 0, 0.14)' : 'rgba(255, 255, 255, 0.12)';
   ctx.stroke();
 
   // Active Target Bead

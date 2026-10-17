@@ -6,15 +6,16 @@
   <title>Rhody Mobile App UI Simulator</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap');
     
     body {
-      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+      letter-spacing: -0.015em;
       user-select: none;
     }
     
     .font-mono {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Space Mono', 'JetBrains Mono', monospace;
     }
     
     /* Custom scrollbars */
@@ -35,6 +36,7 @@
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: background 0.2s ease, border-color 0.2s ease;
     }
     
     .glass-card-hover:hover {
@@ -67,6 +69,47 @@
       50% { transform: scale(1.15); opacity: 0.4; }
       100% { transform: scale(0.95); opacity: 0.8; }
     }
+
+    /* ======================================================== */
+    /* PHONE SCREEN LIGHT MODE OVERRIDES                        */
+    /* ======================================================== */
+    .phone-light #phoneScreenCanvas {
+      background-color: #F4F6F9 !important;
+      color: #0F172A !important;
+    }
+    .phone-light .glass-card {
+      background: #FFFFFF !important;
+      border-color: #E2E8F0 !important;
+      box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05) !important;
+    }
+    .phone-light .text-white {
+      color: #0F172A !important;
+    }
+    .phone-light .text-slate-100 {
+      color: #0F172A !important;
+    }
+    .phone-light .text-slate-200 {
+      color: #1E293B !important;
+    }
+    .phone-light .text-slate-300 {
+      color: #334155 !important;
+    }
+    .phone-light .text-slate-400 {
+      color: #475569 !important;
+    }
+    .phone-light [class*="bg-slate-900"],
+    .phone-light [class*="bg-slate-950"] {
+      background-color: #FFFFFF !important;
+      border-color: #E2E8F0 !important;
+    }
+    .phone-light #phoneBottomNav {
+      background-color: rgba(255, 255, 255, 0.96) !important;
+      border-top-color: #E2E8F0 !important;
+    }
+    .phone-light #phoneStatusBar {
+      background-color: rgba(255, 255, 255, 0.96) !important;
+      color: #0F172A !important;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-4 flex flex-col items-center justify-center antialiased">
@@ -88,10 +131,31 @@
       </div>
     </div>
 
-    <!-- Active screen mapper badge -->
-    <div class="flex items-center gap-2 text-xs bg-slate-950/70 border border-slate-800 rounded-xl px-3 py-1.5">
-      <span class="text-slate-400">Active Source File:</span>
-      <span id="sourceFileBadge" class="font-mono text-cyan-400 font-medium">DashboardScreen.kt</span>
+    <!-- Toolbar Actions (Theme, Language, Source Badge) -->
+    <div class="flex items-center gap-2.5">
+      <!-- Theme Switcher Pill -->
+      <button onclick="togglePhoneTheme()" class="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition">
+        <span id="themeToggleIcon">🌙</span>
+        <span id="themeToggleLabel" class="font-mono text-[11px] font-bold">Dark</span>
+      </button>
+
+      <!-- Language Selector -->
+      <select id="mobileLangSelector" onchange="changeMobileLanguage(this.value)" class="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-cyan-400 font-mono font-bold focus:outline-none cursor-pointer">
+        <option value="en">🌐 EN</option>
+        <option value="es">🌐 ES</option>
+        <option value="fr">🌐 FR</option>
+        <option value="de">🌐 DE</option>
+        <option value="it">🌐 IT</option>
+        <option value="ja">🌐 JA</option>
+        <option value="hi">🌐 HI</option>
+        <option value="ta">🌐 TA</option>
+      </select>
+
+      <!-- Active screen mapper badge -->
+      <div class="hidden sm:flex items-center gap-2 text-xs bg-slate-950/70 border border-slate-800 rounded-xl px-3 py-1.5">
+        <span class="text-slate-400">Source:</span>
+        <span id="sourceFileBadge" class="font-mono text-cyan-400 font-medium">DashboardScreen.kt</span>
+      </div>
     </div>
   </header>
 
@@ -108,10 +172,10 @@
       <div class="absolute -right-[7px] top-36 w-[3px] h-16 bg-slate-700 rounded-r-sm"></div>
 
       <!-- Phone Screen Canvas -->
-      <div class="w-full h-full bg-slate-950 rounded-[40px] overflow-hidden flex flex-col relative border border-slate-800/60">
+      <div id="phoneScreenCanvas" class="w-full h-full bg-slate-950 rounded-[40px] overflow-hidden flex flex-col relative border border-slate-800/60">
         
         <!-- Status Bar -->
-        <div class="h-10 pt-2 px-6 flex items-center justify-between text-xs text-slate-400 z-30 select-none bg-slate-950/80 backdrop-blur-md">
+        <div id="phoneStatusBar" class="h-10 pt-2 px-6 flex items-center justify-between text-xs text-slate-400 z-30 select-none bg-slate-950/80 backdrop-blur-md">
           <span class="font-mono font-semibold text-slate-200" id="liveClock">09:41</span>
           <!-- Dynamic Island / Camera cutout -->
           <div class="w-24 h-5 bg-black rounded-full flex items-center justify-center gap-2 border border-slate-800/60">
@@ -629,7 +693,7 @@
         <!-- ============================================== -->
         <!-- BOTTOM NAVIGATION BAR (4 TABS) -->
         <!-- ============================================== -->
-        <nav class="absolute bottom-0 inset-x-0 h-16 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800/80 px-4 flex items-center justify-around z-30 select-none">
+        <nav id="phoneBottomNav" class="absolute bottom-0 inset-x-0 h-16 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800/80 px-4 flex items-center justify-around z-30 select-none">
           
           <!-- 1. Dashboard Tab -->
           <button id="nav-dashboard" onclick="switchTab('dashboard')" class="nav-item flex flex-col items-center gap-1 text-cyan-400 transition-colors">
@@ -992,6 +1056,45 @@
         const url = URL.createObjectURL(file);
         document.getElementById('profileAvatarImg').src = url;
         document.getElementById('dashboardAvatar').src = url;
+      }
+    }
+
+    var phoneTheme = 'dark';
+    function togglePhoneTheme() {
+      phoneTheme = phoneTheme === 'dark' ? 'light' : 'dark';
+      const phoneFrame = document.querySelector('.relative.w-\\[375px\\]');
+      const icon = document.getElementById('themeToggleIcon');
+      const label = document.getElementById('themeToggleLabel');
+      if (phoneTheme === 'light') {
+        phoneFrame.classList.add('phone-light');
+        if (icon) icon.textContent = '☀️';
+        if (label) label.textContent = 'Light';
+      } else {
+        phoneFrame.classList.remove('phone-light');
+        if (icon) icon.textContent = '🌙';
+        if (label) label.textContent = 'Dark';
+      }
+    }
+
+    var mobileLangDict = {
+      en: { telemetry: "Cockpit", trips: "Trips", garage: "Vault", profile: "Profile" },
+      es: { telemetry: "Cabina", trips: "Viajes", garage: "Bóveda", profile: "Perfil" },
+      fr: { telemetry: "Cockpit", trips: "Trajets", garage: "Coffre", profile: "Profil" },
+      de: { telemetry: "Cockpit", trips: "Fahrten", garage: "Tresor", profile: "Profil" },
+      it: { telemetry: "Cabina", trips: "Viaggi", garage: "Cassaforte", profile: "Profilo" },
+      ja: { telemetry: "コックピット", trips: "走行", garage: "保管庫", profile: "設定" },
+      hi: { telemetry: "कॉकपिट", trips: "यात्राएं", garage: "वॉल्ट", profile: "प्रोफ़ाइल" },
+      ta: { telemetry: "காக்பிட்", trips: "பயணங்கள்", garage: "பெட்டகம்", profile: "சுயவிவரம்" }
+    };
+
+    function changeMobileLanguage(lang) {
+      const trans = mobileLangDict[lang] || mobileLangDict.en;
+      const navItems = document.querySelectorAll('#phoneBottomNav span');
+      if (navItems.length >= 4) {
+        navItems[0].textContent = trans.telemetry;
+        navItems[1].textContent = trans.trips;
+        navItems[2].textContent = trans.garage;
+        navItems[3].textContent = trans.profile;
       }
     }
   </script>
