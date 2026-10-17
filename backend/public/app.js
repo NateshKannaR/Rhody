@@ -2570,8 +2570,10 @@ function goToEntryStep(step) {
   const stepRider = document.getElementById("entryStepRider");
   const stepBike = document.getElementById("entryStepBike");
   const stepParent = document.getElementById("entryStepParent");
-  const modalTitle = document.getElementById("entryModalTitle");
   const modalSubtitle = document.getElementById("entryModalSubtitle");
+  const stepperBar = document.getElementById("entryStepperBar");
+  const stepIndRider = document.getElementById("stepIndicatorRider");
+  const stepIndBike = document.getElementById("stepIndicatorBike");
 
   [stepRole, stepRider, stepBike, stepParent].forEach(el => {
     if (el) el.classList.add("hidden");
@@ -2579,12 +2581,19 @@ function goToEntryStep(step) {
 
   if (step === "role") {
     if (stepRole) stepRole.classList.remove("hidden");
-    if (modalTitle) modalTitle.textContent = "Rhody Precision Telemetry";
-    if (modalSubtitle) modalSubtitle.textContent = "Configure your operational profile to enter the platform";
+    if (stepperBar) stepperBar.classList.add("hidden");
+    if (modalSubtitle) modalSubtitle.textContent = "Autonomous Motorsport Sensor Calibration & Dynamic Cockpit Gateway";
   } else if (step === "rider") {
     if (stepRider) stepRider.classList.remove("hidden");
-    if (modalTitle) modalTitle.textContent = "Rider Setup — Step 1 of 2";
-    if (modalSubtitle) modalSubtitle.textContent = "Tell us who is commanding the machine";
+    if (stepperBar) stepperBar.classList.remove("hidden");
+    if (modalSubtitle) modalSubtitle.textContent = "Establish pilot identity credentials and communication channels";
+
+    if (stepIndRider) {
+      stepIndRider.className = "flex-1 flex items-center justify-center sm:justify-start space-x-2.5 px-3 py-1.5 rounded-xl bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 transition";
+    }
+    if (stepIndBike) {
+      stepIndBike.className = "flex-1 flex items-center justify-center sm:justify-start space-x-2.5 px-3 py-1.5 rounded-xl text-slate-400 border border-transparent transition";
+    }
 
     const nameInp = document.getElementById("entryRiderName");
     const handleInp = document.getElementById("entryRiderHandle");
@@ -2606,10 +2615,19 @@ function goToEntryStep(step) {
       avatarImg.classList.remove("hidden");
       avatarInit.classList.add("hidden");
     }
+
+    updateLiveEntryPreview();
   } else if (step === "bike") {
     if (stepBike) stepBike.classList.remove("hidden");
-    if (modalTitle) modalTitle.textContent = "Machine Hardware — Step 2 of 2";
-    if (modalSubtitle) modalSubtitle.textContent = "Pair your motorcycle specifications";
+    if (stepperBar) stepperBar.classList.remove("hidden");
+    if (modalSubtitle) modalSubtitle.textContent = "Link powertrain geometry and machine registration";
+
+    if (stepIndRider) {
+      stepIndRider.className = "flex-1 flex items-center justify-center sm:justify-start space-x-2.5 px-3 py-1.5 rounded-xl text-slate-400 border border-transparent transition";
+    }
+    if (stepIndBike) {
+      stepIndBike.className = "flex-1 flex items-center justify-center sm:justify-start space-x-2.5 px-3 py-1.5 rounded-xl bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 transition";
+    }
 
     const bikeModelInp = document.getElementById("entryBikeModel");
     const bikePlateInp = document.getElementById("entryBikePlate");
@@ -2625,10 +2643,12 @@ function goToEntryStep(step) {
     if (bikeOdoInp) bikeOdoInp.value = specs.currentOdometer || "";
     if (bikeSpecsInp) bikeSpecsInp.value = specs.engine || riderProfile.bikeSpecs || "";
     if (bikeTiresInp) bikeTiresInp.value = riderProfile.tireSetup || "";
+
+    updateLiveBikePreview();
   } else if (step === "parent") {
     if (stepParent) stepParent.classList.remove("hidden");
-    if (modalTitle) modalTitle.textContent = "Guardian Safety Radar Login";
-    if (modalSubtitle) modalSubtitle.textContent = "Connect to monitor live location & emergency crash SOS";
+    if (stepperBar) stepperBar.classList.add("hidden");
+    if (modalSubtitle) modalSubtitle.textContent = "Connect to monitor live location & emergency crash SOS radar";
 
     const gName = document.getElementById("entryGuardianName");
     const gEmail = document.getElementById("entryGuardianEmail");
@@ -2637,6 +2657,109 @@ function goToEntryStep(step) {
     if (gName) gName.value = guardianParentConfig.guardianName || "";
     if (gEmail) gEmail.value = localStorage.getItem("rhody_parent_email") || "";
     if (gCode) gCode.value = localStorage.getItem("rhody_parent_rider_code") || (riderProfile.handle ? riderProfile.handle.replace("@", "") : "") || "";
+  }
+}
+
+function updateLiveEntryPreview() {
+  const nameVal = (document.getElementById("entryRiderName")?.value || "").trim();
+  const handleVal = (document.getElementById("entryRiderHandle")?.value || "").trim();
+  const bioVal = (document.getElementById("entryRiderBio")?.value || "").trim();
+
+  const previewName = document.getElementById("livePreviewPilotName");
+  const previewHandle = document.getElementById("livePreviewPilotHandle");
+  const previewBio = document.getElementById("livePreviewPilotBio");
+  const previewInitial = document.getElementById("entryAvatarInitial");
+
+  if (previewName) previewName.textContent = nameVal ? nameVal : "Pilot";
+  if (previewHandle) {
+    let h = handleVal;
+    if (h && !h.startsWith("@")) h = "@" + h;
+    previewHandle.textContent = h || (nameVal ? ("@" + nameVal.toLowerCase().replace(/\s+/g, "_")) : "@pilot");
+  }
+  if (previewBio) previewBio.textContent = bioVal ? `"${bioVal}"` : `"Precision motorcycle telemetry & dynamic apex trajectory tracking."`;
+  if (previewInitial) previewInitial.textContent = (nameVal || "P").charAt(0).toUpperCase();
+}
+
+function updateLiveBikePreview() {
+  const modelVal = (document.getElementById("entryBikeModel")?.value || "").trim();
+  const plateVal = (document.getElementById("entryBikePlate")?.value || "").trim();
+  const odoVal = parseFloat(document.getElementById("entryBikeOdo")?.value) || 0;
+  const specsVal = (document.getElementById("entryBikeSpecs")?.value || "").trim();
+  const tiresVal = (document.getElementById("entryBikeTires")?.value || "").trim();
+
+  const previewModel = document.getElementById("livePreviewBikeModel");
+  const previewPlate = document.getElementById("livePreviewBikePlate");
+  const previewSpecs = document.getElementById("livePreviewBikeSpecs");
+  const previewOdo = document.getElementById("livePreviewBikeOdo");
+  const previewTires = document.getElementById("livePreviewBikeTires");
+  const previewStatus = document.getElementById("livePreviewBikeStatusBadge");
+
+  if (previewModel) previewModel.textContent = modelVal || "Unconfigured Motorcycle";
+  if (previewPlate) previewPlate.textContent = (plateVal || "KA-05-MM-1234").toUpperCase();
+  if (previewSpecs) previewSpecs.textContent = specsVal || "373cc Single • 43.5 PS";
+  if (previewOdo) previewOdo.textContent = odoVal > 0 ? `${odoVal.toLocaleString()} KM` : "0 KM";
+  if (previewTires) previewTires.textContent = tiresVal || "Track Spec";
+  if (previewStatus) {
+    if (modelVal) {
+      previewStatus.textContent = "READY TO BIND";
+      previewStatus.className = "px-2 py-0.5 text-[9px] font-mono font-bold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30";
+    } else {
+      previewStatus.textContent = "CALIBRATING";
+      previewStatus.className = "px-2 py-0.5 text-[9px] font-mono font-bold rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30";
+    }
+  }
+}
+
+function applyMachinePreset(presetKey) {
+  const presets = {
+    ktm: {
+      model: "KTM Duke 390 Gen 3",
+      specs: "399cc Liquid Single • 46 PS • 39 Nm",
+      tires: "Metzeler Sportec M5 (F 29 / R 32 PSI)",
+      odo: "4200"
+    },
+    yamaha: {
+      model: "Yamaha MT-15 V2",
+      specs: "155cc Liquid VVA • 18.4 PS • 14.1 Nm",
+      tires: "MRF Revz Radial (F 29 / R 33 PSI)",
+      odo: "5600"
+    },
+    triumph: {
+      model: "Triumph Street Triple 765 RS",
+      specs: "765cc Moto2 Triple • 130 PS • 80 Nm",
+      tires: "Pirelli Diablo Supercorsa SP V3",
+      odo: "3800"
+    },
+    re: {
+      model: "Royal Enfield Himalayan 450",
+      specs: "452cc Sherpa Liquid • 40.02 PS • 40 Nm",
+      tires: "CEAT Gripp-Rad (F 28 / R 32 PSI)",
+      odo: "6100"
+    },
+    custom: {
+      model: "",
+      specs: "",
+      tires: "",
+      odo: ""
+    }
+  };
+
+  const p = presets[presetKey];
+  if (!p) return;
+
+  const mInp = document.getElementById("entryBikeModel");
+  const sInp = document.getElementById("entryBikeSpecs");
+  const tInp = document.getElementById("entryBikeTires");
+  const oInp = document.getElementById("entryBikeOdo");
+
+  if (mInp) mInp.value = p.model;
+  if (sInp) sInp.value = p.specs;
+  if (tInp) tInp.value = p.tires;
+  if (oInp) oInp.value = p.odo;
+
+  updateLiveBikePreview();
+  if (presetKey !== "custom") {
+    showToast(`Preset applied: ${p.model}`, "success");
   }
 }
 
@@ -3308,8 +3431,8 @@ function switchRole(role) {
     if (btnRoleRider) btnRoleRider.className = "px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5";
 
     // Header switcher state
-    if (btnHeaderToggleText) btnHeaderToggleText.textContent = "Rider Cockpit";
-    if (mobileTabPortalText) mobileTabPortalText.textContent = "Cockpit";
+    
+    
 
     // Hide rider view tabs
     ["dashboard", "trips", "parenting", "settings", "analysis"].forEach(v => {
@@ -3340,8 +3463,8 @@ function switchRole(role) {
     if (btnRoleParent) btnRoleParent.className = "px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5";
 
     // Header switcher state
-    if (btnHeaderToggleText) btnHeaderToggleText.textContent = "Guardian Portal";
-    if (mobileTabPortalText) mobileTabPortalText.textContent = "Guardian";
+    
+    
 
     // Return to rider mode
     if (parentTelemetryPollTimer) {
