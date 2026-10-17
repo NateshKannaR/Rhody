@@ -1,5 +1,6 @@
 package com.roadpulse.app.ui.screens.profile
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -501,6 +502,12 @@ fun ProfileScreen(
                 )
             }
 
+            val bikePrefs = remember { context.getSharedPreferences("rhody_bike_prefs", Context.MODE_PRIVATE) }
+            val isMachineConfigured = bikePrefs.getBoolean("is_configured", false)
+            val bikeModel = bikePrefs.getString("bike_model", "") ?: ""
+            val bikePlate = bikePrefs.getString("bike_plate", "") ?: ""
+            val bikeEngineSpec = bikePrefs.getString("bike_specs", "") ?: ""
+
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(
@@ -509,14 +516,14 @@ fun ProfileScreen(
             ) {
                 SettingInfoItem(
                     title = "BIKE MODEL",
-                    value = "Yamaha MT-15 V2",
+                    value = if (isMachineConfigured && bikeModel.isNotBlank()) bikeModel else "Unregistered",
                     icon = Icons.Default.TwoWheeler,
                     accentColor = HyperCyan,
                     modifier = Modifier.weight(1f)
                 )
                 SettingInfoItem(
                     title = "REGISTRATION",
-                    value = "KA-01-EQ-1550",
+                    value = if (isMachineConfigured && bikePlate.isNotBlank()) bikePlate else "No Plate",
                     icon = Icons.Default.Badge,
                     accentColor = OptimalGreen,
                     modifier = Modifier.weight(1f)
@@ -531,7 +538,7 @@ fun ProfileScreen(
             ) {
                 SettingInfoItem(
                     title = "ENGINE DISPLACEMENT",
-                    value = "155cc Liquid VVA",
+                    value = if (isMachineConfigured && bikeEngineSpec.isNotBlank()) bikeEngineSpec else "Unspecified",
                     icon = Icons.Default.Speed,
                     accentColor = SportAmber,
                     modifier = Modifier.weight(1f)

@@ -93,116 +93,120 @@
   <div class="fixed top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-[140px] pointer-events-none"></div>
   <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-rose-500/5 rounded-full blur-[140px] pointer-events-none"></div>
 
-  <!-- ================= MODERN FLOATING GLASS NAVIGATION BAR ================= -->
+  <!-- ================= MODERN FLOATING GLASS NAVIGATION BAR (ZEBEYOND ENGINEERING STYLE) ================= -->
   <header class="sticky top-0 z-40 px-3 sm:px-6 pt-3 pb-1 max-w-[1600px] mx-auto w-full transition-all duration-300">
-    <div class="bg-[#0A0D14]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.7)] px-4 sm:px-5 h-16 flex items-center justify-between">
+    <div class="bg-[#080B11]/90 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.7)] px-4 sm:px-6 h-16 flex items-center justify-between">
       
       <!-- Brand Identity -->
-      <div class="flex items-center space-x-3.5 cursor-pointer" onclick="switchMainView('dashboard')">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.4)] border border-cyan-300/30">
-          <svg class="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
+      <div class="flex items-center space-x-3 cursor-pointer shrink-0" onclick="switchMainView('dashboard')">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-400 via-blue-600 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.35)] border border-cyan-400/30">
+          <svg class="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 24 24">
             <path d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
         <div>
           <div class="flex items-center space-x-2">
-            <span class="text-base font-black tracking-widest text-white">RHODY</span>
-            <span class="px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">Precision Telemetry</span>
+            <span class="text-sm font-black tracking-[0.2em] text-white">RHODY</span>
+            <span class="px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase tracking-wider rounded bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">PLATFORM v2.4</span>
           </div>
-          <span class="text-[10px] block text-slate-400 font-mono tracking-wider">REAL GPS &bull; IMU FUSION &bull; GUARDIAN SHIELD</span>
+          <span class="text-[9px] block text-slate-400 font-mono tracking-wider">MOTORSPORT TELEMETRY SYSTEM</span>
         </div>
       </div>
 
-      <!-- EXACT 4 DESKTOP NAVIGATION TABS WITH ULTRA-CRISP MOTORSPORT SVG ICONS -->
-      <nav class="hidden md:flex items-center p-1 bg-white/[0.03] border border-white/[0.08] rounded-2xl space-x-1 shadow-inner backdrop-blur-md">
-        <!-- 1. GARAGE & BIKE MANAGEMENT -->
-        <button id="navTabDashboard" onclick="switchMainView('dashboard')" class="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(0,240,255,0.2)] flex items-center space-x-2 transition">
-          <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- STREAMLINED MODERN ENGINEERING NAVIGATION TABS -->
+      <nav class="hidden lg:flex items-center p-1 bg-white/[0.03] border border-white/[0.06] rounded-xl space-x-1 backdrop-blur-md">
+        <!-- 1. COCKPIT & GARAGE -->
+        <button id="navTabDashboard" onclick="switchMainView('dashboard')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 shadow-[0_0_12px_rgba(0,240,255,0.2)] flex items-center space-x-2 transition">
+          <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/>
           </svg>
-          <span>Bike Management</span>
+          <span>Cockpit</span>
         </button>
 
-        <!-- 2. TRIPS & CALCULATION -->
-        <button id="navTabTrips" onclick="switchMainView('trips')" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
-          <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- 2. TRIPS & TELEMETRY -->
+        <button id="navTabTrips" onclick="switchMainView('trips')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
+          <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
           </svg>
-          <span>Trip Calculations</span>
-          <span id="navLiveTripPulse" class="hidden w-2 h-2 rounded-full bg-emerald-400 status-pulse"></span>
+          <span>Telemetry &amp; Trips</span>
+          <span id="navLiveTripPulse" class="hidden w-1.5 h-1.5 rounded-full bg-emerald-400 status-pulse"></span>
         </button>
 
-        <!-- 3. BIKE PARENTING BEACON -->
-        <button id="navTabParenting" onclick="switchMainView('parenting')" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
-          <svg class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- 3. GUARDIAN RADAR -->
+        <button id="navTabParenting" onclick="switchMainView('parenting')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
+          <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             <path d="m9 12 2 2 4-4"/>
           </svg>
-          <span>Bike Parenting</span>
+          <span>Guardian Radar</span>
         </button>
 
-        <!-- 4. SETTINGS -->
-        <button id="navTabSettings" onclick="switchMainView('settings')" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
-          <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- 4. SPECS & VAULT -->
+        <button id="navTabSettings" onclick="switchMainView('settings')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
+          <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
-          <span>Settings</span>
+          <span>Specs &amp; Vault</span>
         </button>
       </nav>
 
-      <!-- Right Header Actions (Upfront Role Selector, APK Download & Profile) -->
-      <div class="flex items-center space-x-2.5">
+      <!-- Right Header Actions (Role Switcher, HUD, App, Profile) -->
+      <div class="flex items-center space-x-2">
         
-        <!-- UPFRONT ROLE GATEWAY SELECTOR (Rider vs Parent) -->
-        <button id="btnRoleGateway" onclick="openRoleGatewayModal()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-500/20 to-cyan-500/20 hover:from-purple-500/30 hover:to-cyan-500/30 text-white border border-purple-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(168,85,247,0.25)]" title="Choose Rider Cockpit or Parent Guardian Mode">
-          <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
-          <span id="roleGatewayNavLabel">Role: Rider Cockpit</span>
-          <svg class="w-3 h-3 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="m6 9 6 6 6-6"/>
-          </svg>
-        </button>
+        <!-- UPFRONT SEGMENTED ROLE TOGGLE (Rider Cockpit vs Guardian Portal) -->
+        <div class="flex items-center p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl text-xs">
+          <button id="btnRoleRider" onclick="switchRole('rider')" class="px-2.5 py-1 rounded-lg font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 transition flex items-center space-x-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            <span>Rider</span>
+          </button>
+          <button id="btnRoleParent" onclick="switchRole('parent')" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+            <span>Guardian</span>
+            <span id="navParentAlertDot" class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse hidden"></span>
+          </button>
+        </div>
 
-        <!-- Direct Parent Role Switcher Button -->
-        <button id="btnRoleSwitcher" onclick="toggleParentRole()" class="hidden sm:flex px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-400/40 transition items-center space-x-1.5 shadow-[0_0_15px_rgba(168,85,247,0.2)]" title="Switch between Rider Cockpit and Parent Guardian Portal">
-          <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <!-- Role Modal Trigger -->
+        <button id="btnRoleGateway" onclick="openRoleGatewayModal()" class="p-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-white border border-white/[0.08] transition" title="Choose Role Gateway">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
-          <span id="btnRoleSwitcherText">Parent Portal</span>
-          <span id="navParentAlertDot" class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
         </button>
 
         <!-- Optical HUD Mirror Mode Button -->
-        <button id="btnNavHudMode" onclick="openHudMirrorModal()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(0,240,255,0.2)]" title="Launch Fullscreen Optical HUD Mode for Windshield Reflection">
+        <button id="btnNavHudMode" onclick="openHudMirrorModal()" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-cyan-500/15 text-slate-300 hover:text-cyan-300 border border-white/[0.08] transition flex items-center space-x-1.5" title="Launch Fullscreen Optical HUD Mode for Windshield Reflection">
           <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
           </svg>
-          <span class="hidden md:inline">HUD Mode</span>
+          <span class="hidden sm:inline">HUD</span>
         </button>
 
         <!-- Direct Android APK Download -->
-        <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" download="Rhody-v1.0.0.apk" class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-400/40 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-v1.0.0.apk" download="Rhody-v1.0.0.apk" class="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition flex items-center space-x-1.5 shadow-[0_0_12px_rgba(16,185,129,0.15)]" title="Download Android App APK">
+          <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          <span class="hidden sm:inline">Download App</span>
-          <span class="px-1.5 py-0.2 text-[9px] font-black rounded bg-emerald-400/25 text-emerald-300">APK</span>
+          <span class="hidden sm:inline">App</span>
+          <span class="px-1 py-0.2 text-[8px] font-black rounded bg-emerald-400/20 text-emerald-300">v1.0</span>
         </a>
 
         <!-- Rider Profile Quick Pill -->
-        <button onclick="switchMainView('settings')" class="flex items-center space-x-2 px-2.5 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-cyan-400/40 text-xs transition group">
-          <div class="relative w-6 h-6 rounded-full overflow-hidden bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center shrink-0">
+        <button onclick="switchMainView('settings')" class="flex items-center space-x-2 pl-1 pr-2.5 py-1 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs transition">
+          <div class="relative w-6 h-6 rounded-full overflow-hidden bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center shrink-0">
             <img id="navUserAvatarImg" src="" alt="Avatar" class="w-full h-full object-cover hidden" />
-            <span id="navUserAvatarInit" class="font-bold text-[11px] text-cyan-300">N</span>
+            <span id="navUserAvatarInit" class="font-bold text-[10px] text-cyan-300">P</span>
           </div>
-          <span id="navProfileName" class="text-xs font-bold text-white group-hover:text-cyan-300 transition hidden sm:inline">Natesh</span>
+          <span id="navProfileName" class="text-xs font-semibold text-slate-200 hidden sm:inline">Pilot</span>
         </button>
 
         <!-- Refresh Button -->
-        <button onclick="refreshData()" title="Reload telemetry records" class="p-2 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] transition">
-          <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button onclick="refreshData()" title="Reload telemetry records" class="p-2 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-white border border-white/[0.08] transition">
+          <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
           </svg>
@@ -251,227 +255,245 @@
     <!-- ======================================================== -->
     <div id="viewDashboard" class="space-y-6">
       
-      <!-- ================= GUARDIAN CONSENT AUTHORIZATION BANNER (TWO-WAY HANDSHAKE) ================= -->
-      <div id="riderGuardianRequestBanner" class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-950/70 via-[#0E131F]/95 to-amber-950/40 border border-purple-400/40 shadow-[0_0_30px_rgba(168,85,247,0.25)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hidden">
-        <div class="flex items-start space-x-3.5">
-          <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-400/50 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-            <svg class="w-5 h-5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- ================= GUARDIAN CONSENT AUTHORIZATION BANNER (ZEBEYOND SLEEK STRIP) ================= -->
+      <div id="riderGuardianRequestBanner" class="p-3.5 sm:p-4 rounded-xl bg-[#090C14] border border-purple-500/30 shadow-[0_0_24px_rgba(168,85,247,0.12)] flex flex-col md:flex-row items-start md:items-center justify-between gap-3.5 hidden">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-purple-500/15 text-purple-300 border border-purple-400/30 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               <path d="m9 12 2 2 4-4"/>
             </svg>
           </div>
           <div>
             <div class="flex items-center space-x-2">
-              <span class="text-xs font-black uppercase tracking-wider text-purple-300">Guardian Safety Connection Request</span>
-              <span class="px-2 py-0.5 text-[9px] font-extrabold uppercase rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">Action Required</span>
+              <span class="text-xs font-bold text-white tracking-wide">Guardian Safety Handshake Request</span>
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-400/25">PENDING CONSENT</span>
             </div>
-            <p class="text-xs text-slate-200 mt-1">
-              <strong id="guardianRequesterName" class="text-white font-bold">Family Guardian (Dad &amp; Mom)</strong> (<span id="guardianRequesterEmail" class="text-cyan-300 font-mono">guardian@family.io</span>) has requested live GPS beacon, telemetry, and motorcycle legal status monitoring.
-            </p>
             <p class="text-[11px] text-slate-400 mt-0.5">
-              Strict privacy protection: <strong>Zero telemetry or location is shared</strong> until you explicitly grant access.
+              <strong id="guardianRequesterName" class="text-slate-200 font-semibold">Family Guardian</strong> (<span id="guardianRequesterEmail" class="text-purple-300 font-mono">guardian@family.io</span>) requested live GPS beacon and telemetry sync. Zero telemetry shared until accepted.
             </p>
           </div>
         </div>
         <div class="flex items-center space-x-2 w-full md:w-auto shrink-0">
-          <button onclick="respondGuardianRequest('accept')" class="flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_20px_rgba(16,185,129,0.35)] transition active:scale-95 flex items-center justify-center space-x-1.5">
+          <button onclick="respondGuardianRequest('accept')" class="flex-1 md:flex-none px-3.5 py-1.5 text-xs font-bold rounded-lg bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.3)] transition active:scale-95 flex items-center justify-center space-x-1.5">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
-            <span>Accept &amp; Grant Access</span>
+            <span>Accept &amp; Link</span>
           </button>
-          <button onclick="respondGuardianRequest('reject')" class="flex-1 md:flex-none px-3.5 py-2 text-xs font-semibold rounded-xl bg-white/[0.06] hover:bg-white/10 text-slate-300 border border-white/10 transition flex items-center justify-center space-x-1">
+          <button onclick="respondGuardianRequest('reject')" class="flex-1 md:flex-none px-3 py-1.5 text-xs font-medium rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-white transition">
             <span>Decline</span>
           </button>
         </div>
       </div>
 
-      <!-- Welcome Message & Rider Profile Hero Banner (Cyber-Tactile Cockpit) -->
-      <div class="glass-panel p-6 sm:p-8 bg-gradient-to-r from-[#0E131F]/95 via-[#0E131F]/90 to-cyan-500/10 relative overflow-hidden shadow-2xl border border-cyan-500/20">
-        <div class="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
+      <!-- ================= PILOT TELEMETRY & CAREER MATRIX (ZEBEYOND ENGINEERING DOSSIER) ================= -->
+      <div class="glass-panel p-5 sm:p-6 bg-[#080B11]/90 relative overflow-hidden shadow-2xl border border-white/[0.08]">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
           
-          <!-- Left: Avatar & Identity -->
-          <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-            <!-- Modern Circular Avatar with Neon Glow -->
+          <!-- Left: Identity & Telemetry Sensor Health -->
+          <div class="flex items-center space-x-4">
+            <!-- Micro-Precise Avatar with Status Ring -->
             <div class="relative group shrink-0">
-              <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-2 border-cyan-400 p-1 bg-[#07090E] shadow-[0_0_30px_rgba(0,240,255,0.35)] relative">
-                <div class="w-full h-full rounded-full overflow-hidden relative">
-                  <img id="dashAvatarImg" src="" alt="Rider Photo" class="w-full h-full object-cover hidden" />
-                  <div id="dashAvatarPlaceholder" class="w-full h-full bg-gradient-to-br from-cyan-400 via-blue-600 to-indigo-700 flex items-center justify-center text-3xl font-black text-black">N</div>
+              <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border border-cyan-400/40 p-0.5 bg-[#07090E] shadow-[0_0_20px_rgba(0,240,255,0.2)] relative">
+                <div class="w-full h-full rounded-[14px] overflow-hidden relative">
+                  <img id="dashAvatarImg" src="" alt="Pilot" class="w-full h-full object-cover hidden" />
+                  <div id="dashAvatarPlaceholder" class="w-full h-full bg-gradient-to-br from-[#101726] to-[#0A0D14] flex items-center justify-center text-xl sm:text-2xl font-black text-cyan-400 font-mono">P</div>
                   
-                  <!-- Hover / Tap Camera Overlay -->
-                  <label for="dashPhotoFileInput" class="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
-                    <svg class="w-6 h-6 mb-1 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    <span class="text-[10px] font-bold">Change Photo</span>
+                  <!-- Hover Upload Overlay -->
+                  <label for="dashPhotoFileInput" class="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
+                    <svg class="w-4 h-4 text-cyan-300 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
+                    <span class="text-[8px] font-bold">Edit</span>
                   </label>
                 </div>
-              </div>
-              
-              <div class="flex items-center justify-center space-x-1.5 mt-2">
-                <label for="dashPhotoFileInput" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 cursor-pointer transition flex items-center space-x-1 shadow-[0_0_10px_rgba(0,240,255,0.15)]">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                  <span>Upload</span>
-                </label>
-                <button id="btnRemovePhoto" onclick="removeRiderAvatar()" title="Remove photo" class="px-2 py-1 text-[11px] font-medium rounded-lg bg-white/[0.05] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 transition hidden flex items-center justify-center">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
               </div>
               <input type="file" id="dashPhotoFileInput" accept="image/png, image/jpeg, image/webp" onchange="handleProfilePhotoUpload(event)" class="hidden" />
             </div>
 
-            <!-- Rider Identity & Callsign -->
-            <div class="text-center sm:text-left space-y-2">
-              <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
-                <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Welcome, <span id="dashWelcomeName">Natesh Kanna</span></h1>
-                <span class="px-3 py-1 text-[10px] font-black rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 flex items-center space-x-1.5 shadow-[0_0_12px_rgba(0,240,255,0.2)]">
-                  <svg class="w-3.5 h-3.5 text-cyan-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-                  <span>VERIFIED TELEMETRY PILOT</span>
-                </span>
-                <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">
-                  APEX PILOT &bull; LEVEL 4
-                </span>
+            <!-- Identity & Real-Time Connection Chips -->
+            <div class="space-y-1.5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-[10px] uppercase font-mono font-bold tracking-widest text-cyan-400 block">TELEMETRY PILOT DOSSIER</span>
+                <span class="px-1.5 py-0.2 text-[8px] font-mono font-bold uppercase rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">ONLINE &bull; 60Hz</span>
               </div>
 
-              <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs font-mono-numbers">
-                <span class="text-slate-400">Call-Sign: <strong id="dashHandle" class="text-cyan-300 font-bold">@natesh_pilot</strong></span>
-                <span class="text-slate-600">&bull;</span>
-                <span class="flex items-center space-x-1.5 text-emerald-400 font-bold">
-                  <span class="w-2 h-2 rounded-full bg-emerald-400 status-pulse"></span>
-                  <span>ECU &amp; Atlas Synced</span>
-                </span>
-                <span class="text-slate-600">&bull;</span>
-                <span class="text-rose-400 font-bold">Blood: O+</span>
+              <div class="flex items-center space-x-2">
+                <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  <span id="dashWelcomeName">Pilot</span>
+                </h1>
+                <span id="dashHandle" class="text-xs font-mono text-cyan-400/90 font-medium">@pilot</span>
+                <button id="btnRemovePhoto" onclick="removeRiderAvatar()" title="Reset photo" class="text-slate-500 hover:text-rose-400 transition hidden">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
               </div>
 
-              <p id="dashBio" class="text-xs text-slate-300 max-w-xl leading-relaxed">
-                Weekend canyon carver & telemetry enthusiast. Western Ghats apex seeker pushing precision motorcycle telemetry.
+              <!-- Hardware Bus Status Indicators -->
+              <div class="flex flex-wrap items-center gap-2 text-[10px] font-mono text-slate-400 pt-0.5">
+                <span class="flex items-center space-x-1.5 text-emerald-400 font-semibold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-pulse"></span>
+                  <span>ECU K-LINE: 60Hz</span>
+                </span>
+                <span class="text-slate-700">&bull;</span>
+                <span class="text-cyan-300">GPS RTK: 10Hz</span>
+                <span class="text-slate-700">&bull;</span>
+                <span class="text-purple-300">BLACK BOX: ARMED</span>
+              </div>
+
+              <p id="dashBio" class="text-[11px] text-slate-400 max-w-md line-clamp-1">
+                Precision motorcycle telemetry &amp; dynamic apex trajectory tracking.
               </p>
             </div>
           </div>
 
-          <!-- Right: Pilot Career Telemetry Quick Dossier Strip -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3 w-full lg:w-auto shrink-0">
-            <div class="bg-[#07090E]/90 p-3.5 rounded-2xl border border-white/[0.08] shadow-inner text-center min-w-[125px]">
-              <span class="text-[9px] uppercase tracking-wider font-bold text-slate-500 block">Career Odometer</span>
-              <span class="text-lg font-black text-white font-mono-numbers block mt-0.5">8,420 <span class="text-[10px] text-cyan-400 font-normal">KM</span></span>
-              <span class="text-[9px] text-emerald-400 font-bold block mt-0.5">&uarr; High Season</span>
+          <!-- Right: Dynamic Career Telemetry Readouts (100% Calculated From Saved Trips) -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full lg:w-auto shrink-0">
+            <!-- Distance -->
+            <div class="bg-[#05070B] p-3 rounded-xl border border-white/[0.06] text-center min-w-[115px]">
+              <span class="text-[9px] uppercase tracking-wider font-mono font-semibold text-slate-500 block">CAREER DISTANCE</span>
+              <span class="text-base sm:text-lg font-black text-white font-mono-numbers block mt-0.5">
+                <span id="careerOdoVal">0.0</span> <span class="text-[10px] text-cyan-400 font-normal">KM</span>
+              </span>
+              <span id="careerSeasonStatus" class="text-[8px] font-mono text-slate-400 block mt-0.5">Telemetry Ready</span>
             </div>
 
-            <div class="bg-[#07090E]/90 p-3.5 rounded-2xl border border-white/[0.08] shadow-inner text-center min-w-[125px]">
-              <span class="text-[9px] uppercase tracking-wider font-bold text-slate-500 block">Peak Velocity</span>
-              <span class="text-lg font-black text-rose-400 font-mono-numbers block mt-0.5">134 <span class="text-[10px] text-slate-400 font-normal">KM/H</span></span>
-              <span class="text-[9px] text-slate-400 block mt-0.5">GPS Clocked</span>
+            <!-- Peak Speed -->
+            <div class="bg-[#05070B] p-3 rounded-xl border border-white/[0.06] text-center min-w-[115px]">
+              <span class="text-[9px] uppercase tracking-wider font-mono font-semibold text-slate-500 block">PEAK VELOCITY</span>
+              <span class="text-base sm:text-lg font-black text-rose-400 font-mono-numbers block mt-0.5">
+                <span id="careerPeakSpeedVal">0</span> <span class="text-[10px] text-slate-400 font-normal">KM/H</span>
+              </span>
+              <span class="text-[8px] font-mono text-slate-400 block mt-0.5">GPS Clocked</span>
             </div>
 
-            <div class="bg-[#07090E]/90 p-3.5 rounded-2xl border border-white/[0.08] shadow-inner text-center min-w-[125px]">
-              <span class="text-[9px] uppercase tracking-wider font-bold text-slate-500 block">Max Apex Lean</span>
-              <span class="text-lg font-black text-cyan-300 font-mono-numbers block mt-0.5">46.5&deg; <span class="text-[10px] text-cyan-400 font-normal">L</span></span>
-              <span class="text-[9px] text-cyan-400 font-bold block mt-0.5">Apex Knee Down</span>
+            <!-- Max Lean Angle -->
+            <div class="bg-[#05070B] p-3 rounded-xl border border-white/[0.06] text-center min-w-[115px]">
+              <span class="text-[9px] uppercase tracking-wider font-mono font-semibold text-slate-500 block">MAX APEX LEAN</span>
+              <span class="text-base sm:text-lg font-black text-cyan-300 font-mono-numbers block mt-0.5">
+                <span id="careerMaxLeanVal">0.0</span>&deg; <span class="text-[10px] text-cyan-400 font-normal">MAX</span>
+              </span>
+              <span id="careerApexStatus" class="text-[8px] font-mono text-cyan-400/90 block mt-0.5">Gyro Calibrated</span>
             </div>
 
-            <div class="bg-[#07090E]/90 p-3.5 rounded-2xl border border-white/[0.08] shadow-inner text-center min-w-[125px]">
-              <span class="text-[9px] uppercase tracking-wider font-bold text-slate-500 block">Runs Logged</span>
-              <span class="text-lg font-black text-emerald-400 font-mono-numbers block mt-0.5">28 <span class="text-[10px] text-slate-400 font-normal">RUNS</span></span>
-              <span class="text-[9px] text-slate-400 block mt-0.5">100% Track Logged</span>
+            <!-- Runs Logged -->
+            <div class="bg-[#05070B] p-3 rounded-xl border border-white/[0.06] text-center min-w-[115px]">
+              <span class="text-[9px] uppercase tracking-wider font-mono font-semibold text-slate-500 block">RUNS LOGGED</span>
+              <span class="text-base sm:text-lg font-black text-emerald-400 font-mono-numbers block mt-0.5">
+                <span id="careerRunsLoggedVal">0</span> <span class="text-[10px] text-slate-400 font-normal">RUNS</span>
+              </span>
+              <span id="careerRunsStatus" class="text-[8px] font-mono text-slate-400 block mt-0.5">Awaiting Ride</span>
             </div>
           </div>
 
         </div>
       </div>
 
-      <!-- TELLS ABOUT HIS BIKE (Active Machine Garage & Full Diagnostics Cockpit) -->
-      <div class="glass-panel p-6 space-y-5 shadow-xl border border-cyan-500/15">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
+      <!-- ================= ACTIVE MOTORCYCLE GARAGE & LIVE DIAGNOSTICS (ZERO MOCK DATA) ================= -->
+      <div class="glass-panel p-5 sm:p-6 space-y-4 shadow-xl border border-white/[0.08]">
+        
+        <!-- Garage Header & Controls -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.06] pb-3.5 gap-3">
           <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-2xl bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <div class="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/></svg>
             </div>
             <div>
               <div class="flex items-center space-x-2">
-                <h3 class="text-sm sm:text-base font-bold text-white">Active Motorcycle Garage &amp; Live Diagnostics</h3>
-                <span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">ECU TELEMETRY ONLINE</span>
+                <h3 class="text-sm font-bold text-white tracking-wide">Active Motorcycle Cockpit &amp; Live Telemetry</h3>
+                <span id="garageEcuBadge" class="px-2 py-0.2 text-[9px] font-mono font-bold rounded bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">ECU STANDBY</span>
               </div>
-              <p class="text-xs text-slate-400">Live telemetry vitals, fuel range estimation &amp; hardware sensor setup</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Powertrain vitals, fuel range telemetry &amp; sensor diagnostic telemetry</p>
             </div>
           </div>
 
-          <!-- Quick Machine Garage Switcher -->
-          <div class="flex flex-wrap items-center gap-2">
-            <div class="flex items-center p-1 rounded-xl bg-[#07090E] border border-white/[0.08] space-x-1">
-              <button id="bikeBtn_mt15" onclick="switchActiveBike('mt15')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 transition flex items-center space-x-1">
-                <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/></svg>
-                <span>MT-15 V2</span>
-              </button>
-              <button id="bikeBtn_mt09" onclick="switchActiveBike('mt09')" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center space-x-1">
-                <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/></svg>
-                <span>MT-09 SP</span>
-              </button>
-            </div>
-            <button onclick="searchYoutubeForBike()" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-              <svg class="w-3.5 h-3.5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
-              <span>Bike Videos</span>
+          <!-- Machine Actions -->
+          <div class="flex items-center space-x-2">
+            <button onclick="openOnboardingModal()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_0_15px_rgba(0,240,255,0.25)] transition active:scale-95 flex items-center space-x-1.5">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              <span>Configure Machine</span>
             </button>
-            <button onclick="switchMainView('settings')" class="px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/10 transition">
-              Edit Specs
+            <button onclick="searchYoutubeForBike()" class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] transition flex items-center space-x-1.5" title="Motorcycle Video Reviews & Sound Research">
+              <svg class="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+              <span class="hidden sm:inline">Exhaust &amp; Media</span>
             </button>
           </div>
         </div>
 
-        <!-- Machine Primary Attributes -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5 text-xs">
-          <div class="bg-[#07090E]/80 p-3.5 rounded-2xl border border-white/[0.08]">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block">Machine Model</span>
-            <span id="dashBikeModel" class="text-sm font-bold text-white block mt-1">Yamaha MT-15 V2</span>
-            <span id="dashBikeSpecs" class="text-[11px] text-cyan-400 font-medium block mt-0.5">155cc Liquid VVA &bull; 18.4 PS</span>
+        <!-- Unconfigured Bike Setup Prompt Banner (Visible when bike is not configured) -->
+        <div id="unconfiguredMachineNotice" class="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-[#0A0D14] to-cyan-500/10 border border-amber-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center space-x-3">
+            <div class="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-400/30 flex items-center justify-center shrink-0">
+              <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+              <span class="text-xs font-bold text-white block">Motorcycle Not Registered Yet</span>
+              <span class="text-[11px] text-slate-400">Add your machine details &amp; legal documents to personalize your cockpit, or ride unconfigured.</span>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 shrink-0">
+            <button onclick="openOnboardingModal()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_0_12px_rgba(0,240,255,0.25)] transition active:scale-95">
+              Register Machine
+            </button>
+            <button onclick="dismissUnconfiguredMachineNotice()" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-white/[0.04] transition">
+              Ride Unconfigured
+            </button>
+          </div>
+        </div>
+
+        <!-- Machine Primary Attributes (Dynamic Bindings) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div class="bg-[#05070B] p-3.5 rounded-xl border border-white/[0.06]">
+            <span class="text-[9px] uppercase font-mono font-semibold text-slate-500 block">MACHINE MODEL</span>
+            <span id="dashBikeModel" class="text-sm font-bold text-white block mt-1">Unconfigured Motorcycle</span>
+            <span id="dashBikeSpecs" class="text-[11px] text-cyan-400 font-medium block mt-0.5">Awaiting Engine Specifications</span>
           </div>
 
-          <div class="bg-[#07090E]/80 p-3.5 rounded-2xl border border-white/[0.08]">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block">Registration Plate</span>
-            <span id="dashBikePlate" class="text-sm font-bold text-amber-400 font-mono-numbers block mt-1">KA-01-EQ-1550</span>
-            <span class="text-[11px] text-slate-400 block mt-0.5">Active Telemetry Registered</span>
+          <div class="bg-[#05070B] p-3.5 rounded-xl border border-white/[0.06]">
+            <span class="text-[9px] uppercase font-mono font-semibold text-slate-500 block">REGISTRATION PLATE</span>
+            <span id="dashBikePlate" class="text-sm font-bold text-amber-400 font-mono-numbers block mt-1">NOT REGISTERED</span>
+            <span id="dashPlateSubtitle" class="text-[11px] text-slate-400 block mt-0.5">Awaiting RC / Plate Details</span>
           </div>
 
-          <div class="bg-[#07090E]/80 p-3.5 rounded-2xl border border-white/[0.08]">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block">Tire Specification</span>
-            <span id="dashTires" class="text-xs font-bold text-white block mt-1">MRF Nylogrip Zapper</span>
+          <div class="bg-[#05070B] p-3.5 rounded-xl border border-white/[0.06]">
+            <span class="text-[9px] uppercase font-mono font-semibold text-slate-500 block">TIRE SPECIFICATION</span>
+            <span id="dashTires" class="text-xs font-bold text-white block mt-1">Standard Spec</span>
             <div class="flex items-center space-x-1.5 mt-0.5">
-              <span id="dashTiresFront" class="px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-300 font-mono-numbers text-[10px] font-bold">F: 32 PSI</span>
-              <span id="dashTiresRear" class="px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-300 font-mono-numbers text-[10px] font-bold">R: 34 PSI</span>
+              <span id="dashTiresFront" class="px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-300 font-mono-numbers text-[10px] font-bold">F: -- PSI</span>
+              <span id="dashTiresRear" class="px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-300 font-mono-numbers text-[10px] font-bold">R: -- PSI</span>
             </div>
           </div>
 
-          <div class="bg-[#07090E]/80 p-3.5 rounded-2xl border border-white/[0.08]">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block">Road Weather &amp; Grip</span>
+          <div class="bg-[#05070B] p-3.5 rounded-xl border border-white/[0.06]">
+            <span class="text-[9px] uppercase font-mono font-semibold text-slate-500 block">ROAD WEATHER &amp; GRIP</span>
             <span id="roadGripBadge" class="text-xs font-bold text-emerald-400 flex items-center space-x-1.5 mt-1">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34D399]"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-pulse"></span>
               <span>DRY (98% GRIP)</span>
             </span>
-            <span class="text-[10px] text-slate-400 block mt-0.5">28&deg;C Asphalt &bull; Open-Meteo</span>
+            <span class="text-[10px] text-slate-400 block mt-0.5">Open-Meteo GPS Sync</span>
           </div>
         </div>
 
         <!-- Real-Time Telemetry Health & Vitals Bar -->
-        <div class="p-4 rounded-2xl bg-[#07090E]/90 border border-white/[0.08] space-y-3.5">
+        <div class="p-4 rounded-xl bg-[#05070B] border border-white/[0.06] space-y-3">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
             <div class="flex items-center space-x-2">
               <div class="w-5 h-5 rounded-md bg-amber-500/15 flex items-center justify-center shrink-0">
                 <svg class="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"/><path d="M13 10h4a2 2 0 0 1 2 2v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-9l-3-3"/><rect x="6" y="6" width="4" height="4"/></svg>
               </div>
               <span class="text-amber-400 font-bold">Fuel Telemetry:</span>
-              <span class="text-white font-mono-numbers font-bold"><span id="dashFuelPercent">82%</span> (<span id="dashFuelLiters">8.2L remaining</span>)</span>
+              <span class="text-white font-mono-numbers font-bold"><span id="dashFuelPercent">--%</span> (<span id="dashFuelLiters">--L</span>)</span>
               <span class="text-slate-500">&bull;</span>
-              <span id="dashEstRange" class="text-emerald-400 font-mono-numbers font-bold">~380 KM Estimated Range</span>
+              <span id="dashEstRange" class="text-emerald-400 font-mono-numbers font-bold">-- KM Range</span>
             </div>
-            <div class="flex items-center space-x-2 text-[10px] font-mono-numbers">
-              <span id="dashAbsBadge" class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-bold">ABS ACTIVE</span>
+            <div class="flex items-center space-x-1.5 text-[10px] font-mono-numbers">
+              <span id="dashAbsBadge" class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-bold">ABS READY</span>
               <span id="dashTcsBadge" class="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-bold">TCS READY</span>
-              <span id="dashVvaBadge" class="px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 font-bold">VVA ENGAGED</span>
+              <span id="dashVvaBadge" class="px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 font-bold">TELEMETRY LINKED</span>
             </div>
           </div>
 
-          <!-- Animated Glowing Fuel Progress Bar -->
-          <div class="w-full h-2.5 rounded-full bg-[#141A29] overflow-hidden p-0.5">
-            <div id="dashFuelBar" class="h-full rounded-full bg-gradient-to-r from-amber-500 via-emerald-400 to-cyan-400 shadow-[0_0_12px_rgba(0,240,255,0.5)] transition-all duration-1000" style="width: 82%;"></div>
+          <!-- Animated Fuel Progress Bar -->
+          <div class="w-full h-2 rounded-full bg-[#10141F] overflow-hidden p-0.5">
+            <div id="dashFuelBar" class="h-full rounded-full bg-gradient-to-r from-amber-500 via-emerald-400 to-cyan-400 shadow-[0_0_12px_rgba(0,240,255,0.4)] transition-all duration-1000" style="width: 0%;"></div>
           </div>
 
           <!-- Secondary Telemetry Row: Engine Coolant, Battery, Oil Life, Odometer -->
@@ -481,8 +503,8 @@
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>
               </div>
               <div>
-                <span class="text-[10px] text-slate-500 block">Coolant Temp</span>
-                <span class="text-white font-mono-numbers font-bold"><span id="dashCoolantVal">88&deg;C</span> <span id="dashCoolantStatus" class="text-[9px] text-emerald-400 font-normal">Nominal</span></span>
+                <span class="text-[10px] text-slate-500 font-mono block">COOLANT TEMP</span>
+                <span class="text-white font-mono-numbers font-bold"><span id="dashCoolantVal">--&deg;C</span> <span id="dashCoolantStatus" class="text-[9px] text-slate-400 font-normal">Standby</span></span>
               </div>
             </div>
 
@@ -491,8 +513,8 @@
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
               </div>
               <div>
-                <span class="text-[10px] text-slate-500 block">Battery Voltage</span>
-                <span class="text-white font-mono-numbers font-bold"><span id="dashBatteryVal">12.6 V</span> <span id="dashBatteryStatus" class="text-[9px] text-cyan-400 font-normal">Healthy</span></span>
+                <span class="text-[10px] text-slate-500 font-mono block">BATTERY VOLTS</span>
+                <span class="text-white font-mono-numbers font-bold"><span id="dashBatteryVal">12.6 V</span> <span id="dashBatteryStatus" class="text-[9px] text-cyan-400 font-normal">Ready</span></span>
               </div>
             </div>
 
@@ -501,8 +523,8 @@
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
               </div>
               <div>
-                <span class="text-[10px] text-slate-500 block">Oil Life</span>
-                <span class="text-white font-mono-numbers font-bold"><span id="dashOilVal">76%</span> <span id="dashOilNext" class="text-[9px] text-amber-400 font-normal">Next: 2.4k km</span></span>
+                <span class="text-[10px] text-slate-500 font-mono block">OIL SERVICE</span>
+                <span class="text-white font-mono-numbers font-bold"><span id="dashOilVal">--%</span> <span id="dashOilNext" class="text-[9px] text-slate-400 font-normal">Awaiting Setup</span></span>
               </div>
             </div>
 
@@ -511,8 +533,8 @@
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
               </div>
               <div>
-                <span class="text-[10px] text-slate-500 block">Odometer</span>
-                <span id="dashOdoVal" class="text-white font-mono-numbers font-bold">8,420 km</span>
+                <span class="text-[10px] text-slate-500 font-mono block">ODOMETER</span>
+                <span id="dashOdoVal" class="text-white font-mono-numbers font-bold">0 km</span>
               </div>
             </div>
           </div>
@@ -2156,7 +2178,7 @@
                 <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Guardian Safety Radar</h2>
                 <span id="parentRadarStatusPill" class="px-2.5 py-0.5 text-[10px] font-black rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">LIVE RADAR</span>
               </div>
-              <p class="text-xs text-slate-300 mt-0.5">Monitoring Rider: <span id="parentPairedRiderName" class="font-bold text-white">Natesh</span> (<span id="parentPairedBikeName" class="text-cyan-300">Yamaha MT-15 V2</span> • <span id="parentPairedPlate" class="font-mono text-purple-300">KA-01-EQ-1550</span>)</p>
+              <p class="text-xs text-slate-300 mt-0.5">Monitoring Rider: <span id="parentPairedRiderName" class="font-bold text-white">Pilot</span> (<span id="parentPairedBikeName" class="text-cyan-300">Awaiting Machine Details</span> &bull; <span id="parentPairedPlate" class="font-mono text-purple-300">No Plate Registered</span>)</p>
             </div>
           </div>
 
@@ -2759,7 +2781,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1">Motorcycle Make &amp; Model</label>
-            <input type="text" id="obMakeModel" placeholder="e.g. Yamaha MT-15 V2" class="w-full px-3.5 py-2.5 bg-[#07090E] border border-white/10 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition" />
+            <input type="text" id="obMakeModel" placeholder="e.g. KTM Duke 390 / Royal Enfield Hunter" class="w-full px-3.5 py-2.5 bg-[#07090E] border border-white/10 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition" />
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1">Registration / Plate Number</label>

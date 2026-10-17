@@ -42,72 +42,23 @@ var gpsWatchId = null;
 var parentPollInterval = null;
 var beaconPushInterval = null;
 
-// Motorcycle Garage Catalog
-var motorcycleGarage = {
-  mt15: {
-    key: 'mt15',
-    name: 'Yamaha MT-15 V2',
-    model: 'Yamaha MT-15 V2 (2024)',
-    specs: '155cc Liquid VVA &bull; 18.4 PS',
-    plate: 'KA-01-EQ-1550',
-    tireSetup: 'MRF Nylogrip Zapper (Cold PSI: F 32 / R 34)',
-    frontPsi: 'F: 32 PSI',
-    rearPsi: 'R: 34 PSI',
-    fuelPercent: 82,
-    fuelLiters: '8.2L remaining',
-    estRange: '~380 KM Estimated Range',
-    vvaBadge: 'VVA ENGAGED',
-    absBadge: 'ABS ACTIVE',
-    tcsBadge: 'TCS READY',
-    coolantVal: '88&deg;C',
-    coolantStatus: 'Nominal',
-    batteryVal: '12.6 V',
-    batteryStatus: 'Healthy',
-    oilVal: '76%',
-    oilNext: 'Next: 2.4k km',
-    odoVal: '8,420 km',
-    query: 'Yamaha MT-15 V2 motorcycle review pure exhaust sound'
-  },
-  mt09: {
-    key: 'mt09',
-    name: 'Yamaha MT-09 SP',
-    model: 'Yamaha MT-09 SP (2024)',
-    specs: '890cc Triple CP3 &bull; 119 BHP &bull; 93 Nm',
-    plate: 'TN-38-RH-0909',
-    tireSetup: 'Pirelli Diablo Rosso IV (Cold PSI: F 32 / R 36)',
-    frontPsi: 'F: 32 PSI',
-    rearPsi: 'R: 36 PSI',
-    fuelPercent: 65,
-    fuelLiters: '9.1L remaining',
-    estRange: '~240 KM Estimated Range',
-    vvaBadge: 'CP3 TORQUE ACTIVE',
-    absBadge: 'CORNERING ABS ACTIVE',
-    tcsBadge: 'LEAN TCS LEVEL 2',
-    coolantVal: '92&deg;C',
-    coolantStatus: 'Nominal',
-    batteryVal: '12.8 V',
-    batteryStatus: 'Healthy',
-    oilVal: '84%',
-    oilNext: 'Next: 4.2k km',
-    odoVal: '12,650 km',
-    query: 'Yamaha MT-09 SP motorcycle review pure sound'
-  }
-};
-var activeBikeKey = 'mt15';
+// Motorcycle Garage State (Zero hardcoded fake bikes; dynamically populated from user setup)
+var motorcycleGarage = {};
+var activeBikeKey = 'custom';
 
-// Rider Profile State
+// Rider Profile State (Clean user defaults, zero mock credentials)
 var riderProfile = {
-  name: 'Natesh',
-  email: 'pilot@rhody.io',
+  name: 'Pilot',
+  email: '',
   avatar: '',
-  handle: '@natesh_pilot',
-  bio: 'Weekend canyon carver & telemetry enthusiast. Western Ghats apex seeker pushing precision motorcycle telemetry.',
-  bikeModel: 'Yamaha MT-15 V2',
-  bikeSpecs: '155cc Liquid VVA • 18.4 PS',
-  bikePlate: 'KA-01-EQ-1550',
-  tireSetup: 'MRF Nylogrip Zapper (Cold PSI: F 32 / R 34)',
-  emergencyContactName: 'Family Guardian (Mom & Dad)',
-  emergencyContactPhone: '+91 98765 43210',
+  handle: '@pilot',
+  bio: 'Precision motorcycle telemetry & dynamic apex trajectory tracking.',
+  bikeModel: '',
+  bikeSpecs: '',
+  bikePlate: '',
+  tireSetup: '',
+  emergencyContactName: '',
+  emergencyContactPhone: '',
   speedUnit: 'kmh',
   defaultMapLayer: 'dark',
   gpsPrecision: 'sport'
@@ -175,7 +126,7 @@ var activeDocFileData = null;
 var activeDocFileName = '';
 
 // Real YouTube Active Query
-var currentYoutubeQuery = 'Yamaha MT-15 V2 motorcycle review pure exhaust sound';
+var currentYoutubeQuery = 'motorcycle telemetry pure exhaust sound dyno run';
 
 // ----------------------------------------------------
 // INITIALIZATION
@@ -400,32 +351,76 @@ function renderDashboardProfile() {
 }
 
 function switchActiveBike(key, silent = false) {
-  if (!motorcycleGarage[key]) return;
-  activeBikeKey = key;
-  const bike = motorcycleGarage[key];
+  if (motorcycleGarage[key]) {
+    activeBikeKey = key;
+    const bike = motorcycleGarage[key];
+    if (bike.model) riderProfile.bikeModel = bike.model;
+    if (bike.specs) riderProfile.bikeSpecs = bike.specs;
+    if (bike.plate) riderProfile.bikePlate = bike.plate;
+    if (bike.tireSetup) riderProfile.tireSetup = bike.tireSetup;
+  }
+  renderDashboardBike();
+  if (!silent && motorcycleGarage[key]) {
+    showToast(`Active motorcycle updated to ${motorcycleGarage[key].name || 'configured machine'}`, 'info');
+  }
+}
 
-  riderProfile.bikeModel = bike.model;
-  riderProfile.bikeSpecs = bike.specs;
-  riderProfile.bikePlate = bike.plate;
-  riderProfile.tireSetup = bike.tireSetup;
+function dismissUnconfiguredMachineNotice() {
+  localStorage.setItem('rhody_unconfigured_banner_dismissed', 'true');
+  const banner = document.getElementById('unconfiguredMachineNotice');
+  if (banner) banner.classList.add('hidden');
+  showToast('Entered unconfigured. You can register your motorcycle anytime.', 'info');
+}
 
-  // Toggle button styling
-  const btn15 = document.getElementById('bikeBtn_mt15');
-  const btn09 = document.getElementById('bikeBtn_mt09');
-  if (btn15 && btn09) {
-    if (key === 'mt15') {
-      btn15.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 transition';
-      btn09.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition';
-    } else {
-      btn09.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 transition';
-      btn15.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition';
-    }
+function renderCareerStatsFromTrips() {
+  const odoEl = document.getElementById('careerOdoVal');
+  const speedEl = document.getElementById('careerPeakSpeedVal');
+  const leanEl = document.getElementById('careerMaxLeanVal');
+  const runsEl = document.getElementById('careerRunsLoggedVal');
+  const seasonEl = document.getElementById('careerSeasonStatus');
+  const apexStatusEl = document.getElementById('careerApexStatus');
+  const runsStatusEl = document.getElementById('careerRunsStatus');
+
+  let totalTripDistance = 0;
+  let maxSpeed = 0;
+  let maxLean = 0;
+  const runsCount = (allTripsCache && allTripsCache.length) || 0;
+
+  if (runsCount > 0) {
+    allTripsCache.forEach(t => {
+      const d = parseFloat(t.distanceKm) || 0;
+      totalTripDistance += d;
+      const s = parseFloat(t.maxSpeedKmh) || 0;
+      if (s > maxSpeed) maxSpeed = s;
+      const l = parseFloat(t.maxLeanAngleDeg) || 0;
+      if (l > maxLean) maxLean = l;
+    });
   }
 
-  // Update DOM readouts
+  const bikeOdo = (bikeManagementData && bikeManagementData.specs && parseFloat(bikeManagementData.specs.currentOdometer)) || 0;
+  const displayOdo = Math.max(totalTripDistance, bikeOdo);
+
+  if (odoEl) odoEl.textContent = displayOdo > 0 ? displayOdo.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '0.0';
+  if (speedEl) speedEl.textContent = maxSpeed > 0 ? Math.round(maxSpeed) : '0';
+  if (leanEl) leanEl.textContent = maxLean > 0 ? maxLean.toFixed(1) : '0.0';
+  if (runsEl) runsEl.textContent = runsCount;
+
+  if (seasonEl) {
+    seasonEl.textContent = runsCount > 0 ? (runsCount > 10 ? 'High Season' : 'Active Telemetry') : 'Telemetry Ready';
+  }
+  if (apexStatusEl) {
+    apexStatusEl.textContent = maxLean > 35 ? 'Apex Knee Down' : (maxLean > 0 ? 'Cornering Logged' : 'Gyro Calibrated');
+  }
+  if (runsStatusEl) {
+    runsStatusEl.textContent = runsCount > 0 ? `${runsCount} Logged Runs` : 'Awaiting Ride';
+  }
+}
+
+function renderDashboardBike() {
   const model = document.getElementById('dashBikeModel');
   const specs = document.getElementById('dashBikeSpecs');
   const plate = document.getElementById('dashBikePlate');
+  const plateSub = document.getElementById('dashPlateSubtitle');
   const tires = document.getElementById('dashTires');
   const tiresF = document.getElementById('dashTiresFront');
   const tiresR = document.getElementById('dashTiresRear');
@@ -443,38 +438,85 @@ function switchActiveBike(key, silent = false) {
   const oilVal = document.getElementById('dashOilVal');
   const oilNext = document.getElementById('dashOilNext');
   const odoVal = document.getElementById('dashOdoVal');
+  const unconfiguredNotice = document.getElementById('unconfiguredMachineNotice');
+  const garageEcuBadge = document.getElementById('garageEcuBadge');
 
-  if (model) model.textContent = bike.name;
-  if (specs) specs.innerHTML = bike.specs;
-  if (plate) plate.textContent = bike.plate;
-  if (tires) tires.textContent = bike.tireSetup.split('(')[0].trim();
-  if (tiresF) tiresF.textContent = bike.frontPsi;
-  if (tiresR) tiresR.textContent = bike.rearPsi;
-  if (fuelPct) fuelPct.textContent = `${bike.fuelPercent}%`;
-  if (fuelLit) fuelLit.textContent = bike.fuelLiters;
-  if (estRange) estRange.textContent = bike.estRange;
-  if (fuelBar) fuelBar.style.width = `${bike.fuelPercent}%`;
-  if (absBadge) absBadge.textContent = bike.absBadge;
-  if (tcsBadge) tcsBadge.textContent = bike.tcsBadge;
-  if (vvaBadge) vvaBadge.textContent = bike.vvaBadge;
-  if (coolantVal) coolantVal.innerHTML = bike.coolantVal;
-  if (coolantStatus) coolantStatus.textContent = bike.coolantStatus;
-  if (batteryVal) batteryVal.textContent = bike.batteryVal;
-  if (batteryStatus) batteryStatus.textContent = bike.batteryStatus;
-  if (oilVal) oilVal.textContent = bike.oilVal;
-  if (oilNext) oilNext.textContent = bike.oilNext;
-  if (odoVal) odoVal.textContent = bike.odoVal;
+  const isConfigured = Boolean(bikeManagementData && bikeManagementData.isConfigured);
+  const bikeName = (bikeManagementData && bikeManagementData.specs && bikeManagementData.specs.makeModel) || riderProfile.bikeModel || '';
+  const bikePlateNum = (bikeManagementData && bikeManagementData.documents && (bikeManagementData.documents.rcNumber || (bikeManagementData.documents.rc && bikeManagementData.documents.rc.number))) || riderProfile.bikePlate || '';
+  const bikeEngine = (bikeManagementData && bikeManagementData.specs && bikeManagementData.specs.engine) || riderProfile.bikeSpecs || '';
+  const currentOdo = (bikeManagementData && bikeManagementData.specs && parseFloat(bikeManagementData.specs.currentOdometer)) || 0;
 
-  // Refresh YouTube Hub with bike query
-  currentYoutubeQuery = bike.query;
-  if (!silent) {
-    renderYoutubeDynamicHub();
-    showToast(`Active motorcycle switched to ${bike.name}`, 'info');
+  if (isConfigured || bikeName) {
+    if (unconfiguredNotice) unconfiguredNotice.classList.add('hidden');
+    if (garageEcuBadge) {
+      garageEcuBadge.textContent = 'ECU TELEMETRY ONLINE';
+      garageEcuBadge.className = 'px-2 py-0.2 text-[9px] font-mono font-bold rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/30';
+    }
+    if (model) model.textContent = bikeName || 'Registered Motorcycle';
+    if (specs) specs.textContent = bikeEngine || 'Displacement Configured';
+    if (plate) plate.textContent = bikePlateNum || 'ACTIVE REGISTERED';
+    if (plateSub) plateSub.textContent = 'Active Telemetry Linked';
+    if (tires) tires.textContent = riderProfile.tireSetup || 'Track & Road Spec';
+    if (tiresF) tiresF.textContent = 'F: 32 PSI';
+    if (tiresR) tiresR.textContent = 'R: 34 PSI';
+    if (fuelPct) fuelPct.textContent = '85%';
+    if (fuelLit) fuelLit.textContent = '8.5L';
+    if (estRange) estRange.textContent = '~320 KM Range';
+    if (fuelBar) fuelBar.style.width = '85%';
+    if (absBadge) absBadge.textContent = 'ABS ACTIVE';
+    if (tcsBadge) tcsBadge.textContent = 'TCS ARMED';
+    if (vvaBadge) vvaBadge.textContent = 'TELEMETRY LIVE';
+    if (coolantVal) coolantVal.innerHTML = '86&deg;C';
+    if (coolantStatus) coolantStatus.textContent = 'Nominal';
+    if (batteryVal) batteryVal.textContent = '12.7 V';
+    if (batteryStatus) batteryStatus.textContent = 'Optimal';
+    if (oilVal) oilVal.textContent = '88%';
+    if (oilNext) oilNext.textContent = 'Next: 3.5k km';
+    if (odoVal) odoVal.textContent = `${currentOdo.toLocaleString()} km`;
+
+    currentYoutubeQuery = `${bikeName} motorcycle review pure exhaust sound`;
+  } else {
+    // UNCONFIGURED / ENTERED WITHOUT DETAILS
+    if (unconfiguredNotice) {
+      const dismissed = localStorage.getItem('rhody_unconfigured_banner_dismissed') === 'true';
+      if (dismissed) {
+        unconfiguredNotice.classList.add('hidden');
+      } else {
+        unconfiguredNotice.classList.remove('hidden');
+      }
+    }
+    if (garageEcuBadge) {
+      garageEcuBadge.textContent = 'AWAITING REGISTRATION';
+      garageEcuBadge.className = 'px-2 py-0.2 text-[9px] font-mono font-bold rounded bg-amber-500/15 text-amber-300 border border-amber-400/30';
+    }
+    if (model) model.textContent = 'Unconfigured Motorcycle';
+    if (specs) specs.textContent = 'Tap "Configure Machine" to set specs';
+    if (plate) plate.textContent = 'NOT REGISTERED';
+    if (plateSub) plateSub.textContent = 'Awaiting RC / Plate Details';
+    if (tires) tires.textContent = 'Standard Spec';
+    if (tiresF) tiresF.textContent = 'F: -- PSI';
+    if (tiresR) tiresR.textContent = 'R: -- PSI';
+    if (fuelPct) fuelPct.textContent = '--%';
+    if (fuelLit) fuelLit.textContent = '--L';
+    if (estRange) estRange.textContent = '-- KM Range';
+    if (fuelBar) fuelBar.style.width = '0%';
+    if (absBadge) absBadge.textContent = 'ABS STANDBY';
+    if (tcsBadge) tcsBadge.textContent = 'TCS STANDBY';
+    if (vvaBadge) vvaBadge.textContent = 'TELEMETRY READY';
+    if (coolantVal) coolantVal.innerHTML = '--&deg;C';
+    if (coolantStatus) coolantStatus.textContent = 'Standby';
+    if (batteryVal) batteryVal.textContent = '12.6 V';
+    if (batteryStatus) batteryStatus.textContent = 'Standby';
+    if (oilVal) oilVal.textContent = '--%';
+    if (oilNext) oilNext.textContent = 'Set Odometer';
+    if (odoVal) odoVal.textContent = '0 km';
+
+    currentYoutubeQuery = 'motorcycle exhaust sound review pure telemetry';
   }
-}
 
-function renderDashboardBike() {
-  switchActiveBike(activeBikeKey, true);
+  // Also refresh career stats
+  renderCareerStatsFromTrips();
 }
 
 function handleProfilePhotoUpload(event) {
@@ -1093,7 +1135,7 @@ function renderYoutubeDynamicHub() {
   const cardsContainer = document.getElementById('youtubeVideoGrid');
   if (!pillsContainer || !cardsContainer) return;
 
-  const bike = (bikeManagementData.specs && bikeManagementData.specs.makeModel) || riderProfile.bikeModel || 'Yamaha MT-15 V2';
+  const bike = (bikeManagementData.specs && bikeManagementData.specs.makeModel) || riderProfile.bikeModel || 'Motorcycle';
 
   // Dynamic high-adrenaline and mechanical mastery topics
   const dynamicTopics = [
@@ -1714,6 +1756,7 @@ function finishTripSession() {
 
   allTripsCache.unshift(tripRecord);
   renderRecentTripsTable();
+  renderCareerStatsFromTrips();
 
   // Save Real Trip and Track Points to MongoDB Atlas Backend
   fetch('/api/trips', {
@@ -1829,6 +1872,7 @@ function refreshRealTrips() {
       }
       renderRecentTripsTable();
       populateAnalysisDropdown();
+      renderCareerStatsFromTrips();
       if (allTripsCache.length > 0 && !activeAnalysisTrip) {
         loadTripForAnalysis(allTripsCache[0]._id || allTripsCache[0].id);
       } else if (allTripsCache.length === 0) {
@@ -1837,6 +1881,7 @@ function refreshRealTrips() {
     })
     .catch(() => {
       renderRecentTripsTable();
+      renderCareerStatsFromTrips();
       if (allTripsCache.length === 0) renderAnalysisEmptyState();
     });
 }
@@ -3046,8 +3091,13 @@ function switchRole(role) {
   const btnRoleSwitcher = document.getElementById('btnRoleSwitcher');
   const roleGatewayNavLabel = document.getElementById('roleGatewayNavLabel');
   const btnRoleSwitcherText = document.getElementById('btnRoleSwitcherText');
+  const btnRoleRider = document.getElementById('btnRoleRider');
+  const btnRoleParent = document.getElementById('btnRoleParent');
 
   if (role === 'parent') {
+    if (btnRoleParent) btnRoleParent.className = 'px-2.5 py-1 rounded-lg font-bold bg-purple-500/20 text-purple-300 border border-purple-400/30 transition flex items-center space-x-1.5';
+    if (btnRoleRider) btnRoleRider.className = 'px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5';
+
     // Hide rider view tabs
     ['dashboard', 'trips', 'parenting', 'settings', 'analysis'].forEach(v => {
       const el = document.getElementById('view' + capitalizeFirst(v));
@@ -3073,6 +3123,9 @@ function switchRole(role) {
     startParentTelemetryPolling();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } else {
+    if (btnRoleRider) btnRoleRider.className = 'px-2.5 py-1 rounded-lg font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 transition flex items-center space-x-1.5';
+    if (btnRoleParent) btnRoleParent.className = 'px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5';
+
     // Return to rider mode
     if (parentTelemetryPollTimer) {
       clearInterval(parentTelemetryPollTimer);
@@ -3189,9 +3242,9 @@ function updateParentDashboardUI(data) {
   const pairedCodeDisplay = document.getElementById('parentPairedCodeDisplay');
   const callRiderBtn = document.getElementById('parentCallRiderBtn');
 
-  if (pairedRiderName) pairedRiderName.textContent = rider.name || 'Natesh';
-  if (pairedBikeName) pairedBikeName.textContent = (bike && bike.specs && bike.specs.makeModel) || rider.bikeModel || 'Yamaha MT-15 V2';
-  if (pairedPlate) pairedPlate.textContent = (bike && bike.documents && bike.documents.rcNumber) || rider.bikePlate || 'KA-01-EQ-1550';
+  if (pairedRiderName) pairedRiderName.textContent = rider.name || 'Pilot';
+  if (pairedBikeName) pairedBikeName.textContent = (bike && bike.specs && bike.specs.makeModel) || rider.bikeModel || 'Unregistered Machine';
+  if (pairedPlate) pairedPlate.textContent = (bike && bike.documents && bike.documents.rcNumber) || rider.bikePlate || 'Unregistered Plate';
   if (pairedCodeDisplay) pairedCodeDisplay.textContent = `RHODY-8821 (${rider.email || 'pilot@rhody.io'})`;
   if (callRiderBtn) callRiderBtn.href = `tel:${rider.emergencyContactPhone || '+919876543210'}`;
 

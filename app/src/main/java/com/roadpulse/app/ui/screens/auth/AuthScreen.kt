@@ -1,6 +1,8 @@
 package com.roadpulse.app.ui.screens.auth
 
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,14 +27,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.TwoWheeler
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -46,7 +52,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,14 +63,11 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.roadpulse.app.data.auth.AuthManager
-import com.roadpulse.app.data.auth.AuthUser
 import com.roadpulse.app.ui.theme.CarbonDark
 import com.roadpulse.app.ui.theme.CardBorder
-import com.roadpulse.app.ui.theme.ElectricBlue
 import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
 import com.roadpulse.app.ui.theme.RacingRed
-import com.roadpulse.app.ui.theme.SuccessGreen
 import com.roadpulse.app.ui.theme.TextMuted
 import com.roadpulse.app.ui.theme.TextPrimary
 import com.roadpulse.app.ui.theme.TextSecondary
@@ -70,24 +75,36 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AuthScreen(
-    onAuthenticated: () -> Unit,
+    onAuthenticated: (role: String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
+    // Upfront Role Gateway: "rider" vs "parent"
+    var selectedRole by remember { mutableStateOf("rider") }
+
+    // Rider Form State
     var isLoginMode by remember { mutableStateOf(true) }
     var emailInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
     var nameInput by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // Parent Form State
+    var parentNameInput by remember { mutableStateOf("") }
+    var parentEmailInput by remember { mutableStateOf("") }
+    var riderPairingCodeInput by remember { mutableStateOf("") }
+
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val scrollState = rememberScrollState()
 
-    fun performAuth() {
+    val guardianPurple = Color(0xFFA855F7)
+
+    fun performRiderAuth() {
         focusManager.clearFocus()
         errorMessage = null
 
@@ -119,11 +136,31 @@ fun AuthScreen(
 
             isLoading = false
             result.onSuccess {
-                onAuthenticated()
+                onAuthenticated("rider")
             }.onFailure { err ->
-                errorMessage = err.localizedMessage ?: "Authentication failed. Please check credentials or network."
+                errorMessage = err.localizedMessage ?: "Authentication failed. Check credentials or network."
             }
         }
+    }
+
+    fun performParentConnect() {
+        focusManager.clearFocus()
+        errorMessage = null
+
+        val pName = parentNameInput.trim().ifEmpty { "Family Guardian" }
+        val pEmail = parentEmailInput.trim().ifEmpty { "guardian@family.io" }
+        val rCode = riderPairingCodeInput.trim().ifEmpty { "RHODY-8821" }
+
+        // Persist parent credentials to preferences
+        val prefs = context.getSharedPreferences("rhody_parent_prefs", Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString("parent_name", pName)
+            .putString("parent_email", pEmail)
+            .putString("paired_rider_code", rCode)
+            .putBoolean("is_parent_logged_in", true)
+            .apply()
+
+        onAuthenticated("parent")
     }
 
     Box(
@@ -135,57 +172,57 @@ fun AuthScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(horizontal = 24.dp, vertical = 32.dp),
+                .padding(horizontal = 20.dp, vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // App Telemetry Logo Monogram
+            // App Monogram
             Box(
                 modifier = Modifier
-                    .size(68.dp)
-                    .clip(RoundedCornerShape(20.dp))
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(18.dp))
                     .background(MidnightCard)
-                    .border(1.dp, CardBorder, RoundedCornerShape(20.dp)),
+                    .border(1.dp, CardBorder, RoundedCornerShape(18.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Speed,
                     contentDescription = "Rhody Logo",
                     tint = NeonCyan,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(32.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "RHODY TELEMETRY",
-                fontSize = 22.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 2.sp,
                 color = TextPrimary
             )
 
             Text(
-                text = "Precision Motorcycle GPS & Guardian Live Safety",
-                fontSize = 12.sp,
+                text = "Precision Motorcycle GPS & Guardian Safety Radar",
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextSecondary,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = 2.dp)
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Card Container
+            // Main Gateway Card
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(18.dp))
                     .background(MidnightCard)
-                    .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
-                    .padding(20.dp)
+                    .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
+                    .padding(18.dp)
             ) {
-                // Sign In / Sign Up Segmented Tabs
+                // UPFRONT ROLE GATEWAY SWITCHER: RIDER COCKPIT vs GUARDIAN PORTAL
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -193,203 +230,444 @@ fun AuthScreen(
                         .background(CarbonDark)
                         .padding(4.dp)
                 ) {
+                    // Rider Tab
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (isLoginMode) MidnightCard else Color.Transparent)
+                            .background(if (selectedRole == "rider") NeonCyan.copy(alpha = 0.15f) else Color.Transparent)
+                            .border(
+                                width = if (selectedRole == "rider") 1.dp else 0.dp,
+                                color = if (selectedRole == "rider") NeonCyan.copy(alpha = 0.4f) else Color.Transparent,
+                                shape = RoundedCornerShape(10.dp)
+                            )
                             .clickable {
-                                isLoginMode = true
+                                selectedRole = "rider"
                                 errorMessage = null
                             }
                             .padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "SIGN IN",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp,
-                            color = if (isLoginMode) NeonCyan else TextMuted
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(if (!isLoginMode) MidnightCard else Color.Transparent)
-                            .clickable {
-                                isLoginMode = false
-                                errorMessage = null
-                            }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "REGISTER",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp,
-                            color = if (!isLoginMode) NeonCyan else TextMuted
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Name Field (Register Mode Only)
-                AnimatedVisibility(visible = !isLoginMode) {
-                    Column {
-                        OutlinedTextField(
-                            value = nameInput,
-                            onValueChange = { nameInput = it },
-                            label = { Text("Full Name") },
-                            leadingIcon = {
-                                Icon(Icons.Default.Person, contentDescription = null, tint = TextMuted)
-                            },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = NeonCyan,
-                                unfocusedBorderColor = CardBorder,
-                                focusedLabelColor = NeonCyan,
-                                unfocusedLabelColor = TextMuted,
-                                focusedTextColor = TextPrimary,
-                                unfocusedTextColor = TextPrimary,
-                                cursorColor = NeonCyan
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        Spacer(modifier = Modifier.height(14.dp))
-                    }
-                }
-
-                // Email Field
-                OutlinedTextField(
-                    value = emailInput,
-                    onValueChange = { emailInput = it },
-                    label = { Text("Email Address") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Email, contentDescription = null, tint = TextMuted)
-                    },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email,
-                        imeAction = ImeAction.Next
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = NeonCyan,
-                        unfocusedBorderColor = CardBorder,
-                        focusedLabelColor = NeonCyan,
-                        unfocusedLabelColor = TextMuted,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        cursorColor = NeonCyan
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Password Field
-                OutlinedTextField(
-                    value = passwordInput,
-                    onValueChange = { passwordInput = it },
-                    label = { Text("Password") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Lock, contentDescription = null, tint = TextMuted)
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
                             Icon(
-                                imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                                tint = TextMuted
+                                imageVector = Icons.Default.TwoWheeler,
+                                contentDescription = null,
+                                tint = if (selectedRole == "rider") NeonCyan else TextMuted,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "RIDER COCKPIT",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.8.sp,
+                                color = if (selectedRole == "rider") NeonCyan else TextMuted
                             )
                         }
-                    },
-                    singleLine = true,
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(onDone = { performAuth() }),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = NeonCyan,
-                        unfocusedBorderColor = CardBorder,
-                        focusedLabelColor = NeonCyan,
-                        unfocusedLabelColor = TextMuted,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        cursorColor = NeonCyan
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
+                    }
 
-                // Error Message
-                if (errorMessage != null) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = errorMessage ?: "",
-                        color = RacingRed,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    // Guardian Tab
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (selectedRole == "parent") guardianPurple.copy(alpha = 0.15f) else Color.Transparent)
+                            .border(
+                                width = if (selectedRole == "parent") 1.dp else 0.dp,
+                                color = if (selectedRole == "parent") guardianPurple.copy(alpha = 0.4f) else Color.Transparent,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .clickable {
+                                selectedRole = "parent"
+                                errorMessage = null
+                            }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = null,
+                                tint = if (selectedRole == "parent") guardianPurple else TextMuted,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "GUARDIAN RADAR",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.8.sp,
+                                color = if (selectedRole == "parent") guardianPurple else TextMuted
+                            )
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
-                // Submit Button
-                Button(
-                    onClick = { performAuth() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = NeonCyan,
-                        contentColor = TextPrimary
-                    ),
-                    shape = RoundedCornerShape(14.dp),
-                    enabled = !isLoading
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            color = TextPrimary,
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
+                // ================= TAB 1: RIDER COCKPIT LOGIN / REGISTER / BYPASS =================
+                if (selectedRole == "rider") {
+                    // Sign In vs Register sub-tabs
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(CarbonDark)
+                            .padding(3.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isLoginMode) MidnightCard else Color.Transparent)
+                                .clickable {
+                                    isLoginMode = true
+                                    errorMessage = null
+                                }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "SIGN IN",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isLoginMode) NeonCyan else TextMuted
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (!isLoginMode) MidnightCard else Color.Transparent)
+                                .clickable {
+                                    isLoginMode = false
+                                    errorMessage = null
+                                }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "REGISTER",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (!isLoginMode) NeonCyan else TextMuted
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Name Field (Register Mode Only)
+                    AnimatedVisibility(visible = !isLoginMode) {
+                        Column {
+                            OutlinedTextField(
+                                value = nameInput,
+                                onValueChange = { nameInput = it },
+                                label = { Text("Full Name", fontSize = 12.sp) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Person, contentDescription = null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                                },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = NeonCyan,
+                                    unfocusedBorderColor = CardBorder,
+                                    focusedLabelColor = NeonCyan,
+                                    unfocusedLabelColor = TextMuted,
+                                    focusedTextColor = TextPrimary,
+                                    unfocusedTextColor = TextPrimary,
+                                    cursorColor = NeonCyan
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                    }
+
+                    // Email Field
+                    OutlinedTextField(
+                        value = emailInput,
+                        onValueChange = { emailInput = it },
+                        label = { Text("Rider Email", fontSize = 12.sp) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Email, contentDescription = null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
+                            imeAction = ImeAction.Next
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NeonCyan,
+                            unfocusedBorderColor = CardBorder,
+                            focusedLabelColor = NeonCyan,
+                            unfocusedLabelColor = TextMuted,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            cursorColor = NeonCyan
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Password Field
+                    OutlinedTextField(
+                        value = passwordInput,
+                        onValueChange = { passwordInput = it },
+                        label = { Text("Password", fontSize = 12.sp) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Lock, contentDescription = null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = null,
+                                    tint = TextMuted,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        },
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(onDone = { performRiderAuth() }),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NeonCyan,
+                            unfocusedBorderColor = CardBorder,
+                            focusedLabelColor = NeonCyan,
+                            unfocusedLabelColor = TextMuted,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            cursorColor = NeonCyan
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    // Error Message
+                    if (errorMessage != null) {
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = if (isLoginMode) "SIGN IN TO RHODY" else "CREATE ACCOUNT",
-                            fontSize = 14.sp,
+                            text = errorMessage ?: "",
+                            color = RacingRed,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // Rider Submit Button
+                    Button(
+                        onClick = { performRiderAuth() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = NeonCyan,
+                            contentColor = CarbonDark
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isLoading
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = CarbonDark,
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = if (isLoginMode) "SIGN IN TO COCKPIT" else "CREATE ACCOUNT",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 1.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // PROMINENT BYPASS BUTTON: ENTER WITHOUT DETAILS
+                    OutlinedButton(
+                        onClick = { onAuthenticated("rider") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, CardBorder),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = TextSecondary
+                        )
+                    ) {
+                        Text(
+                            text = "Enter Without Details (Set up later)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                // ================= TAB 2: PARENT / GUARDIAN RADAR PORTAL =================
+                if (selectedRole == "parent") {
+                    Text(
+                        text = "Connect to Rider Safety Radar",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "Real-time GPS beacon, high-G crash detection alerts, and motorcycle statutory document status monitoring.",
+                        fontSize = 11.sp,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(top = 2.dp, bottom = 14.dp)
+                    )
+
+                    // Parent Name
+                    OutlinedTextField(
+                        value = parentNameInput,
+                        onValueChange = { parentNameInput = it },
+                        label = { Text("Parent / Guardian Name", fontSize = 12.sp) },
+                        placeholder = { Text("e.g. Dad & Mom", fontSize = 12.sp, color = TextMuted) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Person, contentDescription = null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = guardianPurple,
+                            unfocusedBorderColor = CardBorder,
+                            focusedLabelColor = guardianPurple,
+                            unfocusedLabelColor = TextMuted,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            cursorColor = guardianPurple
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Parent Email
+                    OutlinedTextField(
+                        value = parentEmailInput,
+                        onValueChange = { parentEmailInput = it },
+                        label = { Text("Guardian Email", fontSize = 12.sp) },
+                        placeholder = { Text("guardian@family.io", fontSize = 12.sp, color = TextMuted) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Email, contentDescription = null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
+                            imeAction = ImeAction.Next
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = guardianPurple,
+                            unfocusedBorderColor = CardBorder,
+                            focusedLabelColor = guardianPurple,
+                            unfocusedLabelColor = TextMuted,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            cursorColor = guardianPurple
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Rider Pairing Code / Email
+                    OutlinedTextField(
+                        value = riderPairingCodeInput,
+                        onValueChange = { riderPairingCodeInput = it },
+                        label = { Text("Rider Pairing Code or Email", fontSize = 12.sp) },
+                        placeholder = { Text("RHODY-8821 or pilot@rhody.io", fontSize = 12.sp, color = TextMuted) },
+                        leadingIcon = {
+                            Icon(Icons.Default.VpnKey, contentDescription = null, tint = guardianPurple, modifier = Modifier.size(18.dp))
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { performParentConnect() }),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = guardianPurple,
+                            unfocusedBorderColor = CardBorder,
+                            focusedLabelColor = guardianPurple,
+                            unfocusedLabelColor = TextMuted,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            cursorColor = guardianPurple
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // Connect Button
+                    Button(
+                        onClick = { performParentConnect() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = guardianPurple,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "CONNECT TO GUARDIAN RADAR",
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp
+                            letterSpacing = 0.8.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Quick Demo Pairing Button
+                    OutlinedButton(
+                        onClick = {
+                            parentNameInput = "Family Guardian"
+                            parentEmailInput = "guardian@family.io"
+                            riderPairingCodeInput = "RHODY-8821"
+                            performParentConnect()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, guardianPurple.copy(alpha = 0.4f)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = guardianPurple
+                        )
+                    ) {
+                        Text(
+                            text = "Use Demo Pairing (RHODY-8821)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace
                         )
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Guest / Offline fallback option
-            Text(
-                text = "Continue as Guest (Offline Mode)",
-                color = TextSecondary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable {
-                        // Enter app as guest session
-                        onAuthenticated()
-                    }
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            )
+        }
+    }
+}
         }
     }
 }

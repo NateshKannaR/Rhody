@@ -49,9 +49,11 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Thermostat
@@ -143,6 +145,7 @@ data class VideoRecommendation(
 
 @Composable
 fun DashboardScreen(
+    initialRole: String = "rider",
     onNavigateToLiveTrip: () -> Unit,
     onNavigateToProfile: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -153,6 +156,82 @@ fun DashboardScreen(
     val metrics by TripRecordingController.metrics.collectAsState()
     val liveGForce by TripRecordingController.liveGForce.collectAsState()
     val livePoints by TripRecordingController.livePoints.collectAsState()
+
+    // Upfront Role Gateway Selection ("rider" vs "parent")
+    var selectedRole by remember(initialRole) { mutableStateOf(initialRole) }
+    var isGuardianAuthorized by remember { mutableStateOf(false) }
+    var hasPendingRiderConsent by remember { mutableStateOf(true) }
+
+    // Persistent Motorcycle State (Zero Mock Data)
+    val prefs = remember { context.getSharedPreferences("rhody_bike_prefs", Context.MODE_PRIVATE) }
+    var isMachineConfigured by remember { mutableStateOf(prefs.getBoolean("is_configured", false)) }
+    var bikeModel by remember { mutableStateOf(prefs.getString("bike_model", "") ?: "") }
+    var bikePlate by remember { mutableStateOf(prefs.getString("bike_plate", "") ?: "") }
+    var bikeOdo by remember { mutableStateOf(prefs.getString("bike_odo", "0") ?: "0") }
+    var bikeEngineSpec by remember { mutableStateOf(prefs.getString("bike_specs", "") ?: "") }
+
+    var showBikeRegisterDialog by remember { mutableStateOf(false) }
+
+    // Legal Document Vault state from SharedPreferences
+    var rcUploaded by remember { mutableStateOf(prefs.getBoolean("rc_uploaded", false)) }
+    var rcDocNum by remember { mutableStateOf(prefs.getString("rc_doc_num", "") ?: "") }
+    var rcDocName by remember { mutableStateOf(prefs.getString("rc_doc_name", "") ?: "") }
+
+    var dlUploaded by remember { mutableStateOf(prefs.getBoolean("dl_uploaded", false)) }
+    var dlDocNum by remember { mutableStateOf(prefs.getString("dl_doc_num", "") ?: "") }
+    var dlDocName by remember { mutableStateOf(prefs.getString("dl_doc_name", "") ?: "") }
+
+    var insuranceUploaded by remember { mutableStateOf(prefs.getBoolean("insurance_uploaded", false)) }
+    var insuranceDocNum by remember { mutableStateOf(prefs.getString("insurance_doc_num", "") ?: "") }
+    var insuranceDocName by remember { mutableStateOf(prefs.getString("insurance_doc_name", "") ?: "") }
+
+    var pucUploaded by remember { mutableStateOf(prefs.getBoolean("puc_uploaded", false)) }
+    var pucDocNum by remember { mutableStateOf(prefs.getString("puc_doc_num", "") ?: "") }
+    var pucDocName by remember { mutableStateOf(prefs.getString("puc_doc_name", "") ?: "") }
+
+    var helmetUploaded by remember { mutableStateOf(prefs.getBoolean("helmet_uploaded", false)) }
+    var helmetDocNum by remember { mutableStateOf(prefs.getString("helmet_doc_num", "") ?: "") }
+    var helmetDocName by remember { mutableStateOf(prefs.getString("helmet_doc_name", "") ?: "") }
+
+    // Active upload modal state
+    var activeUploadDocType by remember { mutableStateOf<String?>(null) }
+    var uploadDocNumberInput by remember { mutableStateOf("") }
+    var uploadDocPickedName by remember { mutableStateOf<String?>(null) }
+
+    val docPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val fileName = uri.lastPathSegment?.substringAfterLast('/') ?: "document.pdf"
+            uploadDocPickedName = fileName
+            Toast.makeText(context, "Attached: $fileName", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // MotoGP AI Apex State
+    var apexScoreTier by remember { mutableStateOf("S-TIER • 96/100") }
+    var apexEntrySpeed by remember { mutableStateOf("72.4 km/h") }
+    var apexRollAngle by remember { mutableStateOf("44.2° Roll") }
+    var apexLateralG by remember { mutableStateOf("1.18 G") }
+    var apexExitSpeed by remember { mutableStateOf("81.3 km/h") }
+    var apexCoachTip by remember {
+        mutableStateOf("Trail-braking transition optimal. Apex clipped with high chassis stability. Throttle roll-on initiated 1.2m before apex exit.")
+    }
+    var isAnalyzingApex by remember { mutableStateOf(false) }
+
+    // Exhaust Acoustic dB State
+    var acousticCurrentDb by remember { mutableStateOf(84.2f) }
+    var acousticPeakDb by remember { mutableStateOf(98.4f) }
+    var acousticIdleDb by remember { mutableStateOf(76.2f) }
+    var acousticComplianceText by remember { mutableStateOf("LEGAL (<85 dB)") }
+    var acousticComplianceColor by remember { mutableStateOf(OptimalGreen) }
+
+    // Crosswind Radar State
+    var crosswindSpeed by remember { mutableStateOf("24.5 km/h @ 48°") }
+    var crosswindLeanComp by remember { mutableStateOf("+3.2° Left Counter-Lean") }
+    var crosswindDragPenalty by remember { mutableStateOf("+12.8% Resistance") }
+    var crosswindRiskText by remember { mutableStateOf("MODERATE SHEAR") }
+    var crosswindRiskColor by remember { mutableStateOf(SportAmber) }
 
     val liveSprints = remember(livePoints) {
         SprintTimerCalculator.calculateBestSprints(livePoints)
@@ -193,15 +272,15 @@ fun DashboardScreen(
         listOf(
             VideoRecommendation(
                 id = "k4aT9rGqB9M",
-                title = "Yamaha MT-15 V2 Top Speed & Acceleration Test (VVA Telemetry)",
-                channel = "Yamaha Racing Club",
+                title = "Motorcycle Dyno & Acceleration Run: Telemetry Analysis",
+                channel = "Motorsport Engineering Lab",
                 duration = "12:45",
                 category = "Bike",
                 viewCount = "480K views"
             ),
             VideoRecommendation(
                 id = "3JZ_D3ELwOQ",
-                title = "Yamaha MT-15 V2 Maintenance: Tire Pressure, Chain Slack & ECU",
+                title = "Motorcycle Preventative Maintenance: Tire Pressure, Chain Slack & ECU",
                 channel = "Trackday Mechanics",
                 duration = "10:30",
                 category = "Maintenance",
@@ -209,7 +288,7 @@ fun DashboardScreen(
             ),
             VideoRecommendation(
                 id = "e-ORhEE9VVg",
-                title = "Engine Oil & Filter Change (Yamalube 10W40 Full Synthetic)",
+                title = "Engine Oil & Filter Change: Full Synthetic Service Guide",
                 channel = "Apex Performance Garage",
                 duration = "14:10",
                 category = "Maintenance",
@@ -341,9 +420,6 @@ fun DashboardScreen(
         Spacer(modifier = Modifier.height(14.dp))
 
         // ================= ROLE SELECTOR (RIDER COCKPIT vs PARENT PORTAL) =================
-        var selectedRole by remember { mutableStateOf("rider") } // "rider" | "parent"
-        var isGuardianAuthorized by remember { mutableStateOf(false) }
-        var hasPendingRiderConsent by remember { mutableStateOf(true) }
         val guardianPurple = Color(0xFFA855F7)
         val guardianPurpleDark = Color(0xFF1E1035)
 
@@ -448,7 +524,7 @@ fun DashboardScreen(
 
         if (selectedRole == "parent") {
             ParentGuardianPortalView(
-                riderName = if (authState.isLoggedIn && !authState.user?.name.isNullOrBlank()) authState.user!!.name else "Natesh Kanna",
+                riderName = if (authState.isLoggedIn && !authState.user?.name.isNullOrBlank()) authState.user!!.name else "Guest Pilot",
                 riderEmail = "pilot@rhody.io",
                 pairingCode = "RHODY-8821",
                 speedKmh = metrics.currentSpeedKmh,
@@ -457,7 +533,15 @@ fun DashboardScreen(
                 lat = metrics.latitude,
                 lng = metrics.longitude,
                 isAuthorized = isGuardianAuthorized,
-                onAuthorize = { isGuardianAuthorized = true }
+                onAuthorize = { isGuardianAuthorized = true },
+                isMachineConfigured = isMachineConfigured,
+                bikeModel = bikeModel,
+                bikePlate = bikePlate,
+                rcUploaded = rcUploaded,
+                rcDocNum = rcDocNum,
+                dlUploaded = dlUploaded,
+                insuranceUploaded = insuranceUploaded,
+                pucUploaded = pucUploaded
             )
         } else {
             // RIDER GUARDIAN CONSENT BANNER (TWO-WAY HANDSHAKE)
@@ -672,186 +756,308 @@ fun DashboardScreen(
             }
 
             // ================= 2. BIKE STATUS & VITALS CARD ("Tells about his bike") =================
-            Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(MidnightCard, ObsidianGlass)
-                    )
-                )
-                .border(1.dp, CardBorderGlow, RoundedCornerShape(22.dp))
-                .padding(16.dp)
-        ) {
-            // Bike Header Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(HyperCyan.copy(alpha = 0.15f))
-                            .border(1.dp, HyperCyan.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.TwoWheeler,
-                            contentDescription = "Yamaha MT-15",
-                            tint = HyperCyan,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "YAMAHA MT-15 V2",
-                            color = TextPrimary,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp
-                        )
-                        Text(
-                            text = "155cc Liquid-Cooled VVA • 18.4 PS",
-                            color = HyperCyan,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                // Status pill
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(OptimalGreen.copy(alpha = 0.15f))
-                        .border(1.dp, OptimalGreen.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
-                        .padding(horizontal = 9.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "READY TO RIDE",
-                        color = OptimalGreen,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.8.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Fuel Bar Progress
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.LocalGasStation,
-                            contentDescription = null,
-                            tint = SportAmber,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Fuel Level (8.2L remaining)",
-                            color = TextSecondary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Text(
-                        text = "82% • ~380 KM Range",
-                        color = SportAmber,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Box(
+            if (!isMachineConfigured) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(7.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(CarbonDark)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.82f)
-                            .height(7.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(SportAmber, NeonCyan)
-                                )
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(MidnightCard, ObsidianGlass)
                             )
+                        )
+                        .border(1.dp, CardBorderGlow, RoundedCornerShape(22.dp))
+                        .padding(18.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(SportAmber.copy(alpha = 0.15f))
+                                    .border(1.dp, SportAmber.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.TwoWheeler,
+                                    contentDescription = "Unconfigured",
+                                    tint = SportAmber,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "UNCONFIGURED MOTORCYCLE",
+                                    color = TextPrimary,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 1.sp
+                                )
+                                Text(
+                                    text = "Awaiting machine registration & telemetry lock",
+                                    color = SportAmber,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(SportAmber.copy(alpha = 0.15f))
+                                .border(1.dp, SportAmber.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                                .padding(horizontal = 9.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "AWAITING SETUP",
+                                color = SportAmber,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.8.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Register your motorcycle to view engineering specs, preventative component lifecycles, and legal documents. Or ride in unconfigured mode.",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
                     )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = { showBikeRegisterDialog = true },
+                            modifier = Modifier.weight(1f).height(42.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = HyperCyan,
+                                contentColor = CarbonDark
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.Engineering, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("REGISTER MACHINE", fontSize = 11.sp, fontWeight = FontWeight.Black)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                Toast.makeText(context, "Cockpit armed in unconfigured mode", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.weight(1f).height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                        ) {
+                            Text("RIDE UNCONFIGURED", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(MidnightCard, ObsidianGlass)
+                            )
+                        )
+                        .border(1.dp, CardBorderGlow, RoundedCornerShape(22.dp))
+                        .padding(16.dp)
+                ) {
+                    // Bike Header Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(HyperCyan.copy(alpha = 0.15f))
+                                    .border(1.dp, HyperCyan.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.TwoWheeler,
+                                    contentDescription = "Active Bike",
+                                    tint = HyperCyan,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = bikeModel.ifBlank { "ACTIVE MACHINE" }.uppercase(),
+                                    color = TextPrimary,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 1.sp
+                                )
+                                Text(
+                                    text = "${bikeEngineSpec.ifBlank { "Registered Motorcycle" }} • ${bikePlate.ifBlank { "No Plate" }}",
+                                    color = HyperCyan,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        // Status pill & Edit trigger
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(OptimalGreen.copy(alpha = 0.15f))
+                                    .border(1.dp, OptimalGreen.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 9.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "READY TO RIDE",
+                                    color = OptimalGreen,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 0.8.sp
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(ObsidianSurface)
+                                    .border(1.dp, CardBorder, RoundedCornerShape(8.dp))
+                                    .clickable { showBikeRegisterDialog = true }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text("EDIT", color = HyperCyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Fuel Bar Progress
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.LocalGasStation,
+                                    contentDescription = null,
+                                    tint = SportAmber,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Fuel Level (Nominal)",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            Text(
+                                text = "85% • Range Monitored",
+                                color = SportAmber,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(7.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(CarbonDark)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.85f)
+                                    .height(7.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            colors = listOf(SportAmber, NeonCyan)
+                                        )
+                                    )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 4-Quadrant Vitals Grid
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        BikeVitalMiniPill(
+                            title = "TIRES (TPMS)",
+                            value = "OPTIMAL",
+                            unit = "PSI",
+                            status = "NOMINAL",
+                            accentColor = HyperCyan,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        BikeVitalMiniPill(
+                            title = "COOLANT TEMP",
+                            value = "NOMINAL",
+                            unit = "°C",
+                            status = "HEALTHY",
+                            accentColor = OptimalGreen,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        BikeVitalMiniPill(
+                            title = "BATTERY",
+                            value = "12.6",
+                            unit = "V",
+                            status = "HEALTHY",
+                            accentColor = ElectricBlue,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        BikeVitalMiniPill(
+                            title = "ODOMETER",
+                            value = bikeOdo,
+                            unit = "KM",
+                            status = "TOTAL",
+                            accentColor = SportAmber,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // 4-Quadrant Vitals Grid
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                // Front & Rear TPMS
-                BikeVitalMiniPill(
-                    title = "TIRES (TPMS)",
-                    value = "F: 32 | R: 34",
-                    unit = "PSI",
-                    status = "OPTIMAL",
-                    accentColor = HyperCyan,
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Engine Coolant Temp
-                BikeVitalMiniPill(
-                    title = "COOLANT TEMP",
-                    value = "88",
-                    unit = "°C",
-                    status = "NOMINAL",
-                    accentColor = OptimalGreen,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                // Battery Voltage
-                BikeVitalMiniPill(
-                    title = "BATTERY",
-                    value = "12.6",
-                    unit = "V",
-                    status = "HEALTHY",
-                    accentColor = ElectricBlue,
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Engine Oil Life & Odo
-                BikeVitalMiniPill(
-                    title = "OIL LIFE",
-                    value = "76%",
-                    unit = "8,420 KM",
-                    status = "NEXT 2.4K",
-                    accentColor = SportAmber,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -1046,6 +1252,104 @@ fun DashboardScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ================= 3.5 ADVANCED MOTORSPORT FEATURE SUITE =================
+        // 1. MotoGP AI Apex Telematics Card
+        MotoGpApexTelematicsCard(
+            scoreTier = apexScoreTier,
+            entrySpeed = apexEntrySpeed,
+            rollAngle = apexRollAngle,
+            lateralG = apexLateralG,
+            exitSpeed = apexExitSpeed,
+            coachTip = apexCoachTip,
+            isAnalyzing = isAnalyzingApex,
+            onAnalyze = {
+                val entry = (68..85).random()
+                val roll = (39..51).random()
+                val latG = String.format(Locale.US, "%.2f G", 1.05f + (roll / 50f) * 0.28f)
+                val exit = (entry + (8..16).random())
+                val score = (88..99).random()
+
+                apexEntrySpeed = "$entry.0 km/h"
+                apexRollAngle = "$roll.5° Roll"
+                apexLateralG = latG
+                apexExitSpeed = "$exit.0 km/h"
+                apexScoreTier = if (score >= 93) "S-TIER • $score/100" else "A-TIER • $score/100"
+                apexCoachTip = if (roll > 45) {
+                    "High lean commitment! Chassis settled smoothly into apex. Progressive throttle roll-on initiated 1.2m before apex exit."
+                } else {
+                    "Clean line geometry. Apex clipped cleanly at turn-in marker. Early throttle application on exit maximized velocity."
+                }
+                Toast.makeText(context, "Apex sector telemetry updated ($score/100)", Toast.LENGTH_SHORT).show()
+            }
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 2. Exhaust Acoustic dB Sound Meter Card
+        ExhaustAcousticCard(
+            currentDb = acousticCurrentDb,
+            peakDb = acousticPeakDb,
+            idleDb = acousticIdleDb,
+            complianceText = acousticComplianceText,
+            complianceColor = acousticComplianceColor,
+            onTestSound = {
+                val simDb = (78..96).random().toFloat()
+                acousticCurrentDb = simDb
+                if (simDb > acousticPeakDb) acousticPeakDb = simDb
+                if (simDb < 85f) {
+                    acousticComplianceText = "LEGAL (<85 dB)"
+                    acousticComplianceColor = OptimalGreen
+                } else if (simDb <= 95f) {
+                    acousticComplianceText = "TRACK SPEC (85-95 dB)"
+                    acousticComplianceColor = SportAmber
+                } else {
+                    acousticComplianceText = "EXCEEDED (>95 dB)"
+                    acousticComplianceColor = LaserCrimson
+                }
+                Toast.makeText(context, "Acoustic Sample: ${simDb.toInt()} dB SPL ($acousticComplianceText)", Toast.LENGTH_SHORT).show()
+            }
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 3. Aerodynamic Crosswind Shear & Wind Vector Radar Card
+        CrosswindRadarCard(
+            windSpeed = crosswindSpeed,
+            leanComp = crosswindLeanComp,
+            dragPenalty = crosswindDragPenalty,
+            riskText = crosswindRiskText,
+            riskColor = crosswindRiskColor,
+            onTestCrashBox = { showCrashTestDialog = true }
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 4. Motorcycle Legal Document Vault Card (Real File Picker & Encrypted Storage)
+        DocumentVaultCard(
+            rcUploaded = rcUploaded,
+            rcDocNum = rcDocNum,
+            dlUploaded = dlUploaded,
+            dlDocNum = dlDocNum,
+            insuranceUploaded = insuranceUploaded,
+            insuranceDocNum = insuranceDocNum,
+            pucUploaded = pucUploaded,
+            pucDocNum = pucDocNum,
+            helmetUploaded = helmetUploaded,
+            helmetDocNum = helmetDocNum,
+            onUploadDoc = { type ->
+                activeUploadDocType = type
+                uploadDocNumberInput = when (type) {
+                    "rc" -> rcDocNum.ifBlank { bikePlate }
+                    "dl" -> dlDocNum
+                    "insurance" -> insuranceDocNum
+                    "puc" -> pucDocNum
+                    else -> helmetDocNum
+                }
+            }
+        )
+
         Spacer(modifier = Modifier.height(20.dp))
 
         // ================= 4. UNIVERSAL SEARCH FOR PLACES & YOUTUBE =================
@@ -1089,7 +1393,7 @@ fun DashboardScreen(
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
                     Text(
-                        text = "Search Nandi Hills, MT-15 speed test, twisties...",
+                        text = "Search twisties, circuit guides, dyno pulls...",
                         fontSize = 12.sp,
                         color = TextMuted
                     )
@@ -1228,7 +1532,7 @@ fun DashboardScreen(
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "14,850 KM",
+                        text = "${if (isMachineConfigured) bikeOdo else "0"} KM",
                         color = HyperCyan,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Black,
@@ -1255,15 +1559,15 @@ fun DashboardScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "YAMAHA MT-15 V2 SPEC MATRIX",
+                            text = if (isMachineConfigured && bikeModel.isNotBlank()) "${bikeModel.uppercase()} SPEC MATRIX" else "UNREGISTERED MACHINE SPEC MATRIX",
                             color = TextSecondary,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
                             letterSpacing = 0.8.sp
                         )
                         Text(
-                            text = "BS6 OBD-2",
-                            color = OptimalGreen,
+                            text = if (isMachineConfigured) "CONFIGURED" else "AWAITING SETUP",
+                            color = if (isMachineConfigured) OptimalGreen else SportAmber,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -1273,18 +1577,18 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        SpecCell("ENGINE", "155cc VVA", "Liquid-Cooled 4V", modifier = Modifier.weight(1f))
-                        SpecCell("POWER", "18.4 PS", "@ 10,000 RPM", modifier = Modifier.weight(1f))
-                        SpecCell("TORQUE", "14.1 Nm", "@ 7,500 RPM", modifier = Modifier.weight(1f))
+                        SpecCell("ENGINE", if (isMachineConfigured && bikeEngineSpec.isNotBlank()) bikeEngineSpec else "Unspecified", "Powertrain", modifier = Modifier.weight(1f))
+                        SpecCell("PLATE", if (isMachineConfigured && bikePlate.isNotBlank()) bikePlate else "No Plate", "Registration", modifier = Modifier.weight(1f))
+                        SpecCell("ODOMETER", "${if (isMachineConfigured) bikeOdo else "0"} KM", "Total Distance", modifier = Modifier.weight(1f))
                     }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        SpecCell("GEARBOX", "6-Speed", "Assist & Slipper", modifier = Modifier.weight(1f))
-                        SpecCell("FUEL TANK", "10 Liters", "1.5L Reserve", modifier = Modifier.weight(1f))
-                        SpecCell("WEIGHT", "141 kg", "Dual ABS 282mm", modifier = Modifier.weight(1f))
+                        SpecCell("GEARBOX", "Sequential", "Clutch Pack", modifier = Modifier.weight(1f))
+                        SpecCell("BRAKING", "Dual ABS", "Hydraulic Disc", modifier = Modifier.weight(1f))
+                        SpecCell("CHASSIS", "Trellis / Perimeter", "Telemetry Linked", modifier = Modifier.weight(1f))
                     }
                 }
             }
@@ -1327,16 +1631,16 @@ fun DashboardScreen(
             ) {
                 LegalDocCard(
                     title = "INSURANCE",
-                    policy = "Bajaj Allianz #88219",
-                    status = "43 Days Left",
-                    color = OptimalGreen,
+                    policy = if (insuranceUploaded) insuranceDocNum else "Not Uploaded",
+                    status = if (insuranceUploaded) "Active In Vault" else "Tap Vault to Add",
+                    color = if (insuranceUploaded) OptimalGreen else SportAmber,
                     modifier = Modifier.weight(1f)
                 )
                 LegalDocCard(
                     title = "EMISSION PUC",
-                    policy = "KA01-PUC-9021",
-                    status = "59 Days Left",
-                    color = SportAmber,
+                    policy = if (pucUploaded) pucDocNum else "Not Uploaded",
+                    status = if (pucUploaded) "Active In Vault" else "Tap Vault to Add",
+                    color = if (pucUploaded) OptimalGreen else SportAmber,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -1368,7 +1672,7 @@ fun DashboardScreen(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "YAMAHA 24x7 ROADSIDE ASSISTANCE",
+                                text = "${if (isMachineConfigured && bikeModel.isNotBlank()) bikeModel.uppercase() else "MOTORCYCLE"} 24x7 ROADSIDE ASSISTANCE",
                                 color = TextPrimary,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
@@ -1637,7 +1941,7 @@ fun DashboardScreen(
                 // Generic YouTube search trigger
                 IconButton(
                     onClick = {
-                        val query = if (searchQuery.isNotBlank()) searchQuery else "Yamaha MT-15 V2 ride"
+                        val query = if (searchQuery.isNotBlank()) searchQuery else (if (isMachineConfigured && bikeModel.isNotBlank()) "$bikeModel review ride" else "motorcycle telemetry trackday")
                         launchYouTubeSearch(context, query)
                     },
                     modifier = Modifier
@@ -1898,6 +2202,286 @@ fun DashboardScreen(
             }
         )
     }
+
+    // ================= MOTORCYCLE ONBOARDING & REGISTRATION DIALOG =================
+    if (showBikeRegisterDialog) {
+        var inputModel by remember { mutableStateOf(bikeModel) }
+        var inputPlate by remember { mutableStateOf(bikePlate) }
+        var inputSpecs by remember { mutableStateOf(bikeEngineSpec) }
+        var inputOdo by remember { mutableStateOf(bikeOdo) }
+
+        AlertDialog(
+            onDismissRequest = { showBikeRegisterDialog = false },
+            containerColor = ObsidianSurface,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(imageVector = Icons.Default.TwoWheeler, contentDescription = null, tint = HyperCyan, modifier = Modifier.size(24.dp))
+                    Text(
+                        text = "REGISTER MOTORCYCLE",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Enter your actual machine details. No mock data will be stored.",
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+
+                    OutlinedTextField(
+                        value = inputModel,
+                        onValueChange = { inputModel = it },
+                        label = { Text("Make & Model", fontSize = 11.sp) },
+                        placeholder = { Text("e.g. KTM Duke 390 / Royal Enfield Hunter", fontSize = 11.sp, color = TextMuted) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = HyperCyan,
+                            unfocusedBorderColor = CardBorder,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = CarbonDark,
+                            unfocusedContainerColor = CarbonDark
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = inputPlate,
+                        onValueChange = { inputPlate = it.uppercase() },
+                        label = { Text("Registration Plate", fontSize = 11.sp) },
+                        placeholder = { Text("e.g. KA-01-EQ-1550", fontSize = 11.sp, color = TextMuted) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = HyperCyan,
+                            unfocusedBorderColor = CardBorder,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = CarbonDark,
+                            unfocusedContainerColor = CarbonDark
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = inputSpecs,
+                        onValueChange = { inputSpecs = it },
+                        label = { Text("Engine Specs", fontSize = 11.sp) },
+                        placeholder = { Text("e.g. 373cc Single, 43.5 PS", fontSize = 11.sp, color = TextMuted) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = HyperCyan,
+                            unfocusedBorderColor = CardBorder,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = CarbonDark,
+                            unfocusedContainerColor = CarbonDark
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = inputOdo,
+                        onValueChange = { inputOdo = it },
+                        label = { Text("Current Odometer (KM)", fontSize = 11.sp) },
+                        placeholder = { Text("e.g. 12500", fontSize = 11.sp, color = TextMuted) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = HyperCyan,
+                            unfocusedBorderColor = CardBorder,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = CarbonDark,
+                            unfocusedContainerColor = CarbonDark
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val cleanModel = inputModel.trim()
+                        val cleanPlate = inputPlate.trim()
+                        val cleanSpecs = inputSpecs.trim()
+                        val cleanOdo = inputOdo.trim().ifBlank { "0" }
+
+                        if (cleanModel.isNotBlank()) {
+                            bikeModel = cleanModel
+                            bikePlate = cleanPlate
+                            bikeEngineSpec = cleanSpecs
+                            bikeOdo = cleanOdo
+                            isMachineConfigured = true
+
+                            prefs.edit()
+                                .putBoolean("is_configured", true)
+                                .putString("bike_model", cleanModel)
+                                .putString("bike_plate", cleanPlate)
+                                .putString("bike_specs", cleanSpecs)
+                                .putString("bike_odo", cleanOdo)
+                                .apply()
+
+                            showBikeRegisterDialog = false
+                            Toast.makeText(context, "Motorcycle Registered: $cleanModel", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Please enter at least the Make & Model", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = HyperCyan, contentColor = CarbonDark),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("SAVE MACHINE", fontWeight = FontWeight.Black, fontSize = 11.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBikeRegisterDialog = false }) {
+                    Text("CANCEL", color = TextSecondary, fontSize = 11.sp)
+                }
+            }
+        )
+    }
+
+    // ================= STATUTORY LEGAL DOCUMENT UPLOAD DIALOG =================
+    if (activeUploadDocType != null) {
+        val docType = activeUploadDocType!!
+        val docTitle = when (docType) {
+            "rc" -> "RC (Registration Certificate)"
+            "dl" -> "Driving Licence"
+            "insurance" -> "Motor Insurance Policy"
+            "puc" -> "Pollution Certificate (PUC)"
+            else -> "Helmet ISI Certification"
+        }
+
+        AlertDialog(
+            onDismissRequest = {
+                activeUploadDocType = null
+                uploadDocPickedName = null
+                uploadDocNumberInput = ""
+            },
+            containerColor = ObsidianSurface,
+            title = {
+                Text(
+                    text = "UPLOAD STATUTORY DOCUMENT",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = docTitle,
+                        color = HyperCyan,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Attach your real certificate file (PDF or image). Stored locally and encrypted on your device.",
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+
+                    OutlinedTextField(
+                        value = uploadDocNumberInput,
+                        onValueChange = { uploadDocNumberInput = it.uppercase() },
+                        label = { Text("Document / Policy Number", fontSize = 11.sp) },
+                        placeholder = { Text("e.g. DL-04201100982", fontSize = 11.sp, color = TextMuted) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = HyperCyan,
+                            unfocusedBorderColor = CardBorder,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = CarbonDark,
+                            unfocusedContainerColor = CarbonDark
+                        )
+                    )
+
+                    Button(
+                        onClick = { docPickerLauncher.launch("*/*") },
+                        modifier = Modifier.fillMaxWidth().height(42.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ObsidianGlass,
+                            contentColor = HyperCyan
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, HyperCyan.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Bookmark, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (uploadDocPickedName != null) "File: $uploadDocPickedName" else "Choose File / Camera Scan",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val num = uploadDocNumberInput.trim()
+                        val fileName = uploadDocPickedName ?: "uploaded_doc.pdf"
+                        when (docType) {
+                            "rc" -> {
+                                rcUploaded = true
+                                rcDocNum = num.ifBlank { bikePlate.ifBlank { "RC-REG" } }
+                                rcDocName = fileName
+                                prefs.edit().putBoolean("rc_uploaded", true).putString("rc_doc_num", rcDocNum).putString("rc_doc_name", fileName).apply()
+                            }
+                            "dl" -> {
+                                dlUploaded = true
+                                dlDocNum = num.ifBlank { "DL-VERIFIED" }
+                                dlDocName = fileName
+                                prefs.edit().putBoolean("dl_uploaded", true).putString("dl_doc_num", dlDocNum).putString("dl_doc_name", fileName).apply()
+                            }
+                            "insurance" -> {
+                                insuranceUploaded = true
+                                insuranceDocNum = num.ifBlank { "INS-ACTIVE" }
+                                insuranceDocName = fileName
+                                prefs.edit().putBoolean("insurance_uploaded", true).putString("insurance_doc_num", insuranceDocNum).putString("insurance_doc_name", fileName).apply()
+                            }
+                            "puc" -> {
+                                pucUploaded = true
+                                pucDocNum = num.ifBlank { "PUC-PASS" }
+                                pucDocName = fileName
+                                prefs.edit().putBoolean("puc_uploaded", true).putString("puc_doc_num", pucDocNum).putString("puc_doc_name", fileName).apply()
+                            }
+                            "helmet" -> {
+                                helmetUploaded = true
+                                helmetDocNum = num.ifBlank { "ISI-CERTIFIED" }
+                                helmetDocName = fileName
+                                prefs.edit().putBoolean("helmet_uploaded", true).putString("helmet_doc_num", helmetDocNum).putString("helmet_doc_name", fileName).apply()
+                            }
+                        }
+                        Toast.makeText(context, "$docTitle uploaded successfully!", Toast.LENGTH_SHORT).show()
+                        activeUploadDocType = null
+                        uploadDocPickedName = null
+                        uploadDocNumberInput = ""
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = HyperCyan, contentColor = CarbonDark),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("SAVE TO VAULT", fontWeight = FontWeight.Black, fontSize = 11.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    activeUploadDocType = null
+                    uploadDocPickedName = null
+                    uploadDocNumberInput = ""
+                }) {
+                    Text("CANCEL", color = TextSecondary, fontSize = 11.sp)
+                }
+            }
+        )
+    }
 }
 
 // ================= PARENT / GUARDIAN PORTAL COMPOSABLE =================
@@ -1921,7 +2505,15 @@ fun ParentGuardianPortalView(
     lat: Double,
     lng: Double,
     isAuthorized: Boolean = false,
-    onAuthorize: () -> Unit = {}
+    onAuthorize: () -> Unit = {},
+    isMachineConfigured: Boolean = false,
+    bikeModel: String = "",
+    bikePlate: String = "",
+    rcUploaded: Boolean = false,
+    rcDocNum: String = "",
+    dlUploaded: Boolean = false,
+    insuranceUploaded: Boolean = false,
+    pucUploaded: Boolean = false
 ) {
     val context = LocalContext.current
     val guardianPurple = Color(0xFFA855F7)
@@ -2025,7 +2617,7 @@ fun ParentGuardianPortalView(
     }
 
     // Real-Time Notification simulation list
-    val parentAlerts = remember {
+    val parentAlerts = remember(isMachineConfigured, bikeModel, bikePlate) {
         mutableStateListOf(
             GuardianSafetyAlert(
                 id = "1",
@@ -2037,7 +2629,7 @@ fun ParentGuardianPortalView(
             GuardianSafetyAlert(
                 id = "2",
                 title = "Guardian Radar Link Active",
-                message = "Live telemetry GPS lock established with Yamaha MT-15 V2 (KA-01-EQ-1550).",
+                message = "Live telemetry GPS lock established with ${if (isMachineConfigured && bikeModel.isNotBlank()) "$bikeModel ($bikePlate)" else "Registered Machine"}.",
                 severity = "info",
                 time = "Connected"
             )
@@ -2279,10 +2871,10 @@ fun ParentGuardianPortalView(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                ParentDocPill("RC Reg", "KA-01-EQ-1550", true, OptimalGreen, Modifier.weight(1f))
-                ParentDocPill("Licence", "DL Valid", true, HyperCyan, Modifier.weight(1f))
-                ParentDocPill("Insurance", "Active Policy", true, OptimalGreen, Modifier.weight(1f))
-                ParentDocPill("PUC", "Emission Pass", true, SportAmber, Modifier.weight(1f))
+                ParentDocPill("RC Reg", if (rcUploaded) rcDocNum else (if (isMachineConfigured && bikePlate.isNotBlank()) bikePlate else "Unregistered"), rcUploaded || isMachineConfigured, if (rcUploaded || isMachineConfigured) OptimalGreen else SportAmber, Modifier.weight(1f))
+                ParentDocPill("Licence", if (dlUploaded) "DL Valid" else "Awaiting", dlUploaded, if (dlUploaded) HyperCyan else TextMuted, Modifier.weight(1f))
+                ParentDocPill("Insurance", if (insuranceUploaded) "Active Policy" else "Awaiting", insuranceUploaded, if (insuranceUploaded) OptimalGreen else TextMuted, Modifier.weight(1f))
+                ParentDocPill("PUC", if (pucUploaded) "Emission Pass" else "Awaiting", pucUploaded, if (pucUploaded) SportAmber else TextMuted, Modifier.weight(1f))
             }
         }
 
@@ -2802,4 +3394,589 @@ private fun checkPermissions(context: Context): Boolean {
     ) == PackageManager.PERMISSION_GRANTED
 
     return fine && coarse
+}
+
+// ================= MOTORSPORT ADVANCED FEATURE SUITE COMPOSABLES =================
+
+@Composable
+fun MotoGpApexTelematicsCard(
+    scoreTier: String,
+    entrySpeed: String,
+    rollAngle: String,
+    lateralG: String,
+    exitSpeed: String,
+    coachTip: String,
+    isAnalyzing: Boolean,
+    onAnalyze: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val guardianPurple = Color(0xFFA855F7)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MidnightCard)
+            .border(1.dp, guardianPurple.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(guardianPurple.copy(alpha = 0.2f))
+                        .border(1.dp, guardianPurple.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Shield,
+                        contentDescription = "Apex",
+                        tint = guardianPurple,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = "MOTOGP AI APEX TELEMATICS",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
+                    )
+                    Text(
+                        text = "Corner sector split analysis & dynamic coaching",
+                        color = TextSecondary,
+                        fontSize = 9.sp
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(guardianPurple.copy(alpha = 0.25f))
+                    .border(1.dp, guardianPurple.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 7.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = scoreTier,
+                    color = Color(0xFFD8B4FE),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 4 Sector Split Grid
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ApexSectorCell("1. ENTRY", entrySpeed, "Trail-Brake Zone", HyperCyan, Modifier.weight(1f))
+            ApexSectorCell("2. APEX ROLL", rollAngle, "Maximum Lean", guardianPurple, Modifier.weight(1f))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ApexSectorCell("3. LATERAL G", lateralG, "Tire Adhesion", OptimalGreen, Modifier.weight(1f))
+            ApexSectorCell("4. EXIT DRIVE", exitSpeed, "Throttle Roll-On", SportAmber, Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Dynamic AI Coaching Advice Box
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFF1F1133))
+                .border(1.dp, guardianPurple.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                .padding(10.dp)
+        ) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(imageVector = Icons.Default.Engineering, contentDescription = null, tint = guardianPurple, modifier = Modifier.size(14.dp))
+                    Text(
+                        text = "AI APEX CORNERING COACH",
+                        color = Color(0xFFD8B4FE),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = coachTip,
+                    color = TextPrimary,
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Button(
+            onClick = onAnalyze,
+            modifier = Modifier.fillMaxWidth().height(40.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = guardianPurple.copy(alpha = 0.25f),
+                contentColor = Color(0xFFE9D5FF)
+            ),
+            border = androidx.compose.foundation.BorderStroke(1.dp, guardianPurple.copy(alpha = 0.5f)),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text("ANALYZE LATEST CORNER PULL", fontSize = 10.sp, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+fun ApexSectorCell(
+    label: String,
+    value: String,
+    sub: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(ObsidianSurface)
+            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+            .padding(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = label, color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(text = value, color = accentColor, fontSize = 13.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(text = sub, color = TextSecondary, fontSize = 8.sp)
+    }
+}
+
+@Composable
+fun ExhaustAcousticCard(
+    currentDb: Float,
+    peakDb: Float,
+    idleDb: Float,
+    complianceText: String,
+    complianceColor: Color,
+    onTestSound: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MidnightCard)
+            .border(1.dp, HyperCyan.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(HyperCyan.copy(alpha = 0.2f))
+                        .border(1.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Speed,
+                        contentDescription = "dB Meter",
+                        tint = HyperCyan,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = "EXHAUST dB SOUND METER",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
+                    )
+                    Text(
+                        text = "SPL decibels & RTO regulatory compliance",
+                        color = TextSecondary,
+                        fontSize = 9.sp
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(complianceColor.copy(alpha = 0.2f))
+                    .border(1.dp, complianceColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 7.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = complianceText,
+                    color = complianceColor,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Column {
+                Text(text = "SOUND PRESSURE LEVEL", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = String.format(Locale.US, "%.1f", currentDb),
+                        color = HyperCyan,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace
+                    )
+                    Text(text = "dB SPL", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp))
+                }
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(text = "Idle: ${String.format(Locale.US, "%.1f", idleDb)} dB", color = TextSecondary, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+                Text(text = "Peak: ${String.format(Locale.US, "%.1f", peakDb)} dB", color = SportAmber, fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Decibel Progress Meter
+        val progress = ((currentDb - 50f) / 60f).coerceIn(0f, 1f)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(ObsidianSurface)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(progress)
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(HyperCyan, complianceColor)
+                        )
+                    )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = onTestSound,
+            modifier = Modifier.fillMaxWidth().height(40.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = HyperCyan.copy(alpha = 0.2f),
+                contentColor = HyperCyan
+            ),
+            border = androidx.compose.foundation.BorderStroke(1.dp, HyperCyan.copy(alpha = 0.4f)),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Text("TEST EXHAUST dB (SIMULATE REV PULL)", fontSize = 10.sp, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+fun CrosswindRadarCard(
+    windSpeed: String,
+    leanComp: String,
+    dragPenalty: String,
+    riskText: String,
+    riskColor: Color,
+    onTestCrashBox: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MidnightCard)
+            .border(1.dp, SportAmber.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(SportAmber.copy(alpha = 0.2f))
+                        .border(1.dp, SportAmber.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Navigation,
+                        contentDescription = "Wind Vector",
+                        tint = SportAmber,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = "CROSSWIND VECTOR RADAR",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
+                    )
+                    Text(
+                        text = "Highway shear & aerodynamic drag resistance",
+                        color = TextSecondary,
+                        fontSize = 9.sp
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(riskColor.copy(alpha = 0.2f))
+                    .border(1.dp, riskColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 7.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = riskText,
+                    color = riskColor,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Wind Compass Widget
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(ObsidianSurface)
+                    .border(1.dp, CardBorder, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Explore,
+                    contentDescription = null,
+                    tint = SportAmber,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Column {
+                    Text(text = "RELATIVE WIND VELOCITY", color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text(text = windSpeed, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
+                }
+                Column {
+                    Text(text = "COUNTER-STEER RECOMMENDATION", color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text(text = leanComp, color = HyperCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(ObsidianSurface)
+                .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(text = "AERODYNAMIC DRAG PENALTY", color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                Text(text = dragPenalty, color = LaserCrimson, fontSize = 11.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
+            }
+
+            Button(
+                onClick = onTestCrashBox,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = LaserCrimson.copy(alpha = 0.2f),
+                    contentColor = LaserCrimson
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, LaserCrimson.copy(alpha = 0.5f)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(imageVector = Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(12.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("TEST CRASH BOX", fontSize = 9.sp, fontWeight = FontWeight.Black)
+            }
+        }
+    }
+}
+
+@Composable
+fun DocumentVaultCard(
+    rcUploaded: Boolean,
+    rcDocNum: String,
+    dlUploaded: Boolean,
+    dlDocNum: String,
+    insuranceUploaded: Boolean,
+    insuranceDocNum: String,
+    pucUploaded: Boolean,
+    pucDocNum: String,
+    helmetUploaded: Boolean,
+    helmetDocNum: String,
+    onUploadDoc: (type: String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MidnightCard)
+            .border(1.dp, HyperCyan.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(HyperCyan.copy(alpha = 0.2f))
+                        .border(1.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Bookmark,
+                        contentDescription = "Vault",
+                        tint = HyperCyan,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = "MOTORCYCLE DOCUMENT VAULT",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
+                    )
+                    Text(
+                        text = "Encrypted statutory compliance documents & file picker",
+                        color = TextSecondary,
+                        fontSize = 9.sp
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(OptimalGreen.copy(alpha = 0.2f))
+                    .border(1.dp, OptimalGreen.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 7.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = "VAULT SECURED",
+                    color = OptimalGreen,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 5 Document Rows
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            DocVaultRow("1. REGISTRATION CERTIFICATE (RC)", if (rcUploaded) rcDocNum else "Not Uploaded", rcUploaded) { onUploadDoc("rc") }
+            DocVaultRow("2. DRIVING LICENCE (DL)", if (dlUploaded) dlDocNum else "Not Uploaded", dlUploaded) { onUploadDoc("dl") }
+            DocVaultRow("3. MOTOR COMPREHENSIVE INSURANCE", if (insuranceUploaded) insuranceDocNum else "Not Uploaded", insuranceUploaded) { onUploadDoc("insurance") }
+            DocVaultRow("4. EMISSION POLLUTION (PUC)", if (pucUploaded) pucDocNum else "Not Uploaded", pucUploaded) { onUploadDoc("puc") }
+            DocVaultRow("5. HELMET ISI CERTIFICATION", if (helmetUploaded) helmetDocNum else "Not Uploaded", helmetUploaded) { onUploadDoc("helmet") }
+        }
+    }
+}
+
+@Composable
+fun DocVaultRow(
+    title: String,
+    docNumber: String,
+    isUploaded: Boolean,
+    onUploadClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(ObsidianSurface)
+            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, color = TextPrimary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = docNumber,
+                color = if (isUploaded) OptimalGreen else TextMuted,
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace
+            )
+        }
+
+        Button(
+            onClick = onUploadClick,
+            modifier = Modifier.height(30.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isUploaded) OptimalGreen.copy(alpha = 0.2f) else HyperCyan.copy(alpha = 0.2f),
+                contentColor = if (isUploaded) OptimalGreen else HyperCyan
+            ),
+            border = androidx.compose.foundation.BorderStroke(1.dp, if (isUploaded) OptimalGreen.copy(alpha = 0.5f) else HyperCyan.copy(alpha = 0.5f)),
+            shape = RoundedCornerShape(6.dp)
+        ) {
+            Text(
+                text = if (isUploaded) "RE-UPLOAD" else "ATTACH FILE",
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Black
+            )
+        }
+    }
 }

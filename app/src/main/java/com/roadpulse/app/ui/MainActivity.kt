@@ -80,10 +80,12 @@ class MainActivity : ComponentActivity() {
             RoadPulseTheme {
                 val authState by AuthManager.authState.collectAsState()
                 var guestModeActive by remember { mutableStateOf(false) }
+                var activeRole by remember { mutableStateOf("rider") }
 
                 if (!authState.isLoggedIn && !guestModeActive) {
                     AuthScreen(
-                        onAuthenticated = {
+                        onAuthenticated = { role ->
+                            activeRole = role
                             guestModeActive = true
                         }
                     )
@@ -108,6 +110,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             composable(Screen.Dashboard.route) {
                                 DashboardScreen(
+                                    initialRole = activeRole,
                                     onNavigateToLiveTrip = {
                                         navController.navigate(Screen.Trips.route)
                                     },
