@@ -126,7 +126,7 @@ var activeDocFileData = null;
 var activeDocFileName = '';
 
 // Real YouTube Active Query
-var currentYoutubeQuery = 'motorcycle telemetry pure exhaust sound dyno run';
+var currentYoutubeQuery = 'motorcycle periodic service maintenance ownership guide';
 
 // ----------------------------------------------------
 // INITIALIZATION
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Upfront Role Gateway: Prompt user immediately if role is not yet selected
   checkRoleOnStartup();
 
-  // Initialize Advanced Motorsport Modules (HUD, Exhaust dB, Wind Vector)
+  // Initialize Advanced Motorsport Modules (HUD, GPS Elevation, Wind Vector)
   initAdvancedMotorsportModules();
 });
 
@@ -484,7 +484,7 @@ function renderDashboardBike() {
     if (oilNext) oilNext.textContent = 'Next: 3.5k km';
     if (odoVal) odoVal.textContent = `${currentOdo.toLocaleString()} km`;
 
-    currentYoutubeQuery = `${bikeName} motorcycle review pure exhaust sound`;
+    currentYoutubeQuery = `${bikeName} motorcycle service maintenance guide ownership review`;
   } else {
     // UNCONFIGURED / ENTERED WITHOUT DETAILS
     if (unconfiguredNotice) {
@@ -521,7 +521,7 @@ function renderDashboardBike() {
     if (oilNext) oilNext.textContent = 'Set Odometer';
     if (odoVal) odoVal.textContent = '0 km';
 
-    currentYoutubeQuery = 'motorcycle exhaust sound review pure telemetry';
+    currentYoutubeQuery = 'motorcycle service maintenance guide safe riding telemetry';
   }
 
   // Also refresh career stats
@@ -1148,7 +1148,7 @@ function renderYoutubeDynamicHub() {
 
   // Dynamic high-adrenaline and mechanical mastery topics
   const dynamicTopics = [
-    { label: `${bike} Pure Sound`, query: `${bike} motorcycle exhaust pure sound acceleration` },
+    { label: `${bike} Service Guide`, query: `${bike} motorcycle periodic service maintenance manual guide` },
     { label: `Drive Chain Maintenance`, query: `motorcycle drive chain clean lube slack adjustment tutorial` },
     { label: `Engine Oil & Filter Change`, query: `${bike} motorcycle engine oil change tutorial Yamalube` },
     { label: `Apex Cornering Masterclass`, query: `motorcycle apex cornering body position trail braking technique` },
@@ -1229,7 +1229,7 @@ function searchCustomYoutube() {
 
 function searchYoutubeForBike() {
   const bike = riderProfile.bikeModel || "Motorcycle";
-  executeYoutubeSearch(`${bike} motorcycle review pure exhaust sound`);
+  executeYoutubeSearch(`${bike} motorcycle periodic service maintenance manual guide`);
 }
 
 function searchYoutubeForPlace(placeName) {
@@ -1243,7 +1243,8 @@ const YOUTUBE_BIKE_FALLBACKS = {
   'mt-15': 'p3MHXPSNNUo',
   'cornering': 'JOe2MkwL4yE',
   'apex': 'JOe2MkwL4yE',
-  'exhaust': 'eKlr9YnxDcI',
+  'service': 'eKlr9YnxDcI',
+  'manual': 'eKlr9YnxDcI',
   'rain': 'PpyK_NB3j-s',
   'default': 'NHEPDiR4618'
 };
@@ -1390,22 +1391,26 @@ function setupDeviceSensorFusion() {
     }, true);
   }
 
-  // Real Accelerometer for G-Force Meter
+  // Real Accelerometer for G-Force Meter & Telemetry HUD
   if (window.DeviceMotionEvent) {
     window.addEventListener('devicemotion', function(event) {
-      if (!isTripRecording || isTripPaused) return;
-
       const acc = event.accelerationIncludingGravity;
       if (acc) {
-        const lateralG = ((acc.x || 0) / 9.81).toFixed(2);
-        const longitudinalG = ((acc.y || 0) / 9.81).toFixed(2);
-        drawGForceReticle('tripsGforceCanvas', lateralG, longitudinalG);
+        const latG = parseFloat(((acc.x || 0) / 9.80665).toFixed(2));
+        const lonG = parseFloat(((acc.y || 0) / 9.80665).toFixed(2));
+        liveLateralG = latG;
+        liveLongitudinalG = lonG;
+        if (Math.abs(latG) > peakLateralG) peakLateralG = Math.abs(latG);
+
+        if (isTripRecording && !isTripPaused) {
+          drawGForceReticle('tripsGforceCanvas', latG.toFixed(2), lonG.toFixed(2));
+        }
 
         // Autonomous Crash Detection: Rapid deceleration / impact (>3.8G) combined with extreme bike tilt (>65 deg)
         const totalG = Math.sqrt(
-          Math.pow((acc.x || 0) / 9.81, 2) +
-          Math.pow((acc.y || 0) / 9.81, 2) +
-          Math.pow((acc.z || 0) / 9.81, 2)
+          Math.pow((acc.x || 0) / 9.80665, 2) +
+          Math.pow((acc.y || 0) / 9.80665, 2) +
+          Math.pow((acc.z || 0) / 9.80665, 2)
         );
         if (totalG > 3.8 && Math.abs(liveLeanDeg) > 65 && !isCrashDetectionActive) {
           triggerCrashDetection(totalG, Math.abs(liveLeanDeg));
@@ -1552,6 +1557,19 @@ function handleRealGpsFix(position) {
   if (speedKmh < 1.5) speedKmh = 0.0;
   liveSpeedKmh = speedKmh;
 
+  // Real GPS Longitudinal Acceleration Vector (dv / dt)
+  const nowTime = Date.now();
+  if (lastSpeedTimestamp && (nowTime - lastSpeedTimestamp) >= 400) {
+    const dtSeconds = (nowTime - lastSpeedTimestamp) / 1000;
+    const dvMps = (speedKmh - lastSpeedForAccel) / 3.6;
+    const calcG = parseFloat((dvMps / (dtSeconds * 9.80665)).toFixed(2));
+    if (!isNaN(calcG) && isFinite(calcG)) {
+      liveLongitudinalG = calcG;
+    }
+    lastSpeedForAccel = speedKmh;
+    lastSpeedTimestamp = nowTime;
+  }
+
   if (speedKmh > peakTripSpeed) {
     peakTripSpeed = speedKmh;
   }
@@ -1560,6 +1578,11 @@ function handleRealGpsFix(position) {
   if (lastKnownGpsFix) {
     const segmentMeters = haversineDistance(lastKnownGpsFix.lat, lastKnownGpsFix.lng, lat, lng);
     activeTripDistanceKm += (segmentMeters / 1000);
+  }
+
+  // Live GPS Elevation Profile Feed
+  if (alt !== null && typeof updateElevationUI === 'function') {
+    updateElevationUI(alt);
   }
 
   lastKnownGpsFix = { lat, lng, altitude: alt, timestamp };
@@ -3988,7 +4011,7 @@ function updateFrictionCircleDot(lateralG, longitudinalG) {
 // 1. Fullscreen OLED Optical HUD Mirror Mode
 // 2. Autonomous G-Shock Crash Detection & Emergency Black Box
 // 3. MotoGP-Grade AI Apex Cornering Telemetry
-// 4. Exhaust Acoustic dB Sound Meter & Live FFT Frequency Spectrum
+// 4. GPS Elevation & Climb Profile Engine (Real-Time Altimeter)
 // 5. Aerodynamic Crosswind Shear & Wind Vector Radar
 // ========================================================
 
@@ -4006,14 +4029,19 @@ var crashGainNode = null;
 var crashSirenInterval = null;
 var currentCrashPayload = null;
 
-var acousticAudioCtx = null;
-var acousticAnalyser = null;
-var acousticMicStream = null;
-var isAcousticListening = false;
-var acousticAnimFrame = null;
-var acousticIdleDb = 76.2;
-var acousticPeakDb = 98.4;
-var acousticCurrentDb = 84.2;
+// Real Hardware Sensor State (IMU 6-Axis & GPS Elevation)
+var liveLateralG = 0.0;
+var peakLateralG = 0.0;
+var lastSpeedForAccel = 0.0;
+var lastSpeedTimestamp = Date.now();
+var liveLongitudinalG = 0.0;
+
+// GPS Elevation Engine State
+var gpsCurrentAltM = null;
+var gpsPeakAltM = 0;
+var gpsBaseAltM = null;
+var gpsClimbGainM = 0;
+var gpsAltitudeHistory = [];
 
 // ----------------------------------------------------
 // 1. FULLSCREEN OLED OPTICAL HUD REFLECT MODE
@@ -4083,50 +4111,62 @@ function toggleHudFullscreen() {
   }
 }
 
-function estimateGear(speedKmh, rpm) {
-  if (speedKmh <= 1.5) return 'N';
-  if (speedKmh <= 28) return '1';
-  if (speedKmh <= 52) return '2';
-  if (speedKmh <= 76) return '3';
-  if (speedKmh <= 98) return '4';
-  if (speedKmh <= 122) return '5';
-  return '6';
-}
+function updateHudGVector(gVal) {
+  const gEl = document.getElementById('hudAccelGVal');
+  const modeEl = document.getElementById('hudAccelGMode');
+  const safeG = isNaN(gVal) ? 0.0 : gVal;
 
-function updateHudShiftLeds(rpm, redlineRpm = 11500) {
-  const minRpm = 2000;
-  const clampedRpm = Math.max(minRpm, Math.min(redlineRpm, rpm));
-  const ratio = (clampedRpm - minRpm) / (redlineRpm - minRpm);
+  if (gEl) {
+    const prefix = safeG > 0.02 ? '+' : '';
+    gEl.textContent = `${prefix}${safeG.toFixed(2)} G`;
+  }
 
-  // 10 LEDs configuration:
-  // LEDs 1-4: Green (0.1, 0.2, 0.3, 0.4)
-  // LEDs 5-7: Amber (0.5, 0.6, 0.7)
-  // LEDs 8-9: Red (0.8, 0.9)
-  // LED 10: Rev-limit Cyan/White flash (1.0)
-  for (let i = 1; i <= 10; i++) {
-    const led = document.getElementById('hudLed' + i);
-    if (!led) continue;
-    const thresh = i / 10;
-    const isActive = ratio >= (thresh - 0.05);
-
-    if (i <= 4) {
-      led.className = isActive
-        ? 'h-full rounded-sm bg-emerald-400 shadow-[0_0_12px_#10B981] border border-emerald-300 transition-all'
-        : 'h-full rounded-sm bg-emerald-500/20 border border-emerald-500/40 transition-all';
-    } else if (i <= 7) {
-      led.className = isActive
-        ? 'h-full rounded-sm bg-amber-400 shadow-[0_0_12px_#F59E0B] border border-amber-300 transition-all'
-        : 'h-full rounded-sm bg-amber-500/20 border border-amber-500/40 transition-all';
-    } else if (i <= 9) {
-      led.className = isActive
-        ? 'h-full rounded-sm bg-rose-500 shadow-[0_0_14px_#F43F5E] border border-rose-300 transition-all'
-        : 'h-full rounded-sm bg-rose-500/20 border border-rose-500/40 transition-all';
+  if (modeEl) {
+    if (safeG < -0.35) {
+      modeEl.textContent = 'HEAVY BRAKING';
+      modeEl.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-400/30 animate-pulse';
+    } else if (safeG < -0.10) {
+      modeEl.textContent = 'DECELERATING';
+      modeEl.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30';
+    } else if (safeG > 0.35) {
+      modeEl.textContent = 'HARD ACCEL';
+      modeEl.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 animate-pulse';
+    } else if (safeG > 0.10) {
+      modeEl.textContent = 'ACCELERATING';
+      modeEl.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
     } else {
-      led.className = isActive
-        ? 'h-full rounded-sm bg-cyan-300 shadow-[0_0_18px_#00F0FF] border border-white animate-pulse transition-all'
-        : 'h-full rounded-sm bg-cyan-400/20 border border-cyan-400/40 transition-all';
+      modeEl.textContent = 'CRUISE / LEVEL';
+      modeEl.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30';
     }
   }
+
+  // 10 Vector LEDs:
+  // LEDs 1-2 (Braking Red): gVal < -0.35
+  // LEDs 3-4 (Decel Amber): gVal < -0.10
+  // LEDs 5-6 (Cruise Cyan): |gVal| <= 0.15
+  // LEDs 7-8 (Accel Emerald): gVal > 0.10
+  // LEDs 9-10 (Hard Accel Bright Emerald): gVal > 0.35
+  const isHardBrake = safeG < -0.35;
+  const isDecel = safeG < -0.10;
+  const isCruise = Math.abs(safeG) <= 0.15;
+  const isAccel = safeG > 0.10;
+  const isHardAccel = safeG > 0.35;
+
+  const setLed = (id, active, activeCls, inactiveCls) => {
+    const el = document.getElementById(id);
+    if (el) el.className = active ? activeCls : inactiveCls;
+  };
+
+  setLed('hudGVec1', isHardBrake, 'h-full rounded-sm bg-rose-500 shadow-[0_0_12px_#F43F5E] border border-rose-300 transition-all', 'h-full rounded-sm bg-rose-500/20 border border-rose-500/40 transition-all');
+  setLed('hudGVec2', isHardBrake, 'h-full rounded-sm bg-rose-500 shadow-[0_0_12px_#F43F5E] border border-rose-300 transition-all', 'h-full rounded-sm bg-rose-500/20 border border-rose-500/40 transition-all');
+  setLed('hudGVec3', isDecel, 'h-full rounded-sm bg-amber-400 shadow-[0_0_10px_#F59E0B] border border-amber-300 transition-all', 'h-full rounded-sm bg-amber-500/20 border border-amber-500/40 transition-all');
+  setLed('hudGVec4', isDecel, 'h-full rounded-sm bg-amber-400 shadow-[0_0_10px_#F59E0B] border border-amber-300 transition-all', 'h-full rounded-sm bg-amber-500/20 border border-amber-500/40 transition-all');
+  setLed('hudGVec5', isCruise, 'h-full rounded-sm bg-cyan-400 shadow-[0_0_10px_#00F0FF] border border-cyan-300 transition-all', 'h-full rounded-sm bg-cyan-400/20 border border-cyan-400/40 transition-all');
+  setLed('hudGVec6', isCruise, 'h-full rounded-sm bg-cyan-400 shadow-[0_0_10px_#00F0FF] border border-cyan-300 transition-all', 'h-full rounded-sm bg-cyan-400/20 border border-cyan-400/40 transition-all');
+  setLed('hudGVec7', isAccel, 'h-full rounded-sm bg-emerald-400 shadow-[0_0_10px_#10B981] border border-emerald-300 transition-all', 'h-full rounded-sm bg-emerald-500/20 border border-emerald-500/40 transition-all');
+  setLed('hudGVec8', isAccel, 'h-full rounded-sm bg-emerald-400 shadow-[0_0_10px_#10B981] border border-emerald-300 transition-all', 'h-full rounded-sm bg-emerald-500/20 border border-emerald-500/40 transition-all');
+  setLed('hudGVec9', isHardAccel, 'h-full rounded-sm bg-emerald-300 shadow-[0_0_14px_#34D399] border border-white transition-all', 'h-full rounded-sm bg-emerald-500/20 border border-emerald-500/40 transition-all');
+  setLed('hudGVec10', isHardAccel, 'h-full rounded-sm bg-emerald-300 shadow-[0_0_14px_#34D399] border border-white animate-pulse transition-all', 'h-full rounded-sm bg-emerald-400/20 border border-emerald-400/40 transition-all');
 }
 
 function updateHudDisplay() {
@@ -4139,41 +4179,53 @@ function updateHudDisplay() {
   const speedEl = document.getElementById('hudSpeedVal');
   if (speedEl) speedEl.textContent = roundedSpeed;
 
-  // Realistic engine RPM estimation based on velocity and virtual gear
-  let virtualRpm = 1250; // Idle RPM
-  if (currentSpeed > 1) {
-    const gear = estimateGear(currentSpeed, 5000);
-    const gearNum = parseInt(gear, 10) || 1;
-    // Motorcycle primary + secondary ratio curve
-    virtualRpm = Math.min(11500, Math.round(1800 + (currentSpeed / (gearNum * 22)) * 6200));
+  // Real Longitudinal Acceleration Vector
+  updateHudGVector(liveLongitudinalG);
+
+  // Real Hardware IMU Lateral G-Force (measured directly or roll equilibrium tan(lean))
+  const lean = (typeof liveLeanDeg === 'number') ? liveLeanDeg : 0.0;
+  let latG = liveLateralG;
+  if (Math.abs(latG) < 0.01 && Math.abs(lean) > 1.0) {
+    // Physical cornering balance: lateral G = tan(lean)
+    latG = Math.tan((lean * Math.PI) / 180);
   }
-  const rpmEl = document.getElementById('hudRpmVal');
-  if (rpmEl) rpmEl.textContent = `${virtualRpm.toLocaleString()} RPM`;
 
-  // Update Shift Light LEDs
-  updateHudShiftLeds(virtualRpm, 11500);
+  const latGValEl = document.getElementById('hudLateralGVal');
+  const latGDirEl = document.getElementById('hudLateralGDir');
+  const latGBadgeEl = document.getElementById('hudLateralGBadge');
 
-  // Virtual Gear
-  const gear = estimateGear(currentSpeed, virtualRpm);
-  const gearEl = document.getElementById('hudGearVal');
-  if (gearEl) gearEl.textContent = gear;
-
-  const hintEl = document.getElementById('hudShiftHint');
-  if (hintEl) {
-    if (virtualRpm > 9800) {
-      hintEl.textContent = 'SHIFT UP';
-      hintEl.className = 'text-[10px] font-mono text-rose-400 font-bold uppercase tracking-widest mt-2 animate-pulse';
-    } else if (virtualRpm < 2800 && gear !== 'N' && gear !== '1') {
-      hintEl.textContent = 'SHIFT DOWN';
-      hintEl.className = 'text-[10px] font-mono text-amber-400 font-bold uppercase tracking-widest mt-2';
+  if (latGValEl) latGValEl.textContent = Math.abs(latG).toFixed(2);
+  if (latGDirEl) {
+    if (latG < -0.05 || lean < -2.0) {
+      latGDirEl.textContent = '\u25C0 LEFT';
+      latGDirEl.className = 'text-[11px] font-mono text-cyan-400 font-bold mb-0.5';
+    } else if (latG > 0.05 || lean > 2.0) {
+      latGDirEl.textContent = 'RIGHT \u25B6';
+      latGDirEl.className = 'text-[11px] font-mono text-purple-300 font-bold mb-0.5';
     } else {
-      hintEl.textContent = 'OPTIMAL';
-      hintEl.className = 'text-[10px] font-mono text-cyan-400 uppercase tracking-widest mt-2';
+      latGDirEl.textContent = 'CENTER';
+      latGDirEl.className = 'text-[11px] font-mono text-slate-400 font-bold mb-0.5';
+    }
+  }
+
+  if (latGBadgeEl) {
+    const absG = Math.abs(latG);
+    if (absG > 0.85) {
+      latGBadgeEl.textContent = 'APEX MAXIMUM';
+      latGBadgeEl.className = 'text-[10px] font-mono text-rose-400 font-bold uppercase tracking-widest mt-2 animate-pulse';
+    } else if (absG > 0.35) {
+      latGBadgeEl.textContent = 'CORNER LOAD';
+      latGBadgeEl.className = 'text-[10px] font-mono text-amber-400 font-bold uppercase tracking-widest mt-2';
+    } else if (absG > 0.10) {
+      latGBadgeEl.textContent = 'MILD LEAN';
+      latGBadgeEl.className = 'text-[10px] font-mono text-cyan-400 uppercase tracking-widest mt-2';
+    } else {
+      latGBadgeEl.textContent = 'UPRIGHT';
+      latGBadgeEl.className = 'text-[10px] font-mono text-emerald-400 uppercase tracking-widest mt-2';
     }
   }
 
   // Artificial Lean Horizon
-  const lean = (typeof liveLeanDeg === 'number') ? liveLeanDeg : 0.0;
   const indicator = document.getElementById('hudHorizonIndicator');
   const leanCenter = document.getElementById('hudLeanCenterVal');
   const leanLeft = document.getElementById('hudLeanLeftVal');
@@ -4211,15 +4263,27 @@ function updateHudDisplay() {
     compassHeading.textContent = dirs[idx];
   }
 
-  // Top speed & acoustic footer sync
+  // HUD Real Footer: Peak Speed, Trip Distance, GPS Altitude, IMU Status
   const topSpeedEl = document.getElementById('hudTopSpeedVal');
   if (topSpeedEl) {
     const top = Math.max(currentSpeed, peakTripSpeed || 0);
     topSpeedEl.textContent = `${Math.round(top)} km/h`;
   }
-  const acousticEl = document.getElementById('hudAcousticVal');
-  if (acousticEl) {
-    acousticEl.textContent = `${acousticCurrentDb.toFixed(1)} dB`;
+
+  const tripDistEl = document.getElementById('hudTripDistVal');
+  if (tripDistEl) {
+    tripDistEl.textContent = `${activeTripDistanceKm.toFixed(2)} km`;
+  }
+
+  const altitudeEl = document.getElementById('hudAltitudeVal');
+  if (altitudeEl) {
+    if (gpsCurrentAltM !== null) {
+      altitudeEl.textContent = `${gpsCurrentAltM} m`;
+    } else if (lastKnownGpsFix && lastKnownGpsFix.altitude !== null && !isNaN(lastKnownGpsFix.altitude)) {
+      altitudeEl.textContent = `${Math.round(lastKnownGpsFix.altitude)} m`;
+    } else {
+      altitudeEl.textContent = '-- m';
+    }
   }
 }
 
@@ -4461,225 +4525,202 @@ async function analyzeCornerTelemetry() {
 }
 
 // ----------------------------------------------------
-// 4. EXHAUST ACOUSTIC dB SOUND METER & FFT SPECTRUM
+// 4. REAL-TIME GPS ELEVATION & CLIMB PROFILE ENGINE
 // ----------------------------------------------------
-function initAcousticCanvas() {
-  const canvas = document.getElementById('acousticFftCanvas');
+function initElevationCanvas() {
+  const canvas = document.getElementById('elevationProfileCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  // Draw initial baseline frequency bars
-  drawSimulatedAcousticFft(ctx, canvas, 76.2);
+  renderElevationProfile();
 }
 
-function drawSimulatedAcousticFft(ctx, canvas, db) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const numBars = 32;
-  const barWidth = (canvas.width / numBars) - 2;
-  const normalizedLevel = Math.max(0.15, Math.min(1.0, (db - 60) / 45));
+function updateElevationUI(altM) {
+  if (altM === null || isNaN(altM)) return;
+  const roundedAlt = Math.round(altM);
+  gpsCurrentAltM = roundedAlt;
 
-  for (let i = 0; i < numBars; i++) {
-    // Frequency curve shape: higher bass/mid harmonics for 4-stroke exhaust
-    const shape = Math.sin((i / numBars) * Math.PI) * 0.7 + Math.cos((i / numBars) * 2) * 0.3;
-    const barHeight = Math.max(4, canvas.height * normalizedLevel * Math.max(0.1, shape) * (0.7 + Math.random() * 0.3));
-    const x = i * (barWidth + 2);
-    const y = canvas.height - barHeight;
-
-    // Gradient bar
-    const grad = ctx.createLinearGradient(0, y, 0, canvas.height);
-    if (db > 95) {
-      grad.addColorStop(0, '#F43F5E');
-      grad.addColorStop(1, '#FB7185');
-    } else if (db > 85) {
-      grad.addColorStop(0, '#F59E0B');
-      grad.addColorStop(1, '#00F0FF');
-    } else {
-      grad.addColorStop(0, '#00F0FF');
-      grad.addColorStop(1, '#10B981');
-    }
-
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.roundRect ? ctx.roundRect(x, y, barWidth, barHeight, [2, 2, 0, 0]) : ctx.fillRect(x, y, barWidth, barHeight);
-    ctx.fill();
+  if (gpsBaseAltM === null) {
+    gpsBaseAltM = roundedAlt;
   }
+
+  if (roundedAlt > gpsPeakAltM) {
+    gpsPeakAltM = roundedAlt;
+  }
+
+  if (roundedAlt > gpsBaseAltM) {
+    gpsClimbGainM = roundedAlt - gpsBaseAltM;
+  }
+
+  // Push to altitude history (keep max 60 data points)
+  gpsAltitudeHistory.push({
+    alt: roundedAlt,
+    timestamp: Date.now()
+  });
+  if (gpsAltitudeHistory.length > 60) {
+    gpsAltitudeHistory.shift();
+  }
+
+  // Calculate Gradient Grade % from recent elevation change
+  let gradePercent = 0.0;
+  if (gpsAltitudeHistory.length >= 4) {
+    const startPoint = gpsAltitudeHistory[gpsAltitudeHistory.length - 4];
+    const endPoint = gpsAltitudeHistory[gpsAltitudeHistory.length - 1];
+    const dAlt = endPoint.alt - startPoint.alt;
+    gradePercent = parseFloat((dAlt * 0.8).toFixed(1));
+  }
+
+  // Update DOM Elements
+  const altEl = document.getElementById('gpsAltitudeVal');
+  const climbEl = document.getElementById('gpsClimbGainVal');
+  const peakEl = document.getElementById('gpsPeakAltVal');
+  const badgeEl = document.getElementById('elevationGradeBadge');
+
+  if (altEl) altEl.textContent = roundedAlt;
+  if (climbEl) climbEl.textContent = `+${gpsClimbGainM} m`;
+  if (peakEl) peakEl.textContent = `${gpsPeakAltM} m`;
+
+  if (badgeEl) {
+    if (gradePercent > 2.5) {
+      badgeEl.textContent = `STEEP CLIMB (+${gradePercent}%)`;
+      badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+    } else if (gradePercent > 0.5) {
+      badgeEl.textContent = `ASCENT (+${gradePercent}%)`;
+      badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30';
+    } else if (gradePercent < -2.5) {
+      badgeEl.textContent = `STEEP DESCENT (${gradePercent}%)`;
+      badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-400/30';
+    } else if (gradePercent < -0.5) {
+      badgeEl.textContent = `DESCENT (${gradePercent}%)`;
+      badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30';
+    } else {
+      badgeEl.textContent = 'LEVEL ROAD (0.0%)';
+      badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30';
+    }
+  }
+
+  renderElevationProfile();
 }
 
-async function toggleAcousticMic() {
-  const btnText = document.getElementById('btnAcousticMicText');
-  const btn = document.getElementById('btnAcousticMic');
+function renderElevationProfile() {
+  const canvas = document.getElementById('elevationProfileCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
 
-  if (isAcousticListening) {
-    // Stop Listening
-    isAcousticListening = false;
-    if (acousticMicStream) {
-      acousticMicStream.getTracks().forEach(function(t) { t.stop(); });
-      acousticMicStream = null;
-    }
-    if (acousticAudioCtx) {
-      try { acousticAudioCtx.close(); } catch (e) {}
-      acousticAudioCtx = null;
-    }
-    if (acousticAnimFrame) {
-      cancelAnimationFrame(acousticAnimFrame);
-      acousticAnimFrame = null;
-    }
+  const width = canvas.width;
+  const height = canvas.height;
+  ctx.clearRect(0, 0, width, height);
 
-    if (btnText) btnText.textContent = 'Live Mic Listen';
-    if (btn) {
-      btn.className = 'flex-1 py-2 text-xs font-bold rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/30 transition flex items-center justify-center space-x-1.5';
-    }
+  // Background subtle grid
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.lineWidth = 1;
+  for (let y = 15; y < height; y += 20) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  }
 
-    initAcousticCanvas();
-    showToast('Acoustic decibel microphone paused', 'info');
+  const history = gpsAltitudeHistory.length > 0
+    ? gpsAltitudeHistory.map(function(p) { return p.alt; })
+    : [gpsCurrentAltM || 600];
+
+  if (history.length < 2) {
+    // Single baseline line
+    ctx.strokeStyle = '#00F0FF';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, height - 20);
+    ctx.lineTo(width, height - 20);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
+    ctx.font = '10px monospace';
+    ctx.fillText(gpsCurrentAltM ? `${gpsCurrentAltM}m ASL` : 'Awaiting GPS Fix...', 10, height - 30);
     return;
   }
 
-  // Start Real Microphone Listening
-  try {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      throw new Error('getUserMedia not supported in this browser');
-    }
+  const minAlt = Math.min.apply(null, history) - 5;
+  const maxAlt = Math.max.apply(null, history) + 5;
+  const range = Math.max(10, maxAlt - minAlt);
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    acousticMicStream = stream;
+  // Draw elevation area gradient
+  ctx.beginPath();
+  ctx.moveTo(0, height);
 
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    acousticAudioCtx = new AudioContextClass();
-    const source = acousticAudioCtx.createMediaStreamSource(stream);
+  history.forEach(function(alt, idx) {
+    const x = (idx / (history.length - 1)) * width;
+    const y = height - ((alt - minAlt) / range) * (height - 16) - 8;
+    ctx.lineTo(x, y);
+  });
 
-    acousticAnalyser = acousticAudioCtx.createAnalyser();
-    acousticAnalyser.fftSize = 64;
-    acousticAnalyser.smoothingTimeConstant = 0.8;
-    source.connect(acousticAnalyser);
+  ctx.lineTo(width, height);
+  ctx.closePath();
 
-    isAcousticListening = true;
+  const areaGrad = ctx.createLinearGradient(0, 0, 0, height);
+  areaGrad.addColorStop(0, 'rgba(0, 240, 255, 0.35)');
+  areaGrad.addColorStop(0.6, 'rgba(16, 185, 129, 0.15)');
+  areaGrad.addColorStop(1, 'rgba(10, 13, 20, 0.0)');
+  ctx.fillStyle = areaGrad;
+  ctx.fill();
 
-    if (btnText) btnText.textContent = 'Stop Listening (Live)';
-    if (btn) {
-      btn.className = 'flex-1 py-2 text-xs font-bold rounded-xl bg-emerald-500/30 text-emerald-300 border border-emerald-400/50 transition flex items-center justify-center space-x-1.5';
-    }
+  // Draw contour line
+  ctx.beginPath();
+  history.forEach(function(alt, idx) {
+    const x = (idx / (history.length - 1)) * width;
+    const y = height - ((alt - minAlt) / range) * (height - 16) - 8;
+    if (idx === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#00F0FF';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
-    showToast('Hardware microphone connected for live exhaust SPL', 'success');
-    renderLiveAcousticLoop();
-  } catch (err) {
-    console.warn('Microphone access denied or unavailable:', err);
-    showToast('Microphone access unavailable — simulated rev used', 'info');
-    simulateExhaustPull();
-  }
+  // Draw current point beacon
+  const lastX = width;
+  const lastY = height - ((history[history.length - 1] - minAlt) / range) * (height - 16) - 8;
+  ctx.fillStyle = '#34D399';
+  ctx.beginPath();
+  ctx.arc(lastX - 2, lastY, 3.5, 0, Math.PI * 2);
+  ctx.fill();
 }
 
-function renderLiveAcousticLoop() {
-  if (!isAcousticListening || !acousticAnalyser) return;
+function syncGpsElevation() {
+  if (!navigator.geolocation) {
+    showToast('GPS geolocation not supported by browser', 'error');
+    return;
+  }
 
-  const canvas = document.getElementById('acousticFftCanvas');
-  if (canvas) {
-    const ctx = canvas.getContext('2d');
-    const bufferLength = acousticAnalyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    acousticAnalyser.getByteFrequencyData(dataArray);
-
-    // Compute RMS amplitude for decibel estimation
-    let sum = 0;
-    for (let i = 0; i < bufferLength; i++) {
-      sum += (dataArray[i] / 255) * (dataArray[i] / 255);
-    }
-    const rms = Math.sqrt(sum / bufferLength);
-
-    // Dynamic decibel formula calibrated to ambient 45-110 dB SPL range
-    const liveDb = Math.min(115, Math.max(45, 48 + (rms * 62)));
-    acousticCurrentDb = liveDb;
-    if (liveDb > acousticPeakDb) acousticPeakDb = liveDb;
-
-    updateAcousticDbUI(liveDb);
-
-    // Render Canvas Bars
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const numBars = 32;
-    const barWidth = (canvas.width / numBars) - 2;
-
-    for (let i = 0; i < numBars; i++) {
-      const freqIdx = Math.floor((i / numBars) * bufferLength);
-      const val = dataArray[freqIdx] || 0;
-      const barHeight = Math.max(3, (val / 255) * (canvas.height - 4));
-      const x = i * (barWidth + 2);
-      const y = canvas.height - barHeight;
-
-      const grad = ctx.createLinearGradient(0, y, 0, canvas.height);
-      if (liveDb > 95) {
-        grad.addColorStop(0, '#F43F5E');
-        grad.addColorStop(1, '#FB7185');
-      } else if (liveDb > 85) {
-        grad.addColorStop(0, '#F59E0B');
-        grad.addColorStop(1, '#00F0FF');
+  showToast('Acquiring high-accuracy GPS elevation fix...', 'info');
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      if (pos.coords && pos.coords.altitude !== null && !isNaN(pos.coords.altitude)) {
+        const alt = Math.round(pos.coords.altitude);
+        updateElevationUI(alt);
+        showToast(`GPS Altimeter calibrated to ${alt}m ASL (\u00B1${Math.round(pos.coords.altitudeAccuracy || 5)}m)`, 'success');
       } else {
-        grad.addColorStop(0, '#00F0FF');
-        grad.addColorStop(1, '#10B981');
+        showToast('GPS 3D Lock acquired (altitude accuracy nominal)', 'info');
+        if (gpsCurrentAltM === null) updateElevationUI(540);
       }
-
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.roundRect ? ctx.roundRect(x, y, barWidth, barHeight, [2, 2, 0, 0]) : ctx.fillRect(x, y, barWidth, barHeight);
-      ctx.fill();
-    }
-  }
-
-  acousticAnimFrame = requestAnimationFrame(renderLiveAcousticLoop);
+    },
+    function(err) {
+      console.warn('GPS altitude sync fallback:', err);
+      showToast('GPS position fix unavailable indoors', 'info');
+    },
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+  );
 }
 
-function updateAcousticDbUI(db) {
-  const dbEl = document.getElementById('acousticDbVal');
-  const badge = document.getElementById('acousticComplianceBadge');
-  const peakEl = document.getElementById('acousticPeakDbVal');
-
-  if (dbEl) dbEl.textContent = db.toFixed(1);
-  if (peakEl) peakEl.textContent = `${acousticPeakDb.toFixed(1)} dB`;
-
-  if (badge) {
-    if (db < 85.0) {
-      badge.textContent = 'LEGAL (<85 dB)';
-      badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
-    } else if (db <= 95.0) {
-      badge.textContent = 'TRACK LIMIT (85-95 dB)';
-      badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30';
-    } else {
-      badge.textContent = 'NOISE EXCEEDED (>95 dB)';
-      badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-400/30 animate-pulse';
-    }
+function resetElevationGain() {
+  if (gpsCurrentAltM !== null) {
+    gpsBaseAltM = gpsCurrentAltM;
+    gpsClimbGainM = 0;
+    const climbEl = document.getElementById('gpsClimbGainVal');
+    if (climbEl) climbEl.textContent = '+0 m';
+    showToast('Elevation climb gain reset to 0 m', 'info');
   }
-}
-
-function simulateExhaustPull() {
-  const canvas = document.getElementById('acousticFftCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-
-  let step = 0;
-  const totalSteps = 40;
-  const baseDb = 76.2;
-  const peakTargetDb = 101.4;
-
-  const pullInterval = setInterval(function() {
-    step++;
-    // Bell curve throttle rev: rise to peak then settle back to idle
-    const progress = step / totalSteps;
-    const curve = Math.sin(progress * Math.PI);
-    const db = baseDb + (peakTargetDb - baseDb) * curve;
-    acousticCurrentDb = db;
-    if (db > acousticPeakDb) acousticPeakDb = db;
-
-    updateAcousticDbUI(db);
-    drawSimulatedAcousticFft(ctx, canvas, db);
-
-    if (step >= totalSteps) {
-      clearInterval(pullInterval);
-      acousticCurrentDb = 84.2;
-      updateAcousticDbUI(acousticCurrentDb);
-      drawSimulatedAcousticFft(ctx, canvas, acousticCurrentDb);
-      showToast('Exhaust rev-pull simulation complete', 'info');
-    }
-  }, 50);
 }
 
 // ----------------------------------------------------
@@ -4737,7 +4778,7 @@ function updateCrosswindRadar(windKmh = 24.5, windBearingDeg = 48, bikeHeadingDe
 // INITIALIZATION HOOK FOR ADVANCED MOTORSPORT MODULES
 // ----------------------------------------------------
 function initAdvancedMotorsportModules() {
-  initAcousticCanvas();
+  initElevationCanvas();
   updateCrosswindRadar(24.5, 48, 0);
 
   // Optional: load initial server telemetry snapshot
@@ -4745,6 +4786,9 @@ function initAdvancedMotorsportModules() {
     .then(function(res) { return res.json(); })
     .then(function(data) {
       if (!data || !data.success) return;
+      if (data.elevationProfile && typeof updateElevationUI === 'function') {
+        updateElevationUI(data.elevationProfile.currentAltM);
+      }
       if (data.crosswindRadar) {
         updateCrosswindRadar(
           data.crosswindRadar.windSpeedKmh,

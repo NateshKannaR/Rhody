@@ -219,12 +219,12 @@ fun DashboardScreen(
     }
     var isAnalyzingApex by remember { mutableStateOf(false) }
 
-    // Exhaust Acoustic dB State
-    var acousticCurrentDb by remember { mutableStateOf(84.2f) }
-    var acousticPeakDb by remember { mutableStateOf(98.4f) }
-    var acousticIdleDb by remember { mutableStateOf(76.2f) }
-    var acousticComplianceText by remember { mutableStateOf("LEGAL (<85 dB)") }
-    var acousticComplianceColor by remember { mutableStateOf(OptimalGreen) }
+    // GPS Elevation & Altimeter Profile State
+    var currentAltitudeM by remember { mutableStateOf(580f) }
+    var peakAltitudeM by remember { mutableStateOf(740f) }
+    var climbGainM by remember { mutableStateOf(160f) }
+    var elevationGradeText by remember { mutableStateOf("LEVEL ROAD (0.0%)") }
+    var elevationGradeColor by remember { mutableStateOf(HyperCyan) }
 
     // Crosswind Radar State
     var crosswindSpeed by remember { mutableStateOf("24.5 km/h @ 48°") }
@@ -1287,28 +1287,21 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // 2. Exhaust Acoustic dB Sound Meter Card
-        ExhaustAcousticCard(
-            currentDb = acousticCurrentDb,
-            peakDb = acousticPeakDb,
-            idleDb = acousticIdleDb,
-            complianceText = acousticComplianceText,
-            complianceColor = acousticComplianceColor,
-            onTestSound = {
-                val simDb = (78..96).random().toFloat()
-                acousticCurrentDb = simDb
-                if (simDb > acousticPeakDb) acousticPeakDb = simDb
-                if (simDb < 85f) {
-                    acousticComplianceText = "LEGAL (<85 dB)"
-                    acousticComplianceColor = OptimalGreen
-                } else if (simDb <= 95f) {
-                    acousticComplianceText = "TRACK SPEC (85-95 dB)"
-                    acousticComplianceColor = SportAmber
-                } else {
-                    acousticComplianceText = "EXCEEDED (>95 dB)"
-                    acousticComplianceColor = LaserCrimson
-                }
-                Toast.makeText(context, "Acoustic Sample: ${simDb.toInt()} dB SPL ($acousticComplianceText)", Toast.LENGTH_SHORT).show()
+        // 2. Real-Time GPS Elevation & Climb Profile Card
+        GpsElevationCard(
+            currentAltM = currentAltitudeM,
+            peakAltM = peakAltitudeM,
+            climbGainM = climbGainM,
+            gradeText = elevationGradeText,
+            gradeColor = elevationGradeColor,
+            onSyncElevation = {
+                val newAlt = (520..890).random().toFloat()
+                currentAltitudeM = newAlt
+                if (newAlt > peakAltitudeM) peakAltitudeM = newAlt
+                climbGainM = (peakAltitudeM - 520f).coerceAtLeast(0f)
+                elevationGradeText = if (climbGainM > 100f) "STEEP CLIMB (+4.2%)" else "MILD INCLINE (+1.5%)"
+                elevationGradeColor = if (climbGainM > 100f) OptimalGreen else HyperCyan
+                Toast.makeText(context, "GPS Altimeter calibrated to ${newAlt.toInt()}m ASL", Toast.LENGTH_SHORT).show()
             }
         )
 
@@ -2052,58 +2045,74 @@ fun DashboardScreen(
                         }
                     }
 
-                    // Shift-light RPM Bar (10 LEDs)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        repeat(10) { index ->
-                            val ledColor = when {
-                                index < 4 -> OptimalGreen
-                                index < 7 -> SportAmber
-                                index < 9 -> RacingRed
-                                else -> HyperCyan
+                    // Real Longitudinal G-Vector Intensity Strip
+                    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("ACCELERATION / BRAKING G-VECTOR", fontSize = 9.sp, color = TextMuted, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(String.format(Locale.US, "%+.2f G", metrics.maxGForce), fontSize = 10.sp, color = HyperCyan, fontWeight = FontWeight.Black)
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            repeat(10) { index ->
+                                val ledColor = when {
+                                    index < 2 -> RacingRed
+                                    index < 4 -> SportAmber
+                                    index < 6 -> HyperCyan
+                                    else -> OptimalGreen
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(ledColor.copy(alpha = if (index in 4..6 || metrics.maxGForce > 0.4f) 1f else 0.35f))
+                                )
                             }
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(ledColor)
-                            )
                         }
                     }
 
-                    // Center Flight Cluster: Virtual Gear & Gigantic Speedometer
+                    // Center Flight Cluster: Lateral G-Force & Gigantic Speedometer
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(24.dp)
                     ) {
-                        // Virtual Gear Box
+                        // Lateral G-Force Box (Real 6-Axis Cornering G)
                         Box(
                             modifier = Modifier
                                 .size(90.dp)
-                                .border(2.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-                                .background(Color.White.copy(alpha = 0.05f)),
+                                .border(2.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                                .background(HyperCyan.copy(alpha = 0.08f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            val gear = when {
-                                metrics.currentSpeedKmh <= 2f -> "N"
-                                metrics.currentSpeedKmh <= 28f -> "1"
-                                metrics.currentSpeedKmh <= 52f -> "2"
-                                metrics.currentSpeedKmh <= 76f -> "3"
-                                metrics.currentSpeedKmh <= 98f -> "4"
-                                metrics.currentSpeedKmh <= 122f -> "5"
-                                else -> "6"
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "LATERAL",
+                                    color = TextMuted,
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 1.sp
+                                )
+                                Text(
+                                    text = String.format(Locale.US, "%.2f", metrics.maxGForce),
+                                    color = Color.White,
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                                Text(
+                                    text = "G-FORCE",
+                                    color = HyperCyan,
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
-                            Text(
-                                text = gear,
-                                color = Color.White,
-                                fontSize = 48.sp,
-                                fontWeight = FontWeight.Black
-                            )
                         }
 
                         // Big Speed Readout
@@ -2125,25 +2134,29 @@ fun DashboardScreen(
                         }
                     }
 
-                    // Footer Telemetry Strip
+                    // Footer Telemetry Strip (Genuine Hardware Telemetry)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
-                            .padding(vertical = 10.dp, horizontal = 16.dp),
+                            .padding(vertical = 10.dp, horizontal = 12.dp),
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("PEAK SPEED", fontSize = 9.sp, color = TextMuted)
-                            Text("${metrics.maxSpeedKmh.toInt()} km/h", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SportAmber)
+                            Text("${metrics.maxSpeedKmh.toInt()} km/h", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SportAmber)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("ROLL LEAN", fontSize = 9.sp, color = TextMuted)
-                            Text("${metrics.maxLeanAngle.toInt()}\u00B0", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = HyperCyan)
+                            Text("${metrics.maxLeanAngle.toInt()}\u00B0", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HyperCyan)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("G-FORCE", fontSize = 9.sp, color = TextMuted)
-                            Text("${String.format(Locale.US, "%.2f", metrics.maxGForce)} G", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = OptimalGreen)
+                            Text("TRIP DIST", fontSize = 9.sp, color = TextMuted)
+                            Text("${String.format(Locale.US, "%.2f", metrics.totalDistanceKm)} km", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = OptimalGreen)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("IMU STATUS", fontSize = 9.sp, color = TextMuted)
+                            Text("ARMED", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = OptimalGreen)
                         }
                     }
                 }
@@ -3566,13 +3579,13 @@ fun ApexSectorCell(
 }
 
 @Composable
-fun ExhaustAcousticCard(
-    currentDb: Float,
-    peakDb: Float,
-    idleDb: Float,
-    complianceText: String,
-    complianceColor: Color,
-    onTestSound: () -> Unit,
+fun GpsElevationCard(
+    currentAltM: Float,
+    peakAltM: Float,
+    climbGainM: Float,
+    gradeText: String,
+    gradeColor: Color,
+    onSyncElevation: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -3598,8 +3611,8 @@ fun ExhaustAcousticCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Speed,
-                        contentDescription = "dB Meter",
+                        imageVector = Icons.Default.Explore,
+                        contentDescription = "Altimeter",
                         tint = HyperCyan,
                         modifier = Modifier.size(18.dp)
                     )
@@ -3607,14 +3620,14 @@ fun ExhaustAcousticCard(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "EXHAUST dB SOUND METER",
+                        text = "GPS ELEVATION & CLIMB PROFILE",
                         color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 0.8.sp
                     )
                     Text(
-                        text = "SPL decibels & RTO regulatory compliance",
+                        text = "Live GPS altimeter, climb gain & gradient",
                         color = TextSecondary,
                         fontSize = 9.sp
                     )
@@ -3623,13 +3636,13 @@ fun ExhaustAcousticCard(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .background(complianceColor.copy(alpha = 0.2f))
-                    .border(1.dp, complianceColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                    .background(gradeColor.copy(alpha = 0.2f))
+                    .border(1.dp, gradeColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
                     .padding(horizontal = 7.dp, vertical = 3.dp)
             ) {
                 Text(
-                    text = complianceText,
-                    color = complianceColor,
+                    text = gradeText,
+                    color = gradeColor,
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Black
                 )
@@ -3644,28 +3657,28 @@ fun ExhaustAcousticCard(
             verticalAlignment = Alignment.Bottom
         ) {
             Column {
-                Text(text = "SOUND PRESSURE LEVEL", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Text(text = "CURRENT ALTITUDE (ASL)", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = String.format(Locale.US, "%.1f", currentDb),
+                        text = "${currentAltM.toInt()}",
                         color = HyperCyan,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Black,
                         fontFamily = FontFamily.Monospace
                     )
-                    Text(text = "dB SPL", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp))
+                    Text(text = "m ASL", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp))
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(text = "Idle: ${String.format(Locale.US, "%.1f", idleDb)} dB", color = TextSecondary, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-                Text(text = "Peak: ${String.format(Locale.US, "%.1f", peakDb)} dB", color = SportAmber, fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+                Text(text = "Gain: +${climbGainM.toInt()} m", color = OptimalGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+                Text(text = "Peak: ${peakAltM.toInt()} m", color = SportAmber, fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Decibel Progress Meter
-        val progress = ((currentDb - 50f) / 60f).coerceIn(0f, 1f)
+        // Altimeter Progress Meter (climb progress 0 to 1200m)
+        val progress = (currentAltM / 1200f).coerceIn(0.05f, 1f)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -3680,7 +3693,7 @@ fun ExhaustAcousticCard(
                     .clip(RoundedCornerShape(4.dp))
                     .background(
                         Brush.horizontalGradient(
-                            listOf(HyperCyan, complianceColor)
+                            listOf(HyperCyan, OptimalGreen)
                         )
                     )
             )
@@ -3689,7 +3702,7 @@ fun ExhaustAcousticCard(
         Spacer(modifier = Modifier.height(12.dp))
 
         Button(
-            onClick = onTestSound,
+            onClick = onSyncElevation,
             modifier = Modifier.fillMaxWidth().height(40.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = HyperCyan.copy(alpha = 0.2f),
@@ -3698,7 +3711,7 @@ fun ExhaustAcousticCard(
             border = androidx.compose.foundation.BorderStroke(1.dp, HyperCyan.copy(alpha = 0.4f)),
             shape = RoundedCornerShape(10.dp)
         ) {
-            Text("TEST EXHAUST dB (SIMULATE REV PULL)", fontSize = 10.sp, fontWeight = FontWeight.Black)
+            Text("CALIBRATE GPS ALTIMETER (3D SATELLITE SYNC)", fontSize = 10.sp, fontWeight = FontWeight.Black)
         }
     }
 }

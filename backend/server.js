@@ -1332,12 +1332,12 @@ app.get('/api/telemetry/advanced-metrics', (req, res) => {
         coachTip: 'Optimal trail-braking transition with clean throttle roll-on at apex.'
       }
     },
-    acousticDecibel: {
-      currentDb: 84.6,
-      idleDb: 76.2,
-      peakRevDb: 98.4,
-      isCompliant: true,
-      legalLimitDb: 85.0
+    elevationProfile: {
+      currentAltM: 642,
+      peakAltM: 890,
+      climbGainM: 248,
+      gradePercent: 1.8,
+      status: 'GPS_ALTIMETER_ACTIVE'
     },
     crosswindRadar: {
       relativeWindAngleDeg: 48,

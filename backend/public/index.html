@@ -349,9 +349,9 @@
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               <span>Configure Machine</span>
             </button>
-            <button onclick="searchYoutubeForBike()" class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] transition flex items-center space-x-1.5" title="Motorcycle Video Reviews & Sound Research">
-              <svg class="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
-              <span class="hidden sm:inline">Exhaust &amp; Media</span>
+            <button onclick="searchYoutubeForBike()" class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/[0.08] transition flex items-center space-x-1.5" title="Motorcycle Service Guides &amp; Ownership Manuals">
+              <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              <span class="hidden sm:inline">Service &amp; Guides</span>
             </button>
           </div>
         </div>
@@ -1166,7 +1166,7 @@
         </div>
       </div>
 
-      <!-- ================= MOTOGP AI CORNERING, ACOUSTIC dB METER & CROSSWIND RADAR ================= -->
+      <!-- ================= MOTOGP AI CORNERING, GPS ELEVATION PROFILE & CROSSWIND RADAR ================= -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         <!-- 1. MOTOGP AI APEX CORNERING TELEMETRY (4 Cols) -->
@@ -1230,53 +1230,52 @@
           </button>
         </div>
 
-        <!-- 2. EXHAUST ACOUSTIC dB SOUND METER & FFT SPECTRUM (4 Cols) -->
+        <!-- 2. REAL-TIME GPS ELEVATION & CLIMB PROFILE ENGINE (4 Cols) -->
         <div class="lg:col-span-4 glass-panel p-5 sm:p-6 space-y-4 shadow-xl border border-cyan-500/25 flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between border-b border-white/[0.08] pb-3 mb-3">
               <div class="flex items-center space-x-2.5">
                 <div class="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 flex items-center justify-center shrink-0">
                   <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                    <path d="m8 3 4 8 5-5 5 15H2L8 3z"/>
                   </svg>
                 </div>
                 <div>
-                  <h4 class="text-xs sm:text-sm font-bold text-white tracking-wide">Exhaust dB Sound Meter</h4>
-                  <span class="text-[10px] text-slate-400">SPL decibels &amp; real-time FFT spectrum</span>
+                  <h4 class="text-xs sm:text-sm font-bold text-white tracking-wide">GPS Elevation &amp; Climb Profile</h4>
+                  <span class="text-[10px] text-slate-400">Live GPS altimeter, climb gain &amp; gradient</span>
                 </div>
               </div>
-              <span id="acousticComplianceBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">LEGAL (&lt;85 dB)</span>
+              <span id="elevationGradeBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">LEVEL ROAD (0.0%)</span>
             </div>
 
-            <!-- Decibel Numbers -->
+            <!-- Altitude Numbers -->
             <div class="flex items-baseline justify-between py-1">
               <div>
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">Exhaust Sound Pressure</span>
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Current Altitude (ASL)</span>
                 <div class="flex items-baseline space-x-1">
-                  <span id="acousticDbVal" class="text-3xl font-black text-cyan-300 font-mono-numbers">84.2</span>
-                  <span class="text-xs font-mono text-slate-400">dB SPL</span>
+                  <span id="gpsAltitudeVal" class="text-3xl font-black text-cyan-300 font-mono-numbers">--</span>
+                  <span class="text-xs font-mono text-slate-400">m ASL</span>
                 </div>
               </div>
               <div class="text-right text-[10px] font-mono-numbers space-y-0.5">
-                <span class="text-slate-400 block">Idle: <strong id="acousticIdleDbVal" class="text-white">76.2 dB</strong></span>
-                <span class="text-slate-400 block">Peak: <strong id="acousticPeakDbVal" class="text-amber-400">98.4 dB</strong></span>
+                <span class="text-slate-400 block">Climb Gain: <strong id="gpsClimbGainVal" class="text-emerald-400">+0 m</strong></span>
+                <span class="text-slate-400 block">Peak Alt: <strong id="gpsPeakAltVal" class="text-amber-400">-- m</strong></span>
               </div>
             </div>
 
-            <!-- Real-Time HTML5 Canvas FFT Audio Waveform -->
+            <!-- Real-Time HTML5 Canvas Elevation Profile Chart -->
             <div class="mt-2.5 rounded-xl overflow-hidden bg-black/60 border border-white/10 p-2">
-              <canvas id="acousticFftCanvas" width="360" height="80" class="w-full h-20 rounded-lg"></canvas>
+              <canvas id="elevationProfileCanvas" width="360" height="80" class="w-full h-20 rounded-lg"></canvas>
             </div>
           </div>
 
           <div class="flex items-center space-x-2 pt-2">
-            <button id="btnAcousticMic" onclick="toggleAcousticMic()" class="flex-1 py-2 text-xs font-bold rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/30 transition flex items-center justify-center space-x-1.5">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-              <span id="btnAcousticMicText">Live Mic Listen</span>
+            <button id="btnSyncElevation" onclick="syncGpsElevation()" class="flex-1 py-2 text-xs font-bold rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/30 transition flex items-center justify-center space-x-1.5">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <span>Sync GPS Altimeter</span>
             </button>
-            <button onclick="simulateExhaustPull()" class="px-3 py-2 text-xs font-semibold rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 border border-white/10 transition">
-              Sim Rev
+            <button onclick="resetElevationGain()" class="px-3 py-2 text-xs font-semibold rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 border border-white/10 transition" title="Reset Trip Climb Gain">
+              Reset Gain
             </button>
           </div>
         </div>
@@ -3159,47 +3158,51 @@
     <!-- Inner Reflected Projection Area (Flips horizontally when mirror mode is active) -->
     <div id="hudMirrorInner" class="flex-1 flex flex-col justify-between py-6 transition-transform duration-300">
       
-      <!-- F1 / MotoGP Shift-Light RPM Bar -->
+      <!-- Real GPS Acceleration Dynamics & G-Vector Intensity Strip -->
       <div class="w-full max-w-4xl mx-auto space-y-2">
         <div class="flex items-center justify-between text-xs font-mono px-1">
-          <span class="text-slate-500">RPM TACHOMETER</span>
-          <span id="hudRpmVal" class="text-base font-black text-white">4,850 RPM</span>
-          <span id="hudRpmLimitVal" class="text-rose-500 font-bold">11,500 LIMIT</span>
+          <span class="text-slate-500 tracking-wider">LONGITUDINAL G-FORCE VECTOR</span>
+          <div class="flex items-center space-x-2">
+            <span id="hudAccelGVal" class="text-base font-black text-white font-mono-numbers">+0.00 G</span>
+            <span id="hudAccelGMode" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">CRUISE / LEVEL</span>
+          </div>
+          <span id="hudGpsSampleStatus" class="text-slate-500">GPS 10Hz SYNC</span>
         </div>
-        <div class="grid grid-cols-10 gap-1.5 sm:gap-2 h-4 sm:h-5">
-          <!-- Green LEDs (1-4) -->
-          <div id="hudLed1" class="h-full rounded-sm bg-emerald-500/20 border border-emerald-500/40 transition"></div>
-          <div id="hudLed2" class="h-full rounded-sm bg-emerald-500/20 border border-emerald-500/40 transition"></div>
-          <div id="hudLed3" class="h-full rounded-sm bg-emerald-500/20 border border-emerald-500/40 transition"></div>
-          <div id="hudLed4" class="h-full rounded-sm bg-emerald-500/20 border border-emerald-500/40 transition"></div>
-          <!-- Amber LEDs (5-7) -->
-          <div id="hudLed5" class="h-full rounded-sm bg-amber-500/20 border border-amber-500/40 transition"></div>
-          <div id="hudLed6" class="h-full rounded-sm bg-amber-500/20 border border-amber-500/40 transition"></div>
-          <div id="hudLed7" class="h-full rounded-sm bg-amber-500/20 border border-amber-500/40 transition"></div>
-          <!-- Red LEDs (8-9) -->
-          <div id="hudLed8" class="h-full rounded-sm bg-rose-500/20 border border-rose-500/40 transition"></div>
-          <div id="hudLed9" class="h-full rounded-sm bg-rose-500/20 border border-rose-500/40 transition"></div>
-          <!-- Rev-Limit Blue/White Flash LED (10) -->
-          <div id="hudLed10" class="h-full rounded-sm bg-cyan-400/20 border border-cyan-400/40 transition"></div>
+        <div class="grid grid-cols-10 gap-1.5 sm:gap-2 h-3.5 sm:h-4">
+          <!-- Decel / Braking LEDs 1-4 (Rose/Amber) -->
+          <div id="hudGVec1" class="h-full rounded-sm bg-rose-500/20 border border-rose-500/40 transition"></div>
+          <div id="hudGVec2" class="h-full rounded-sm bg-rose-500/20 border border-rose-500/40 transition"></div>
+          <div id="hudGVec3" class="h-full rounded-sm bg-amber-500/20 border border-amber-500/40 transition"></div>
+          <div id="hudGVec4" class="h-full rounded-sm bg-amber-500/20 border border-amber-500/40 transition"></div>
+          <!-- Neutral Cruise LEDs 5-6 (Cyan) -->
+          <div id="hudGVec5" class="h-full rounded-sm bg-cyan-400/20 border border-cyan-400/40 transition"></div>
+          <div id="hudGVec6" class="h-full rounded-sm bg-cyan-400/20 border border-cyan-400/40 transition"></div>
+          <!-- Accel Thrust LEDs 7-10 (Emerald) -->
+          <div id="hudGVec7" class="h-full rounded-sm bg-emerald-500/20 border border-emerald-500/40 transition"></div>
+          <div id="hudGVec8" class="h-full rounded-sm bg-emerald-500/20 border border-emerald-500/40 transition"></div>
+          <div id="hudGVec9" class="h-full rounded-sm bg-emerald-500/20 border border-emerald-500/40 transition"></div>
+          <div id="hudGVec10" class="h-full rounded-sm bg-emerald-400/20 border border-emerald-400/40 transition"></div>
         </div>
       </div>
 
-      <!-- Core Cockpit Flight Array: Gear Indicator + Velocity + Artificial Lean Horizon -->
+      <!-- Core Cockpit Flight Array: Lateral G-Force + Velocity + Artificial Lean Horizon -->
       <div class="w-full max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-around gap-8 my-auto">
         
-        <!-- Virtual Gear Display Box -->
+        <!-- Hardware IMU Lateral G-Force Box (True 6-Axis Cornering G) -->
         <div class="flex flex-col items-center">
-          <span class="text-[10px] font-mono uppercase text-slate-500 tracking-widest mb-1">GEAR</span>
-          <div class="w-24 h-28 sm:w-28 sm:h-32 rounded-2xl border-2 border-white/20 bg-white/[0.03] flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.05)]">
-            <span id="hudGearVal" class="text-6xl sm:text-7xl font-black font-mono-numbers text-white">3</span>
+          <span class="text-[10px] font-mono uppercase text-slate-500 tracking-widest mb-1">LATERAL G</span>
+          <div class="w-24 h-28 sm:w-28 sm:h-32 rounded-2xl border-2 border-purple-400/30 bg-purple-500/[0.04] flex flex-col items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.15)] p-2">
+            <span id="hudLateralGDir" class="text-[11px] font-mono text-purple-300 font-bold mb-0.5">CENTER</span>
+            <span id="hudLateralGVal" class="text-3xl sm:text-4xl font-black font-mono-numbers text-white">0.00</span>
+            <span class="text-[10px] font-mono text-slate-400 mt-0.5">G CORNER</span>
           </div>
-          <span id="hudShiftHint" class="text-[10px] font-mono text-cyan-400 uppercase tracking-widest mt-2">OPTIMAL</span>
+          <span id="hudLateralGBadge" class="text-[10px] font-mono text-emerald-400 uppercase tracking-widest mt-2">UPRIGHT</span>
         </div>
 
         <!-- Huge Digital Velocity Display -->
         <div class="flex flex-col items-center">
           <div class="flex items-baseline space-x-2">
-            <span id="hudSpeedVal" class="text-8xl sm:text-9xl font-black font-mono-numbers tracking-tighter text-cyan-300 drop-shadow-[0_0_35px_rgba(0,240,255,0.4)]">64</span>
+            <span id="hudSpeedVal" class="text-8xl sm:text-9xl font-black font-mono-numbers tracking-tighter text-cyan-300 drop-shadow-[0_0_35px_rgba(0,240,255,0.4)]">0</span>
             <span class="text-xl sm:text-2xl font-black font-mono text-slate-400">KM/H</span>
           </div>
           <!-- Dynamic Artificial Horizon / Lean Bar -->
@@ -3225,19 +3228,19 @@
 
       </div>
 
-      <!-- HUD Footer Metrics Strip -->
+      <!-- HUD Footer Metrics Strip (100% Real Hardware Sensors) -->
       <div class="w-full max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono border-t border-white/10 pt-4 text-center">
         <div class="p-2 rounded-xl bg-white/[0.02] border border-white/5">
           <span class="text-[9px] uppercase text-slate-500 block">Peak Speed</span>
-          <span id="hudTopSpeedVal" class="text-base font-bold text-amber-400 font-mono-numbers">88 km/h</span>
+          <span id="hudTopSpeedVal" class="text-base font-bold text-amber-400 font-mono-numbers">0 km/h</span>
         </div>
         <div class="p-2 rounded-xl bg-white/[0.02] border border-white/5">
-          <span class="text-[9px] uppercase text-slate-500 block">Exhaust Sound</span>
-          <span id="hudAcousticVal" class="text-base font-bold text-cyan-300 font-mono-numbers">84.2 dB</span>
+          <span class="text-[9px] uppercase text-slate-500 block">Trip Distance</span>
+          <span id="hudTripDistVal" class="text-base font-bold text-cyan-300 font-mono-numbers">0.00 km</span>
         </div>
         <div class="p-2 rounded-xl bg-white/[0.02] border border-white/5">
-          <span class="text-[9px] uppercase text-slate-500 block">Tarmac Friction</span>
-          <span id="hudGripVal" class="text-base font-bold text-emerald-400 font-mono-numbers">0.88 &mu;</span>
+          <span class="text-[9px] uppercase text-slate-500 block">GPS Altitude</span>
+          <span id="hudAltitudeVal" class="text-base font-bold text-emerald-400 font-mono-numbers">-- m</span>
         </div>
         <div class="p-2 rounded-xl bg-white/[0.02] border border-white/5">
           <span class="text-[9px] uppercase text-slate-500 block">Black Box IMU</span>
