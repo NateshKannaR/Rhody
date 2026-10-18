@@ -3032,14 +3032,14 @@ fun DashboardGuardianSafetySection(
         ) {
             Column {
                 Text(
-                    text = "BIKE PARENTING & SAFETY BEACON",
+                    text = "EMERGENCY SOS & LIVE BEACON",
                     color = TextPrimary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 1.sp
                 )
                 Text(
-                    text = "Live Ride Sharing • Speed Warning Alerts • Instant SOS",
+                    text = "Live Ride Sharing • Safety Corridor • Instant SOS",
                     color = OptimalGreen,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold
@@ -3081,13 +3081,13 @@ fun DashboardGuardianSafetySection(
                 ) {
                     Column {
                         Text(
-                            text = "GUARDIAN CONTACT",
+                            text = "EMERGENCY SOS CONTACT",
                             color = TextMuted,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Family Guardian (Dad & Mom)",
+                            text = "Family Emergency Contact",
                             color = TextPrimary,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
@@ -3142,7 +3142,7 @@ fun DashboardGuardianSafetySection(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Parent Speed Limit Alert",
+                                text = "Safe Speed Corridor Limit",
                                 color = TextSecondary,
                                 fontSize = 11.sp
                             )
