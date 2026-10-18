@@ -148,15 +148,55 @@ fun AuthScreen(
         errorMessage = null
 
         val pName = parentNameInput.trim().ifEmpty { "Family Guardian" }
-        val pEmail = parentEmailInput.trim().ifEmpty { "guardian@family.io" }
-        val rCode = riderPairingCodeInput.trim().ifEmpty { "RHODY-8821" }
+        val pEmail = parentEmailInput.trim().lowercase()
+        val rCodeOrEmail = riderPairingCodeInput.trim().lowercase()
+
+        // Validate parent email format
+        if (pEmail.isEmpty()) {
+            errorMessage = "Please enter the parent / guardian email address"
+            return
+        }
+        if (!pEmail.contains("@") || !pEmail.contains(".")) {
+            errorMessage = "Please enter a valid guardian email address"
+            return
+        }
+
+        // Validate rider pairing input
+        if (rCodeOrEmail.isEmpty()) {
+            errorMessage = "Please enter rider's pairing code or email (e.g. RHODY-8821)"
+            return
+        }
+
+        // Prevent parent from using the rider's email
+        if (pEmail == rCodeOrEmail) {
+            errorMessage = "Parent email cannot be the same as rider email! A guardian and rider must be separate individuals."
+            return
+        }
+
+        val riderPrefs = context.getSharedPreferences("roadpulse_auth_prefs", Context.MODE_PRIVATE)
+        val savedRiderEmail = riderPrefs.getString("user_email", "")?.trim()?.lowercase() ?: ""
+        if (savedRiderEmail.isNotEmpty() && pEmail == savedRiderEmail) {
+            errorMessage = "This email ($pEmail) is registered as a Rider. A parent must use a different, separate email address."
+            return
+        }
+
+        val wardEmail = if (rCodeOrEmail.contains("@")) {
+            rCodeOrEmail
+        } else if (savedRiderEmail.isNotEmpty()) {
+            savedRiderEmail
+        } else {
+            "pilot@rhody.io"
+        }
+
+        val wardCode = if (!rCodeOrEmail.contains("@")) rCodeOrEmail.uppercase() else "RHODY-8821"
 
         // Persist parent credentials to preferences
         val prefs = context.getSharedPreferences("rhody_parent_prefs", Context.MODE_PRIVATE)
         prefs.edit()
             .putString("parent_name", pName)
             .putString("parent_email", pEmail)
-            .putString("paired_rider_code", rCode)
+            .putString("paired_rider_code", wardCode)
+            .putString("monitored_rider_email", wardEmail)
             .putBoolean("is_parent_logged_in", true)
             .apply()
 

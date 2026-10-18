@@ -27,19 +27,14 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,8 +56,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.roadpulse.app.RoadPulseApp
-import com.roadpulse.app.data.auth.AuthManager
-import com.roadpulse.app.data.database.TripEntity
 import com.roadpulse.app.domain.calculator.TripCalculator
 import com.roadpulse.app.service.TripRecordingController
 import com.roadpulse.app.ui.components.RouteMapView
@@ -103,35 +96,18 @@ fun ParentPanelScreen(
     val allTrips by repository.allTrips.collectAsState(initial = emptyList())
     val metrics by TripRecordingController.metrics.collectAsState()
     val livePoints by TripRecordingController.livePoints.collectAsState()
-    val authState by AuthManager.authState.collectAsState()
 
-    // Guardian Parent Preferences
+    // Guardian Parent Preferences (Separated from Rider)
     val parentPrefs = remember { context.getSharedPreferences("rhody_parent_prefs", Context.MODE_PRIVATE) }
     val parentName = remember { parentPrefs.getString("parent_name", "Family Guardian") ?: "Family Guardian" }
+    val parentEmail = remember { parentPrefs.getString("parent_email", "guardian@family.io") ?: "guardian@family.io" }
     val pairedCode = remember { parentPrefs.getString("paired_rider_code", "RHODY-8821") ?: "RHODY-8821" }
+    val monitoredRiderEmail = remember { parentPrefs.getString("monitored_rider_email", "pilot@rhody.io") ?: "pilot@rhody.io" }
 
     // Vehicle Preferences
-    val vehiclePrefs = remember { context.getSharedPreferences("rhody_vehicle_prefs", Context.MODE_PRIVATE) }
+    val vehiclePrefs = remember { context.getSharedPreferences("rhody_bike_prefs", Context.MODE_PRIVATE) }
     val bikeModel = remember { vehiclePrefs.getString("bike_model", "Bajaj Pulsar 150") ?: "Bajaj Pulsar 150" }
     val bikePlate = remember { vehiclePrefs.getString("bike_plate", "MH-12-RP-8821") ?: "MH-12-RP-8821" }
-
-    // Document Vault Preferences
-    val docPrefs = remember { context.getSharedPreferences("rhody_doc_vault", Context.MODE_PRIVATE) }
-    val rcUploaded = remember { docPrefs.getBoolean("rc_uploaded", true) }
-    val dlUploaded = remember { docPrefs.getBoolean("dl_uploaded", true) }
-    val insUploaded = remember { docPrefs.getBoolean("insurance_uploaded", true) }
-    val pucUploaded = remember { docPrefs.getBoolean("puc_uploaded", true) }
-
-    val riderName = if (authState.isLoggedIn && !authState.user?.name.isNullOrBlank()) {
-        authState.user!!.name
-    } else {
-        "Natesh Kanna"
-    }
-    val riderEmail = if (authState.isLoggedIn && !authState.user?.email.isNullOrBlank()) {
-        authState.user!!.email
-    } else {
-        "pilot@rhody.io"
-    }
 
     var showLogoutConfirm by remember { mutableStateOf(false) }
 
@@ -141,14 +117,14 @@ fun ParentPanelScreen(
             GuardianAlertItem(
                 id = "1",
                 title = "Safe Speed Corridor Maintained",
-                message = "Rider $riderName is riding smoothly within the safe 95 km/h limit.",
+                message = "Ward ($monitoredRiderEmail) is riding safely within the 95 km/h limit.",
                 severity = "normal",
                 timestamp = "Active now"
             ),
             GuardianAlertItem(
                 id = "2",
                 title = "Guardian Radar Link Active",
-                message = "Live telemetry GPS lock established with $bikeModel ($bikePlate).",
+                message = "Telemetry beacon locked on $bikeModel ($bikePlate).",
                 severity = "info",
                 timestamp = "Connected"
             )
@@ -157,7 +133,7 @@ fun ParentPanelScreen(
 
     val isMoving = metrics.currentSpeedKmh > 3.0f || metrics.isRecording
     val scrollState = rememberScrollState()
-    val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy • hh:mm a", Locale.getDefault()) }
+    val dateFormatter = remember { SimpleDateFormat("dd MMM • hh:mm a", Locale.getDefault()) }
 
     val guardianPurple = Color(0xFFA855F7)
     val guardianPurpleDark = Color(0xFF1E1035)
@@ -170,15 +146,16 @@ fun ParentPanelScreen(
                 Text(
                     text = "Exit Guardian Session?",
                     color = TextPrimary,
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    text = "You are currently logged in as $parentName. Exiting will sign you out of the guardian telemetry radar and return to the login gateway.",
+                    text = "Logged in as Guardian: $parentName ($parentEmail).\n\nExiting will end the monitoring session and return to the role gateway.",
                     color = TextSecondary,
-                    fontSize = 13.sp
+                    fontSize = 12.5.sp,
+                    lineHeight = 17.sp
                 )
             },
             confirmButton = {
@@ -187,14 +164,15 @@ fun ParentPanelScreen(
                         showLogoutConfirm = false
                         onLogout()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = RacingRed)
+                    colors = ButtonDefaults.buttonColors(containerColor = RacingRed),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Log Out", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Exit Session", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutConfirm = false }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text("Cancel", color = TextSecondary, fontSize = 12.sp)
                 }
             }
         )
@@ -205,21 +183,21 @@ fun ParentPanelScreen(
             .fillMaxSize()
             .background(CarbonDark)
             .verticalScroll(scrollState)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // ================= 1. GUARDIAN RADAR HEADER & HOTLINES =================
+        // ================= 1. GUARDIAN HEADER BAR (CONCISE & FOCUSED) =================
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(guardianPurpleDark, MidnightCard)
                     )
                 )
-                .border(1.dp, guardianPurple.copy(alpha = 0.45f), RoundedCornerShape(20.dp))
-                .padding(18.dp)
+                .border(1.dp, guardianPurple.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                .padding(14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -228,21 +206,21 @@ fun ParentPanelScreen(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(14.dp))
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
                             .background(guardianPurple.copy(alpha = 0.2f))
-                            .border(1.dp, guardianPurple.copy(alpha = 0.6f), RoundedCornerShape(14.dp)),
+                            .border(1.dp, guardianPurple.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Shield,
-                            contentDescription = "Guardian Shield",
+                            contentDescription = "Guardian",
                             tint = guardianPurple,
-                            modifier = Modifier.size(26.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
 
@@ -253,75 +231,37 @@ fun ParentPanelScreen(
                         ) {
                             Text(
                                 text = "GUARDIAN SAFETY RADAR",
-                                fontSize = 15.sp,
+                                fontSize = 13.5.sp,
                                 fontWeight = FontWeight.Black,
-                                letterSpacing = 1.sp,
+                                letterSpacing = 0.8.sp,
                                 color = TextPrimary
                             )
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
                                     .background(OptimalGreen.copy(alpha = 0.2f))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .padding(horizontal = 5.dp, vertical = 1.5.dp)
                             ) {
                                 Text(
-                                    text = "LIVE RADAR",
-                                    fontSize = 8.5.sp,
+                                    text = "LIVE",
+                                    fontSize = 8.sp,
                                     fontWeight = FontWeight.Black,
                                     color = OptimalGreen
                                 )
                             }
                         }
                         Text(
-                            text = "Monitoring Rider: $riderName ($riderEmail)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = TextSecondary
-                        )
-                        Text(
-                            text = "Machine: $bikeModel • $bikePlate",
-                            fontSize = 10.sp,
-                            fontFamily = FontFamily.Monospace,
+                            text = "Monitoring Ward: $monitoredRiderEmail",
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
                             color = HyperCyan
                         )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Pairing Connection & Hotlines Strip
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(CarbonDark.copy(alpha = 0.7f))
-                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = "PAIRING CODE:",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextMuted
-                    )
-                    Text(
-                        text = pairedCode,
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Black,
-                        fontFamily = FontFamily.Monospace,
-                        color = HyperCyan
-                    )
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Call Rider Hotline
+                // Quick Action Bar: Call, SOS, Exit
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    // Call Ward
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
@@ -331,28 +271,15 @@ fun ParentPanelScreen(
                                 val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:+919876543210"))
                                 context.startActivity(intent)
                             }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(horizontal = 8.dp, vertical = 5.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Phone,
-                                contentDescription = "Call",
-                                tint = OptimalGreen,
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Text(
-                                text = "Call Rider",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = OptimalGreen
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Icon(Icons.Default.Phone, contentDescription = "Call", tint = OptimalGreen, modifier = Modifier.size(11.dp))
+                            Text("Call", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = OptimalGreen)
                         }
                     }
 
-                    // 112 SOS Hotline
+                    // 112 SOS
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
@@ -362,222 +289,192 @@ fun ParentPanelScreen(
                                 val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
                                 context.startActivity(intent)
                             }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(horizontal = 8.dp, vertical = 5.dp)
                     ) {
-                        Text(
-                            text = "112 SOS",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Black,
-                            color = RacingRed
-                        )
+                        Text("112", fontSize = 9.5.sp, fontWeight = FontWeight.Black, color = RacingRed)
                     }
 
-                    // Logout Button (Exits Guardian Session)
+                    // Logout / Exit
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(CarbonDark)
                             .border(1.dp, CardBorder, RoundedCornerShape(8.dp))
                             .clickable { showLogoutConfirm = true }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(horizontal = 8.dp, vertical = 5.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Logout,
-                                contentDescription = "Logout",
-                                tint = TextMuted,
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Text(
-                                text = "Exit",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextSecondary
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Exit", tint = TextMuted, modifier = Modifier.size(11.dp))
+                            Text("Exit", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
                         }
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Subtitle Strip: Machine & Guardian Account
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(CarbonDark.copy(alpha = 0.6f))
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Machine: $bikeModel • $bikePlate",
+                    fontSize = 9.5.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = TextSecondary
+                )
+                Text(
+                    text = "Guardian: $parentEmail | Code: $pairedCode",
+                    fontSize = 9.sp,
+                    color = TextMuted
+                )
+            }
         }
 
-        // ================= 2. LIVE TELEMETRY RADAR STRIP =================
+        // ================= 2. LIVE TELEMETRY STRIP (COMPACT 4-GRID) =================
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // Motion Status Card
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(MidnightCard)
-                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-                    .padding(12.dp)
+                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                    .padding(10.dp)
             ) {
+                Text("STATUS", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "MOTION STATUS",
-                    fontSize = 8.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextMuted,
-                    letterSpacing = 0.5.sp
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (isMoving) "RIDING ON ROAD" else "PARKED AT BASE",
+                    text = if (isMoving) "RIDING" else "PARKED",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Black,
                     color = if (isMoving) OptimalGreen else HyperCyan
                 )
-                Text(
-                    text = if (isMoving) "Telemetry live" else "Beacon parked",
-                    fontSize = 8.5.sp,
-                    color = TextMuted
-                )
+                Text(if (isMoving) "Live GPS" else "Basecamp", fontSize = 8.sp, color = TextMuted)
             }
 
-            // Live Speed Card
+            // Current Speed
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(MidnightCard)
-                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-                    .padding(12.dp)
+                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                    .padding(10.dp)
             ) {
-                Text(
-                    text = "CURRENT SPEED",
-                    fontSize = 8.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextMuted,
-                    letterSpacing = 0.5.sp
-                )
+                Text("SPEED", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = TextMuted)
                 Spacer(modifier = Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = String.format(Locale.US, "%.1f", metrics.currentSpeedKmh),
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Black,
                         fontFamily = FontFamily.Monospace,
                         color = if (metrics.currentSpeedKmh > 95f) RacingRed else NeonCyan
                     )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(text = "km/h", fontSize = 8.5.sp, color = TextMuted)
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text("km/h", fontSize = 7.5.sp, color = TextMuted)
                 }
-                Text(text = "Limit: 95 km/h", fontSize = 8.5.sp, color = SportAmber, fontWeight = FontWeight.Bold)
+                Text("Limit 95", fontSize = 8.sp, color = SportAmber, fontWeight = FontWeight.Bold)
             }
 
-            // Peak Speed Logged Today
+            // Peak Speed
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(MidnightCard)
-                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-                    .padding(12.dp)
+                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                    .padding(10.dp)
             ) {
-                Text(
-                    text = "PEAK SPEED",
-                    fontSize = 8.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextMuted,
-                    letterSpacing = 0.5.sp
-                )
+                Text("PEAK", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = TextMuted)
                 Spacer(modifier = Modifier.height(2.dp))
+                val peakToday = maxOf(metrics.maxSpeedKmh, allTrips.firstOrNull()?.maxSpeedKmh ?: 0f)
                 Row(verticalAlignment = Alignment.Bottom) {
-                    val peakToday = maxOf(metrics.maxSpeedKmh, allTrips.firstOrNull()?.maxSpeedKmh ?: 0f)
                     Text(
                         text = String.format(Locale.US, "%.1f", peakToday),
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Black,
                         fontFamily = FontFamily.Monospace,
                         color = SportAmber
                     )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(text = "km/h", fontSize = 8.5.sp, color = TextMuted)
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text("km/h", fontSize = 7.5.sp, color = TextMuted)
                 }
-                Text(text = "Today's max", fontSize = 8.5.sp, color = TextMuted)
+                Text("Max today", fontSize = 8.sp, color = TextMuted)
             }
 
-            // Rider Phone Battery
+            // Ward Phone Battery
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(MidnightCard)
-                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-                    .padding(12.dp)
+                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                    .padding(10.dp)
             ) {
-                Text(
-                    text = "RIDER PHONE",
-                    fontSize = 8.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextMuted,
-                    letterSpacing = 0.5.sp
-                )
+                Text("BATTERY", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = TextMuted)
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "88%",
-                    fontSize = 18.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Black,
                     fontFamily = FontFamily.Monospace,
                     color = OptimalGreen
                 )
-                Text(text = "Good Health", fontSize = 8.5.sp, color = OptimalGreen, fontWeight = FontWeight.Bold)
+                Text("Good state", fontSize = 8.sp, color = OptimalGreen)
             }
         }
 
-        // ================= 3. LIVE RADAR GPS MAP =================
+        // ================= 3. COMPACT LIVE GPS RADAR MAP =================
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
+                .clip(RoundedCornerShape(14.dp))
                 .background(MidnightCard)
-                .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
-                .padding(14.dp)
+                .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                .padding(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(OptimalGreen)
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(OptimalGreen))
                     Text(
-                        text = "LIVE RIDER GPS BREADCRUMB RADAR",
-                        fontSize = 11.sp,
+                        text = "LIVE WARD GPS RADAR MAP",
+                        fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.8.sp,
                         color = TextPrimary
                     )
                 }
 
                 Text(
-                    text = if (metrics.currentLatitude != null) "GPS Lock Active" else "Awaiting Satellite Lock",
-                    fontSize = 9.sp,
+                    text = if (metrics.currentLatitude != null) "RTK Lock Active" else "Awaiting Satellite Lock",
+                    fontSize = 8.5.sp,
                     fontFamily = FontFamily.Monospace,
                     color = if (metrics.currentLatitude != null) OptimalGreen else SportAmber
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(220.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                    .height(170.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
             ) {
                 RouteMapView(
                     points = livePoints,
@@ -589,13 +486,13 @@ fun ParentPanelScreen(
             }
         }
 
-        // ================= 4. RIDER LEGAL DOCUMENTS VERIFICATION =================
+        // ================= 4. WARD COMPLETED RIDES & TELEMETRY DETAILS (CORE SECTION) =================
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(MidnightCard)
-                .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
+                .border(1.dp, CardBorderGlow, RoundedCornerShape(16.dp))
                 .padding(14.dp)
         ) {
             Row(
@@ -603,75 +500,31 @@ fun ParentPanelScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "RIDER STATUTORY COMPLIANCE & LEGAL VAULT",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-                Text(
-                    text = "Statutory Pass",
-                    fontSize = 10.sp,
-                    color = OptimalGreen,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ParentDocBadge("RC Reg", bikePlate, rcUploaded, if (rcUploaded) OptimalGreen else SportAmber, Modifier.weight(1f))
-                ParentDocBadge("Driving Licence", if (dlUploaded) "Valid DL" else "Pending", dlUploaded, if (dlUploaded) HyperCyan else TextMuted, Modifier.weight(1f))
-                ParentDocBadge("Insurance", if (insUploaded) "Active Policy" else "Pending", insUploaded, if (insUploaded) OptimalGreen else TextMuted, Modifier.weight(1f))
-                ParentDocBadge("PUC Certificate", if (pucUploaded) "Emission Pass" else "Pending", pucUploaded, if (pucUploaded) SportAmber else TextMuted, Modifier.weight(1f))
-            }
-        }
-
-        // ================= 5. WARD / RIDER TRIP HISTORY & DETAILED TRIP VIEWER =================
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(MidnightCard)
-                .border(1.dp, CardBorderGlow, RoundedCornerShape(18.dp))
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(
                         imageVector = Icons.Default.Route,
-                        contentDescription = "Trips",
+                        contentDescription = "Rides",
                         tint = HyperCyan,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "WARD / RIDER TRIP HISTORY & DETAILS",
-                        fontSize = 12.sp,
+                        text = "WARD'S COMPLETED RIDES",
+                        fontSize = 11.5.sp,
                         fontWeight = FontWeight.Black,
-                        letterSpacing = 0.8.sp,
+                        letterSpacing = 0.5.sp,
                         color = HyperCyan
                     )
                 }
 
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(HyperCyan.copy(alpha = 0.15f))
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                        .padding(horizontal = 7.dp, vertical = 2.dp)
                 ) {
                     Text(
-                        text = "${allTrips.size} RIDES LOGGED",
-                        fontSize = 9.sp,
+                        text = "${allTrips.size} RIDES RECORDED",
+                        fontSize = 8.5.sp,
                         fontWeight = FontWeight.Black,
                         color = HyperCyan
                     )
@@ -679,48 +532,42 @@ fun ParentPanelScreen(
             }
 
             Text(
-                text = "Inspect completed rides, GPS paths, acceleration profiles, and road safety metrics recorded by your rider.",
-                fontSize = 10.5.sp,
+                text = "Tap any ride to inspect full GPS route on map, speed graphs & safety statistics.",
+                fontSize = 9.5.sp,
                 color = TextSecondary,
-                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+                modifier = Modifier.padding(top = 3.dp, bottom = 10.dp)
             )
 
             if (allTrips.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(CarbonDark)
-                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-                        .padding(20.dp),
+                        .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = TextMuted,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Icon(Icons.Default.Info, contentDescription = null, tint = TextMuted, modifier = Modifier.size(20.dp))
                         Text(
                             text = "NO COMPLETED TRIPS YET",
                             color = TextPrimary,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "As soon as your rider records a motorcycle ride, full GPS telemetry, speed charts, and safety compliance will appear here.",
+                            text = "When your ward completes a motorcycle ride, full GPS telemetry will appear here.",
                             color = TextMuted,
-                            fontSize = 10.sp,
-                            lineHeight = 14.sp
+                            fontSize = 9.5.sp
                         )
                     }
                 }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     allTrips.forEach { trip ->
                         val isSpeedExceeded = trip.maxSpeedKmh > 95f
                         val distanceKm = trip.totalDistanceMeters / 1000.0
@@ -732,68 +579,65 @@ fun ParentPanelScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(CarbonDark)
                                 .border(
                                     1.dp,
-                                    if (isSpeedExceeded) SportAmber.copy(alpha = 0.6f) else CardBorder,
-                                    RoundedCornerShape(14.dp)
+                                    if (isSpeedExceeded) SportAmber.copy(alpha = 0.5f) else CardBorder,
+                                    RoundedCornerShape(12.dp)
                                 )
                                 .clickable { onNavigateToTripDetail(trip.id) }
-                                .padding(14.dp)
+                                .padding(12.dp)
                         ) {
-                            // Trip Card Top Header
+                            // Trip Card Top Line
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text(
                                         text = "Ride #${trip.id}",
-                                        fontSize = 13.sp,
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Black,
                                         color = TextPrimary
                                     )
                                     Text(
-                                        text = "•  $dateFormatted",
-                                        fontSize = 10.sp,
+                                        text = "• $dateFormatted",
+                                        fontSize = 9.5.sp,
                                         color = TextMuted
                                     )
                                 }
 
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
+                                        .clip(RoundedCornerShape(5.dp))
                                         .background(
                                             if (isSpeedExceeded) SportAmber.copy(alpha = 0.2f) else OptimalGreen.copy(alpha = 0.15f)
                                         )
-                                        .padding(horizontal = 7.dp, vertical = 2.5.dp)
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
                                     Text(
-                                        text = if (isSpeedExceeded) "⚠️ SPEED EXCEEDED" else "✓ SAFE CORRIDOR",
-                                        fontSize = 8.5.sp,
+                                        text = if (isSpeedExceeded) "⚠️ EXCEEDED 95 KM/H" else "✓ SAFE CORRIDOR",
+                                        fontSize = 8.sp,
                                         fontWeight = FontWeight.Black,
                                         color = if (isSpeedExceeded) SportAmber else OptimalGreen
                                     )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                            // Key Telemetry Row
+                            // Key Telemetry Line
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column {
-                                    Text(text = "DISTANCE", fontSize = 8.sp, color = TextMuted, fontWeight = FontWeight.Bold)
+                                    Text("DISTANCE", fontSize = 7.5.sp, color = TextMuted, fontWeight = FontWeight.Bold)
                                     Text(
-                                        text = "${String.format(Locale.US, "%.1f", distanceKm)} km",
-                                        fontSize = 13.sp,
+                                        "${String.format(Locale.US, "%.1f", distanceKm)} km",
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Black,
                                         fontFamily = FontFamily.Monospace,
                                         color = TextPrimary
@@ -801,10 +645,10 @@ fun ParentPanelScreen(
                                 }
 
                                 Column {
-                                    Text(text = "DURATION", fontSize = 8.sp, color = TextMuted, fontWeight = FontWeight.Bold)
+                                    Text("DURATION", fontSize = 7.5.sp, color = TextMuted, fontWeight = FontWeight.Bold)
                                     Text(
-                                        text = durationFormatted,
-                                        fontSize = 13.sp,
+                                        durationFormatted,
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         fontFamily = FontFamily.Monospace,
                                         color = TextPrimary
@@ -812,10 +656,10 @@ fun ParentPanelScreen(
                                 }
 
                                 Column {
-                                    Text(text = "TOP SPEED", fontSize = 8.sp, color = TextMuted, fontWeight = FontWeight.Bold)
+                                    Text("TOP SPEED", fontSize = 7.5.sp, color = TextMuted, fontWeight = FontWeight.Bold)
                                     Text(
-                                        text = "${trip.maxSpeedKmh.roundToInt()} km/h",
-                                        fontSize = 13.sp,
+                                        "${trip.maxSpeedKmh.roundToInt()} km/h",
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Black,
                                         fontFamily = FontFamily.Monospace,
                                         color = if (isSpeedExceeded) RacingRed else HyperCyan
@@ -823,10 +667,10 @@ fun ParentPanelScreen(
                                 }
 
                                 Column {
-                                    Text(text = "AVG SPEED", fontSize = 8.sp, color = TextMuted, fontWeight = FontWeight.Bold)
+                                    Text("AVG SPEED", fontSize = 7.5.sp, color = TextMuted, fontWeight = FontWeight.Bold)
                                     Text(
-                                        text = "${trip.avgMovingSpeedKmh.roundToInt()} km/h",
-                                        fontSize = 13.sp,
+                                        "${trip.avgMovingSpeedKmh.roundToInt()} km/h",
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         fontFamily = FontFamily.Monospace,
                                         color = TextSecondary
@@ -834,31 +678,31 @@ fun ParentPanelScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                            // Action Button to View Full Details
+                            // One-tap inspect button
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(6.dp))
                                     .background(ObsidianGlass)
-                                    .border(1.dp, CardBorder, RoundedCornerShape(8.dp))
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    .border(1.dp, CardBorder, RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "INSPECT GPS ROUTE, ELEVATION & ACCELERATION",
-                                    fontSize = 9.sp,
+                                    text = "INSPECT FULL GPS ROUTE & TELEMETRY",
+                                    fontSize = 8.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = HyperCyan,
                                     letterSpacing = 0.5.sp
                                 )
                                 Icon(
                                     imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = "Inspect",
+                                    contentDescription = null,
                                     tint = HyperCyan,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(14.dp)
                                 )
                             }
                         }
@@ -867,33 +711,30 @@ fun ParentPanelScreen(
             }
         }
 
-        // ================= 6. REAL-TIME SAFETY NOTIFICATIONS & ALERTS CENTER =================
+        // ================= 5. SAFETY ALERTS & NOTIFICATIONS FEED =================
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
+                .clip(RoundedCornerShape(14.dp))
                 .background(MidnightCard)
-                .border(1.dp, guardianPurple.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
-                .padding(16.dp)
+                .border(1.dp, guardianPurple.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
+                .padding(14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(
                         imageVector = Icons.Default.NotificationsActive,
                         contentDescription = "Alerts",
                         tint = guardianPurple,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                     Text(
                         text = "SAFETY NOTIFICATIONS & ALERTS",
-                        fontSize = 11.5.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
@@ -901,63 +742,57 @@ fun ParentPanelScreen(
 
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(5.dp))
                         .background(guardianPurple.copy(alpha = 0.2f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .padding(horizontal = 5.dp, vertical = 1.5.dp)
                 ) {
                     Text(
                         text = "${alerts.size} ALERTS",
-                        fontSize = 8.5.sp,
+                        fontSize = 8.sp,
                         fontWeight = FontWeight.Bold,
                         color = guardianPurple
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 alerts.forEach { alert ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
+                            .clip(RoundedCornerShape(8.dp))
                             .background(CarbonDark)
                             .border(
                                 1.dp,
                                 if (alert.severity == "warning") SportAmber.copy(alpha = 0.5f) else CardBorder,
-                                RoundedCornerShape(10.dp)
+                                RoundedCornerShape(8.dp)
                             )
-                            .padding(10.dp),
+                            .padding(8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.Top
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = alert.title,
-                                fontSize = 11.sp,
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (alert.severity == "warning") SportAmber else TextPrimary
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Spacer(modifier = Modifier.height(1.dp))
                             Text(
                                 text = alert.message,
-                                fontSize = 10.sp,
+                                fontSize = 9.5.sp,
                                 color = TextSecondary,
-                                lineHeight = 14.sp
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = alert.timestamp,
-                                fontSize = 8.sp,
-                                color = TextMuted
+                                lineHeight = 13.sp
                             )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Simulate Alert Test Trigger
             Row(
@@ -967,7 +802,7 @@ fun ParentPanelScreen(
             ) {
                 Text(
                     text = "Test Guardian Alarm:",
-                    fontSize = 10.sp,
+                    fontSize = 9.5.sp,
                     color = TextMuted
                 )
 
@@ -978,7 +813,7 @@ fun ParentPanelScreen(
                             GuardianAlertItem(
                                 id = System.currentTimeMillis().toString(),
                                 title = "⚠️ Over-Speed Alert Triggered",
-                                message = "Rider $riderName hit 104 km/h (exceeded safe speed limit of 95 km/h).",
+                                message = "Ward ($monitoredRiderEmail) exceeded safe limit of 95 km/h.",
                                 severity = "warning",
                                 timestamp = "Just now"
                             )
@@ -986,12 +821,12 @@ fun ParentPanelScreen(
                         Toast.makeText(context, "⚠️ Over-Speed Guardian Alert Triggered!", Toast.LENGTH_SHORT).show()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = SportAmber.copy(alpha = 0.2f)),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.height(30.dp)
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier.height(28.dp)
                 ) {
                     Text(
                         text = "⚡ Simulate Speed Warning",
-                        fontSize = 9.sp,
+                        fontSize = 8.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = SportAmber
                     )
@@ -999,82 +834,6 @@ fun ParentPanelScreen(
             }
         }
 
-        // ================= 7. ENFORCED SAFETY GUARDRAILS INFO =================
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(guardianPurpleDark.copy(alpha = 0.6f), CarbonDark)
-                    )
-                )
-                .border(1.dp, guardianPurple.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Shield,
-                    contentDescription = null,
-                    tint = guardianPurple,
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(
-                    text = "PARENTAL SAFETY GUARDRAILS ENFORCED",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-            }
-            Text(
-                text = "• Speed Alert Limit: Triggers instant notification if rider exceeds 95 km/h.",
-                fontSize = 9.5.sp,
-                color = TextSecondary
-            )
-            Text(
-                text = "• Crash & Tilt Beacon: Automated SOS broadcast to guardian phone upon high-G impact.",
-                fontSize = 9.5.sp,
-                color = TextSecondary
-            )
-            Text(
-                text = "• Real-Time Beacon: Live GPS telemetry refreshes every 3 seconds during rides.",
-                fontSize = 9.5.sp,
-                color = TextSecondary
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-    }
-}
-
-@Composable
-fun ParentDocBadge(
-    label: String,
-    status: String,
-    verified: Boolean,
-    accentColor: Color,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(CarbonDark.copy(alpha = 0.7f))
-            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
-            .padding(vertical = 8.dp, horizontal = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = label, fontSize = 8.sp, fontWeight = FontWeight.Bold, color = TextMuted)
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = status,
-            fontSize = 9.5.sp,
-            fontWeight = FontWeight.Bold,
-            color = accentColor,
-            maxLines = 1
-        )
+        Spacer(modifier = Modifier.height(12.dp))
     }
 }
