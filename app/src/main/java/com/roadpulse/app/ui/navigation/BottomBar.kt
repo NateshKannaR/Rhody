@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -26,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.roadpulse.app.ui.theme.CarbonDark
 import com.roadpulse.app.ui.theme.CardBorder
 import com.roadpulse.app.ui.theme.CardBorderGlow
 import com.roadpulse.app.ui.theme.HyperCyan
@@ -57,10 +61,15 @@ fun BottomBar(
 
     NavigationBar(
         modifier = modifier
-            .background(ObsidianGlass)
-            .border(width = 1.dp, color = CardBorder),
-        containerColor = ObsidianGlass,
-        tonalElevation = 8.dp
+            .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+            .background(Brush.verticalGradient(listOf(ObsidianGlass, CarbonDark)))
+            .border(
+                width = 1.dp,
+                brush = Brush.verticalGradient(listOf(HyperCyan.copy(alpha = 0.35f), Color.Transparent)),
+                shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
+            ),
+        containerColor = Color.Transparent,
+        tonalElevation = 10.dp
     ) {
         Screen.bottomNavItems.forEach { screen ->
             val isSelected = when (screen) {

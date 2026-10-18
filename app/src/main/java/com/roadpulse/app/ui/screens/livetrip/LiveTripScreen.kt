@@ -55,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
@@ -974,24 +975,24 @@ fun LiveLeanAngleBar(
 ) {
     val absLean = abs(leanDegrees).roundToInt()
     val leanSide = when {
-        absLean < 2 -> "UPRIGHT"
+        absLean < 2 -> "UPRIGHT 0°"
         leanDegrees < 0 -> "${absLean}° LEFT"
         else -> "${absLean}° RIGHT"
     }
 
     val leanStatusColor = when {
-        absLean >= 45 -> RacingRed
-        absLean >= 30 -> SportAmber
-        absLean >= 15 -> HyperCyan
+        absLean >= 42 -> RacingRed
+        absLean >= 28 -> SportAmber
+        absLean >= 14 -> HyperCyan
         else -> OptimalGreen
     }
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(CarbonDark.copy(alpha = 0.9f))
-            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Brush.verticalGradient(listOf(CarbonDark, MidnightCard)))
+            .border(1.dp, CardBorderGlow, RoundedCornerShape(14.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
         Column {
             Row(
@@ -1004,71 +1005,112 @@ fun LiveLeanAngleBar(
                         imageVector = Icons.Default.TwoWheeler,
                         contentDescription = null,
                         tint = leanStatusColor,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(5.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "LEAN ANGLE",
+                        text = "MOTOGP APEX LEAN ANGLE",
                         color = TextMuted,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Black,
-                        letterSpacing = 0.6.sp
+                        letterSpacing = 0.8.sp
                     )
                 }
 
-                Text(
-                    text = leanSide,
-                    color = leanStatusColor,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black,
-                    fontFamily = FontFamily.Monospace
-                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(leanStatusColor.copy(alpha = 0.15f))
+                        .border(1.dp, leanStatusColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = leanSide,
+                        color = leanStatusColor,
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(10.dp)
+                    .height(18.dp)
             ) {
                 val width = size.width
                 val height = size.height
                 val midX = width / 2f
-
-                drawLine(
-                    color = Color(0xFF1E2538),
-                    start = Offset(0f, height / 2f),
-                    end = Offset(width, height / 2f),
-                    strokeWidth = 6.dp.toPx(),
-                    cap = StrokeCap.Round
-                )
-
-                drawLine(
-                    color = Color.White.copy(alpha = 0.7f),
-                    start = Offset(midX, 0f),
-                    end = Offset(midX, height),
-                    strokeWidth = 2.dp.toPx(),
-                    cap = StrokeCap.Square
-                )
-
+                val trackY = height / 2f - 2.dp.toPx()
                 val maxScaleDeg = 50f
-                val clampedLean = leanDegrees.coerceIn(-maxScaleDeg, maxScaleDeg)
-                val indicatorX = midX + (clampedLean / maxScaleDeg) * (midX - 10.dp.toPx())
 
+                // Track Background
                 drawLine(
-                    color = leanStatusColor,
-                    start = Offset(midX, height / 2f),
-                    end = Offset(indicatorX, height / 2f),
-                    strokeWidth = 6.dp.toPx(),
+                    color = Color(0xFF161C2C),
+                    start = Offset(0f, trackY),
+                    end = Offset(width, trackY),
+                    strokeWidth = 8.dp.toPx(),
                     cap = StrokeCap.Round
                 )
 
+                // Graduation Ticks (-45, -30, -15, 0, +15, +30, +45)
+                val ticks = listOf(-45f, -30f, -15f, 0f, 15f, 30f, 45f)
+                ticks.forEach { deg ->
+                    val tickX = midX + (deg / maxScaleDeg) * (midX - 12.dp.toPx())
+                    val isCenter = deg == 0f
+                    val tickColor = if (isCenter) Color.White.copy(alpha = 0.85f) else TextMuted.copy(alpha = 0.5f)
+                    val tickHeight = if (isCenter) 10.dp.toPx() else 6.dp.toPx()
+                    drawLine(
+                        color = tickColor,
+                        start = Offset(tickX, trackY - tickHeight / 2f),
+                        end = Offset(tickX, trackY + tickHeight / 2f),
+                        strokeWidth = (if (isCenter) 2.dp else 1.dp).toPx(),
+                        cap = StrokeCap.Round
+                    )
+                }
+
+                // Active Dynamic Lean Beam
+                val clampedLean = leanDegrees.coerceIn(-maxScaleDeg, maxScaleDeg)
+                val indicatorX = midX + (clampedLean / maxScaleDeg) * (midX - 12.dp.toPx())
+
+                if (absLean >= 2) {
+                    drawLine(
+                        color = leanStatusColor.copy(alpha = 0.85f),
+                        start = Offset(midX, trackY),
+                        end = Offset(indicatorX, trackY),
+                        strokeWidth = 8.dp.toPx(),
+                        cap = StrokeCap.Round
+                    )
+                }
+
+                // Glowing Apex Indicator Dot
+                drawCircle(
+                    color = leanStatusColor.copy(alpha = 0.35f),
+                    radius = 8.dp.toPx(),
+                    center = Offset(indicatorX, trackY)
+                )
                 drawCircle(
                     color = Color.White,
-                    radius = 4.dp.toPx(),
-                    center = Offset(indicatorX, height / 2f)
+                    radius = 4.5.dp.toPx(),
+                    center = Offset(indicatorX, trackY)
                 )
+            }
+
+            // Degree Scale Micro-labels
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("-45°", color = RacingRed.copy(alpha = 0.7f), fontSize = 7.5.sp, fontFamily = FontFamily.Monospace)
+                Text("-30°", color = SportAmber.copy(alpha = 0.7f), fontSize = 7.5.sp, fontFamily = FontFamily.Monospace)
+                Text("0°", color = TextSecondary, fontSize = 7.5.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                Text("+30°", color = SportAmber.copy(alpha = 0.7f), fontSize = 7.5.sp, fontFamily = FontFamily.Monospace)
+                Text("+45°", color = RacingRed.copy(alpha = 0.7f), fontSize = 7.5.sp, fontFamily = FontFamily.Monospace)
             }
         }
     }

@@ -116,8 +116,8 @@ fun RouteMapView(
             if (poly == null) {
                 val options = PolylineOptions()
                     .addAll(latLngs)
-                    .color(android.graphics.Color.parseColor("#3B82F6"))
-                    .width(5.5f)
+                    .color(android.graphics.Color.parseColor("#00F2FE"))
+                    .width(6.5f)
                 currentPolyline = map.addPolyline(options)
             } else {
                 poly.points = latLngs
@@ -149,7 +149,12 @@ fun RouteMapView(
             }
 
             if (isLiveTracking) {
-                map.easeCamera(CameraUpdateFactory.newLatLng(currentLatLng), 400)
+                val currentZoom = map.cameraPosition.zoom
+                if (currentZoom < 13.0) {
+                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16.5), 700)
+                } else {
+                    map.easeCamera(CameraUpdateFactory.newLatLng(currentLatLng), 400)
+                }
             }
         } else if (!isLiveTracking && points.size >= 2) {
             // Zoom bounds to fit historical route
