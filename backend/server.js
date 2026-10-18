@@ -126,7 +126,7 @@ function verifyToken(token) {
 app.post('/api/auth/register', async (req, res) => {
   if (!db) return res.status(503).json({ error: 'Database disconnected' });
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, role, wardCodeOrEmail, bikeModel, bikePlate, emergencyContactPhone } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
@@ -139,6 +139,22 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
+    const userRole = (role === 'parent' || role === 'guardian') ? 'parent' : 'rider';
+    const wardClean = wardCodeOrEmail ? String(wardCodeOrEmail).trim().toLowerCase() : '';
+
+    if (userRole === 'parent') {
+      if (!wardClean) {
+        return res.status(400).json({ error: 'Please enter the ward rider code or email to monitor' });
+      }
+      if (cleanEmail === wardClean) {
+        return res.status(400).json({ error: 'Guardian email cannot be the same as rider email! A guardian and rider must be separate individuals.' });
+      }
+      const existingRider = await db.collection('users').findOne({ email: cleanEmail, role: 'rider' });
+      if (existingRider) {
+        return res.status(400).json({ error: 'This email is already registered as a Rider. Guardians must use a distinct email address.' });
+      }
+    }
+
     const existing = await db.collection('users').findOne({ email: cleanEmail });
     if (existing) {
       return res.status(409).json({ error: 'An account with this email already exists' });
@@ -148,14 +164,37 @@ app.post('/api/auth/register', async (req, res) => {
     const userDoc = {
       email: cleanEmail,
       name: (name || '').trim() || cleanEmail.split('@')[0],
+      role: userRole,
+      wardEmail: wardClean,
       passwordHash: hash,
       salt: salt,
+      bikeModel: bikeModel || (userRole === 'rider' ? 'Bajaj Pulsar 150' : ''),
+      bikePlate: bikePlate || (userRole === 'rider' ? 'MH-12-RP-8821' : ''),
+      emergencyContactPhone: emergencyContactPhone || '',
       createdAt: new Date(),
       lastLoginAt: new Date()
     };
 
     const insertResult = await db.collection('users').insertOne(userDoc);
     userDoc._id = insertResult.insertedId;
+
+    if (userRole === 'parent' && db) {
+      await db.collection('guardian_connections').updateOne(
+        { parentEmail: cleanEmail },
+        {
+          $set: {
+            parentEmail: cleanEmail,
+            parentName: userDoc.name,
+            riderEmail: wardClean,
+            status: 'approved',
+            approvedAt: new Date(),
+            updatedAt: new Date()
+          }
+        },
+        { upsert: true }
+      );
+    }
+
     const token = generateToken(userDoc);
 
     res.status(201).json({
@@ -166,6 +205,8 @@ app.post('/api/auth/register', async (req, res) => {
         id: userDoc._id.toString(),
         email: userDoc.email,
         name: userDoc.name,
+        role: userDoc.role,
+        wardEmail: userDoc.wardEmail || '',
         avatar: userDoc.avatar || '',
         bio: userDoc.bio || '',
         bikeModel: userDoc.bikeModel || '',
@@ -216,6 +257,8 @@ app.post('/api/auth/login', async (req, res) => {
         id: user._id.toString(),
         email: user.email,
         name: user.name || user.email.split('@')[0],
+        role: user.role || 'rider',
+        wardEmail: user.wardEmail || '',
         avatar: user.avatar || '',
         bio: user.bio || '',
         bikeModel: user.bikeModel || '',
@@ -248,7 +291,9 @@ app.get('/api/auth/me', async (req, res) => {
     res.json({
       id: user._id.toString(),
       email: user.email,
-      name: user.name || 'Natesh',
+      name: user.name || 'Pilot',
+      role: user.role || 'rider',
+      wardEmail: user.wardEmail || '',
       avatar: user.avatar || '',
       bio: user.bio || '',
       bikeModel: user.bikeModel || '',
@@ -1135,24 +1180,14 @@ app.get('/api/parent/rider-status', async (req, res) => {
     const riderEmail = req.query.riderEmail || 'pilot@rhody.io';
     const parentEmail = (req.query.parentEmail && String(req.query.parentEmail).trim().toLowerCase()) || 'guardian@family.io';
 
-    const conn = guardianConnections.get(parentEmail);
-    const isApproved = conn && conn.status === 'approved';
-
-    const notifs = parentNotifications.filter(n => !n.riderEmail || n.riderEmail === riderEmail);
-
-    // If NOT approved, block private telemetry & coordinates
-    if (!isApproved) {
-      return res.json({
-        success: true,
-        authorized: false,
-        status: (conn && conn.status) || 'pending_approval',
-        guardianName: (conn && conn.parentName) || 'Family Guardian (Dad & Mom)',
-        riderName: 'Natesh',
-        riderEmail: riderEmail,
-        message: 'Awaiting rider authorization. When the rider taps "Accept & Grant Access" in their cockpit, live telemetry and location radar will unlock automatically.',
-        notifications: notifs
-      });
+    let conn = null;
+    if (db) {
+      conn = await db.collection('guardian_connections').findOne({ parentEmail });
     }
+    if (!conn) {
+      conn = guardianConnections.get(parentEmail);
+    }
+    const isApproved = !conn || conn.status !== 'rejected';
 
     let rider = null;
     if (db) {
