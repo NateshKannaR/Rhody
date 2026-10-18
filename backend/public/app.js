@@ -771,25 +771,104 @@ const SKETCHFAB_BIKE_MODELS = {
     specs: '373cc Liquid DOHC Single • Supersport Clip-ons',
     keywords: ['rc 390', 'rc390', 'ktm rc', 'rc']
   },
-  honda_activa: {
-    name: 'Honda Activa 6G',
-    uid: '7d9b81d5b40a4ea79dd3a9e4b2c0216a',
-    specs: '109.51cc PGM-FI eSP • Silent ACG Starter • 7.84 PS',
-    keywords: ['activa', 'activa 6g', 'activa 125', 'dio', 'jupiter', 'scooter']
+  // Honda Motorcycles
+  honda_cbr1000rr_r: {
+    name: 'Honda CBR 1000RR-R Fireblade SP',
+    uid: 'c3a767939b9847109081b9e5653ab804',
+    specs: '999cc Liquid Inline-4 • 217.5 PS • 113 Nm',
+    keywords: ['cbr 1000rr-r', 'cbr1000rr-r', 'cbr 1000rr', 'cbr1000rr', 'cbr 1000', 'cbr1000', 'fireblade', 'honda fireblade', 'cbr 1000 r']
+  },
+  honda_cbr600rr: {
+    name: 'Honda CBR 600RR',
+    uid: 'ae97bba35caf4c07b1d131427464e014',
+    specs: '599cc Liquid Inline-4 • 121 PS • Dual Stage FI',
+    keywords: ['cbr 600rr', 'cbr600rr', 'cbr 600', 'cbr600', 'cbr 650r', 'cbr650r', 'cb650r', 'cb 650r']
+  },
+  honda_cbr300r: {
+    name: 'Honda CBR 300R / CBR 250R',
+    uid: 'caee3823b5394cb1b3d01b649cf14cb4',
+    specs: '286cc Liquid Single • 30.4 PS • DOHC 4-Valve',
+    keywords: ['cbr 300r', 'cbr300r', 'cbr 300', 'cbr 250r', 'cbr250r', 'cbr 250', 'cbr250', 'cbr']
+  },
+  honda_cbr150r: {
+    name: 'Honda CBR 150R',
+    uid: '7c3e868f811d4ff2849b80810125c28a',
+    specs: '149.16cc DOHC Liquid Single • 17.1 PS • Slipper Clutch',
+    keywords: ['cbr 150r', 'cbr150r', 'cbr 150', 'cbr150']
+  },
+  honda_africa_twin: {
+    name: 'Honda CRF1100L Africa Twin',
+    uid: '9486b2638448488ea7e86a753aec0b80',
+    specs: '1084cc Parallel-Twin • 102 PS • 105 Nm • DCT',
+    keywords: ['africa twin', 'crf1100l', 'crf 1100', 'crf1000l', 'transalp', 'xl750', 'crf300l']
+  },
+  honda_hornet: {
+    name: 'Honda Hornet 2.0 / CB Hornet',
+    uid: 'd4b21ec12111483284493b15e84154be',
+    specs: '184.4cc PGM-FI Air-Cooled Single • 17.26 PS • USD Gold Forks',
+    keywords: ['hornet 2.0', 'hornet', 'cb hornet', 'hornet 160r', 'cb300f', 'cb 300f', 'cb300r', 'cb 300r']
   },
   honda_cb350: {
     name: 'Honda CB350 RS / H\'ness',
     uid: '57da4074452c42a09cf2ecf52d994e2e',
     specs: '348.36cc PGM-FI Air Cooled Single • 21.07 PS • HSTC',
-    keywords: ['cb350', 'cb 350', 'hness', 'h\'ness', 'cb350rs', 'honda cb', 'honda']
+    keywords: ['cb350 rs', 'cb350rs', 'cb350', 'cb 350', 'hness', 'h\'ness', 'cb350 hness', 'honda cb350', 'cb 350 rs', 'honda cb', 'honda']
+  },
+  honda_sp125: {
+    name: 'Honda SP 125 / Shine 125',
+    uid: '57da4074452c42a09cf2ecf52d994e2e',
+    specs: '123.94cc PGM-FI eSP • 10.87 PS • 65 km/l Efficiency',
+    keywords: ['sp 125', 'sp125', 'shine 125', 'shine', 'honda shine', 'honda sp']
+  },
+  honda_activa: {
+    name: 'Honda Activa 6G / Dio 125',
+    uid: '7d9b81d5b40a4ea79dd3a9e4b2c0216a',
+    specs: '109.51cc PGM-FI eSP • Silent ACG Starter • 7.84 PS',
+    keywords: ['activa', 'activa 6g', 'activa 125', 'activa 7g', 'dio', 'dio 125', 'honda dio', 'honda activa', 'scooter']
   },
 
-  // Performance & Superbikes
-  kawasaki_ninja: {
-    name: 'Kawasaki Ninja H2 / ZX-10R',
+  // Kawasaki Motorcycles
+  kawasaki_ninja_h2: {
+    name: 'Kawasaki Ninja H2 / H2R',
     uid: '0ab38d6e39664b25bfaf9f5c3e0c767c',
-    specs: 'Supercharged 998cc • Trellis Chassis',
-    keywords: ['ninja', 'kawasaki', 'h2', 'ninja 300', 'ninja 400', 'zx10r', 'zx-10r', 'zx6r', 'z900', 'z650']
+    specs: '998cc Supercharged Inline-4 • 231 PS • 141.7 Nm',
+    keywords: ['ninja h2', 'ninja h2r', 'h2r', 'h2', 'kawasaki h2', 'kawasaki ninja h2']
+  },
+  kawasaki_ninja_zx10r: {
+    name: 'Kawasaki Ninja ZX-10R',
+    uid: '2b8c4ecdac4d46f68de1c6e0f27d6e6a',
+    specs: '998cc Liquid DOHC Inline-4 • 203 PS • WSBK Heritage',
+    keywords: ['zx-10r', 'zx10r', 'ninja zx-10r', 'ninja zx10r', 'zx 10r', 'zx10', 'kawasaki zx-10r', 'kawasaki 10r']
+  },
+  kawasaki_ninja_zx6r: {
+    name: 'Kawasaki Ninja ZX-6R / ZX-4R',
+    uid: '93d6591f39884a198fa3217d90764395',
+    specs: '636cc Liquid Inline-4 • 124 PS • Showa SFF-BP',
+    keywords: ['zx-6r', 'zx6r', 'ninja zx-6r', 'ninja zx6r', 'zx 6r', 'zx6', 'zx-4r', 'zx4r', 'zx-4rr', 'zx4rr', 'ninja zx-4r']
+  },
+  kawasaki_ninja_400: {
+    name: 'Kawasaki Ninja 400 / 500 / 650',
+    uid: '8b42f4c9436f4d51a741ad030598dd13',
+    specs: '399cc Parallel Twin • 45 PS • Assist & Slipper Clutch',
+    keywords: ['ninja 400', 'ninja400', 'ninja 500', 'ninja500', 'ninja 650', 'ninja650', 'kawasaki ninja 400', 'kawasaki ninja 650']
+  },
+  kawasaki_ninja_300: {
+    name: 'Kawasaki Ninja 300 / 250',
+    uid: '9547013212f241128b21ccb064997cc0',
+    specs: '296cc Parallel Twin • 39 PS • 26.1 Nm • Diamond Frame',
+    keywords: ['ninja 300', 'ninja300', 'ninja 250', 'ninja250', 'kawasaki ninja 300', 'kawasaki 300']
+  },
+  kawasaki_z900: {
+    name: 'Kawasaki Z900',
+    uid: 'ffde1136537448178fbd82d4066b4704',
+    specs: '948cc Liquid Inline-4 • 125 PS • 98.6 Nm • Sugomi Styling',
+    keywords: ['z900', 'z 900', 'kawasaki z900', 'z900 se', 'z800', 'z 800']
+  },
+  kawasaki_z1000: {
+    name: 'Kawasaki Z1000 / Z650 / Versys',
+    uid: '70cecfa5568347428c5ad72e9a156be9',
+    specs: '1043cc Liquid Inline-4 • 142 PS • Sugomi Quad Exhaust',
+    keywords: ['z1000', 'z 1000', 'kawasaki z1000', 'z650', 'z 650', 'versys 650', 'versys', 'versys 1000', 'vulcan s', 'vulcan', 'kawasaki', 'ninja']
   },
   bmw_s1000rr: {
     name: 'BMW S1000 RR',
@@ -1117,6 +1196,14 @@ function renderDashboardBike() {
     if (tiresR) tiresR.textContent = 'R: 34 PSI Spec';
     if (odoVal) odoVal.textContent = `${currentOdo.toLocaleString()} km`;
 
+    const cockpitBtn = document.getElementById('btnCockpitBikeAction');
+    const cockpitBadge = document.getElementById('cockpitBikeBindingBadge');
+    if (cockpitBtn) cockpitBtn.textContent = 'Switch Motorcycle';
+    if (cockpitBadge) {
+      cockpitBadge.textContent = 'ACTIVE MACHINE TWIN';
+      cockpitBadge.className = 'px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shrink-0';
+    }
+
     // Update 3D Sketchfab motorcycle model for this bike
     updateBike3dModel(bikeName);
 
@@ -1143,6 +1230,18 @@ function renderDashboardBike() {
     if (tiresF) tiresF.textContent = 'F: -- PSI';
     if (tiresR) tiresR.textContent = 'R: -- PSI';
     if (odoVal) odoVal.textContent = '0 km';
+
+    const cockpitBtn = document.getElementById('btnCockpitBikeAction');
+    const cockpitBadge = document.getElementById('cockpitBikeBindingBadge');
+    if (cockpitBtn) cockpitBtn.textContent = 'Configure Machine';
+    if (cockpitBadge) {
+      cockpitBadge.textContent = '3D TWIN • DEMO';
+      cockpitBadge.className = 'px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shrink-0';
+    }
+    const cockpitLabel = document.getElementById('cockpitCurrentBikeLabel');
+    const cockpitSpec = document.getElementById('cockpitCurrentBikeSpec');
+    if (cockpitLabel) cockpitLabel.textContent = 'No Motorcycle Configured';
+    if (cockpitSpec) cockpitSpec.textContent = 'Tap "Configure Machine" to bind your motorcycle & calibrate telemetry';
 
     updateBike3dModel('Bajaj Pulsar 150');
 
@@ -1216,9 +1315,13 @@ function saveProfile() {
     console.warn('LocalStorage save warning:', e);
   }
 
+  const token = localStorage.getItem('rhody_auth_token') || localStorage.getItem('token') || (typeof authToken !== 'undefined' ? authToken : null);
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
   fetch('/api/user/profile', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: headers,
     body: JSON.stringify(riderProfile)
   }).catch(function() {});
 }
@@ -3480,6 +3583,48 @@ function applyMachinePreset(presetKey) {
       tires: "Bridgestone Battlax RS10 (F 32 / R 36 PSI)",
       odo: "2800"
     },
+    kawasaki_zx10r: {
+      model: "Kawasaki Ninja ZX-10R",
+      specs: "998cc Liquid DOHC Inline-4 • 203 PS • WSBK Heritage",
+      tires: "Bridgestone Battlax RS11 (F 32 / R 36 PSI)",
+      odo: "2300"
+    },
+    kawasaki_z900: {
+      model: "Kawasaki Z900",
+      specs: "948cc Liquid Inline-4 • 125 PS • 98.6 Nm",
+      tires: "Dunlop Sportmax Roadsport 2 (F 32 / R 36 PSI)",
+      odo: "3500"
+    },
+    kawasaki_ninja300: {
+      model: "Kawasaki Ninja 300",
+      specs: "296cc Parallel Twin • 39 PS • 26.1 Nm",
+      tires: "MRF Revz Radial (F 28 / R 32 PSI)",
+      odo: "5100"
+    },
+    honda_cbr: {
+      model: "Honda CBR 1000RR-R Fireblade SP",
+      specs: "999cc Liquid Inline-4 • 217.5 PS • 113 Nm",
+      tires: "Pirelli Diablo Supercorsa SP (F 34 / R 38 PSI)",
+      odo: "1500"
+    },
+    honda_cb350: {
+      model: "Honda CB350 RS",
+      specs: "348cc PGM-FI Air Cooled Single • 21 PS • 30 Nm",
+      tires: "MRF Zapper Kurve (F 29 / R 33 PSI)",
+      odo: "4600"
+    },
+    bajaj_pulsar150: {
+      model: "Bajaj Pulsar 150",
+      specs: "149.5cc DTS-i Single • 14 PS • 13.25 Nm",
+      tires: "Eurogrip Tubeless (F 28 / R 32 PSI)",
+      odo: "8200"
+    },
+    bajaj_ns200: {
+      model: "Bajaj Pulsar NS200",
+      specs: "199.5cc Triple Spark 4V Liquid • 24.5 PS",
+      tires: "MRF Revz-S (F 29 / R 33 PSI)",
+      odo: "6100"
+    },
     re: {
       model: "Royal Enfield Continental GT 650",
       specs: "648cc Parallel Twin • 47 PS • 52 Nm",
@@ -3612,12 +3757,14 @@ function submitEntryBikeStep() {
   if (!bikeManagementData.documents) bikeManagementData.documents = {};
 
   if (model) {
+    const matched = getSketchfabModelForBike(model);
+    const resolvedSpecs = specs || (matched ? matched.specs : '');
     bikeManagementData.isConfigured = true;
     bikeManagementData.specs.makeModel = model;
     bikeManagementData.specs.currentOdometer = odo;
-    bikeManagementData.specs.engine = specs;
+    bikeManagementData.specs.engine = resolvedSpecs;
     riderProfile.bikeModel = model;
-    riderProfile.bikeSpecs = specs;
+    riderProfile.bikeSpecs = resolvedSpecs;
   }
   if (plate) {
     bikeManagementData.documents.rcNumber = plate;

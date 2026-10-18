@@ -620,66 +620,104 @@
             </div>
           </div>
 
-          <!-- Active Bike Model Binding & Mention Bar -->
+          <!-- Active Bound Motorcycle 3D Twin Header -->
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-black/40 backdrop-blur-md p-2.5 rounded-xl border border-white/[0.08]">
             <div class="flex items-center space-x-2.5 min-w-0">
-              <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shrink-0">
-                3D TWIN
+              <span id="cockpitBikeBindingBadge" class="px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shrink-0">
+                3D DIGITAL TWIN
               </span>
               <div class="min-w-0">
                 <span id="cockpitCurrentBikeLabel" class="text-xs font-bold text-white block truncate">
                   Unconfigured Machine
                 </span>
                 <span id="cockpitCurrentBikeSpec" class="text-[10px] text-slate-400 font-mono block truncate">
-                  Mention or type your motorcycle model to display its 3D twin
+                  Awaiting machine binding &bull; Telemetry linked to configured motorcycle
                 </span>
               </div>
             </div>
 
-            <!-- Mention / Set Bike Input Form -->
-            <form onsubmit="handleCockpitBikeSubmit(event)" class="flex items-center space-x-1.5 shrink-0">
-              <div class="relative flex-1 sm:flex-initial">
-                <input 
-                  type="text" 
-                  id="cockpitBikeInput" 
-                  list="indianBikesDatalist" 
-                  placeholder="Mention bike (e.g. Pulsar 150, NS 200, Apache...)" 
-                  class="w-full sm:w-64 px-3 py-1.5 text-xs rounded-lg bg-white/[0.06] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
-                  autocomplete="off"
-                />
-                <datalist id="indianBikesDatalist">
-                  <option value="Bajaj Pulsar 150"></option>
-                  <option value="Bajaj Pulsar NS 200"></option>
-                  <option value="Bajaj Pulsar 220F"></option>
-                  <option value="TVS Apache RTR 200 4V"></option>
-                  <option value="Hero Splendor Plus"></option>
-                  <option value="Hero Xpulse 200 4V"></option>
-                  <option value="Royal Enfield Classic 350"></option>
-                  <option value="Royal Enfield Bullet 350"></option>
-                  <option value="Royal Enfield Continental GT 650"></option>
-                  <option value="Yamaha MT-15 V2"></option>
-                  <option value="Yamaha R15 V4"></option>
-                  <option value="KTM Duke 200"></option>
-                  <option value="KTM Duke 390"></option>
-                  <option value="KTM RC 390"></option>
-                  <option value="Honda Activa 6G"></option>
-                  <option value="Honda CB350 RS"></option>
-                  <option value="Kawasaki Ninja H2"></option>
-                  <option value="BMW S1000 RR"></option>
-                  <option value="Ducati Panigale V4"></option>
-                  <option value="Suzuki Hayabusa"></option>
-                  <option value="Triumph Street Triple 765"></option>
-                  <option value="Harley-Davidson Cruiser"></option>
-                </datalist>
-              </div>
+            <!-- Cockpit Actions: Configure / Switch Motorcycle & 3D Camera Reset -->
+            <div class="flex items-center space-x-1.5 shrink-0">
               <button 
-                type="submit" 
+                type="button" 
+                onclick="openPlatformEntryModal('bike')" 
                 class="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition shrink-0 flex items-center space-x-1 shadow-lg shadow-cyan-500/20 active:scale-95"
+                title="Configure or switch your active motorcycle"
               >
-                <span>Set Bike</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span id="btnCockpitBikeAction">Configure Machine</span>
               </button>
-            </form>
+              <button 
+                type="button" 
+                onclick="reloadBike3dModel()" 
+                class="px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white border border-white/10 text-xs transition"
+                title="Reset 3D camera"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              </button>
+            </div>
           </div>
+
+          <!-- Comprehensive Motorcycle Datalist for Machine Configurator -->
+          <datalist id="indianBikesDatalist">
+            <!-- Honda -->
+            <option value="Honda CBR 1000RR-R Fireblade SP"></option>
+            <option value="Honda CBR 600RR"></option>
+            <option value="Honda CBR 300R"></option>
+            <option value="Honda CBR 250R"></option>
+            <option value="Honda CBR 150R"></option>
+            <option value="Honda CRF1100L Africa Twin"></option>
+            <option value="Honda Hornet 2.0"></option>
+            <option value="Honda CB350 RS"></option>
+            <option value="Honda H'ness CB350"></option>
+            <option value="Honda SP 125"></option>
+            <option value="Honda Shine 125"></option>
+            <option value="Honda Activa 6G"></option>
+            <option value="Honda Dio 125"></option>
+            <!-- Kawasaki -->
+            <option value="Kawasaki Ninja H2"></option>
+            <option value="Kawasaki Ninja H2R"></option>
+            <option value="Kawasaki Ninja ZX-10R"></option>
+            <option value="Kawasaki Ninja ZX-6R"></option>
+            <option value="Kawasaki Ninja ZX-4R"></option>
+            <option value="Kawasaki Ninja 400"></option>
+            <option value="Kawasaki Ninja 500"></option>
+            <option value="Kawasaki Ninja 650"></option>
+            <option value="Kawasaki Ninja 300"></option>
+            <option value="Kawasaki Ninja 250"></option>
+            <option value="Kawasaki Z900"></option>
+            <option value="Kawasaki Z1000"></option>
+            <option value="Kawasaki Z650"></option>
+            <option value="Kawasaki Versys 650"></option>
+            <!-- Bajaj & TVS -->
+            <option value="Bajaj Pulsar 150"></option>
+            <option value="Bajaj Pulsar NS 200"></option>
+            <option value="Bajaj Pulsar 220F"></option>
+            <option value="TVS Apache RTR 200 4V"></option>
+            <option value="TVS Apache RR 310"></option>
+            <!-- Hero -->
+            <option value="Hero Splendor Plus"></option>
+            <option value="Hero Xpulse 200 4V"></option>
+            <!-- Royal Enfield -->
+            <option value="Royal Enfield Classic 350"></option>
+            <option value="Royal Enfield Bullet 350"></option>
+            <option value="Royal Enfield Continental GT 650"></option>
+            <option value="Royal Enfield Hunter 350"></option>
+            <option value="Royal Enfield Himalayan 450"></option>
+            <!-- Yamaha -->
+            <option value="Yamaha MT-15 V2"></option>
+            <option value="Yamaha R15 V4"></option>
+            <!-- KTM -->
+            <option value="KTM Duke 200"></option>
+            <option value="KTM Duke 390"></option>
+            <option value="KTM RC 390"></option>
+            <!-- Superbikes -->
+            <option value="BMW S1000 RR"></option>
+            <option value="Ducati Panigale V4"></option>
+            <option value="Suzuki Hayabusa"></option>
+            <option value="Triumph Street Triple 765"></option>
+            <option value="Harley-Davidson Cruiser"></option>
+          </datalist>
 
 
           <!-- 3D Iframe Viewer Frame -->
@@ -3262,6 +3300,21 @@
 
               <!-- PRESET CHIPS (ZeBeyond Engineering Platform Style) -->
               <div class="flex flex-wrap gap-1.5">
+                <button type="button" onclick="applyMachinePreset('honda_cbr')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
+                  ⚡ Honda CBR 1000RR
+                </button>
+                <button type="button" onclick="applyMachinePreset('honda_cb350')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
+                  ⚡ Honda CB350
+                </button>
+                <button type="button" onclick="applyMachinePreset('kawasaki_zx10r')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
+                  ⚡ Ninja ZX-10R
+                </button>
+                <button type="button" onclick="applyMachinePreset('kawasaki_z900')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
+                  ⚡ Kawasaki Z900
+                </button>
+                <button type="button" onclick="applyMachinePreset('kawasaki_ninja300')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
+                  ⚡ Ninja 300
+                </button>
                 <button type="button" onclick="applyMachinePreset('ktm')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
                   ⚡ KTM Duke 390
                 </button>
@@ -3269,22 +3322,19 @@
                   ⚡ Yamaha MT-15
                 </button>
                 <button type="button" onclick="applyMachinePreset('r15')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
-                  ⚡ Yamaha R15 / R1
+                  ⚡ Yamaha R15
                 </button>
-                <button type="button" onclick="applyMachinePreset('ninja')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
-                  ⚡ Ninja H2
+                <button type="button" onclick="applyMachinePreset('bajaj_ns200')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
+                  ⚡ Pulsar NS200
                 </button>
                 <button type="button" onclick="applyMachinePreset('re')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
-                  ⚡ RE Hunter / GT 650
+                  ⚡ RE GT 650
                 </button>
                 <button type="button" onclick="applyMachinePreset('bmw')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
                   ⚡ BMW S1000RR
                 </button>
                 <button type="button" onclick="applyMachinePreset('ducati')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
                   ⚡ Ducati Panigale
-                </button>
-                <button type="button" onclick="applyMachinePreset('triumph')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
-                  ⚡ Triumph 765
                 </button>
                 <button type="button" onclick="applyMachinePreset('custom')" class="px-2 py-1 text-[10px] font-medium rounded-lg bg-white/[0.02] text-slate-400 hover:text-white border border-white/[0.06] transition">
                   Clear
@@ -3298,7 +3348,7 @@
                     <label class="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">Make &amp; Model</label>
                     <div class="relative">
                       <svg class="w-4 h-4 text-cyan-400 absolute left-3 top-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/></svg>
-                      <input type="text" id="entryBikeModel" oninput="updateLiveBikePreview()" placeholder="e.g. KTM Duke 390 / Royal Enfield" class="w-full pl-9 pr-3.5 py-2.5 bg-[#050811] border border-white/10 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 transition" />
+                      <input type="text" id="entryBikeModel" list="indianBikesDatalist" oninput="updateLiveBikePreview()" placeholder="e.g. Kawasaki Ninja ZX-10R, Honda CBR 1000RR..." class="w-full pl-9 pr-3.5 py-2.5 bg-[#050811] border border-white/10 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 transition" />
                     </div>
                   </div>
                   <div>

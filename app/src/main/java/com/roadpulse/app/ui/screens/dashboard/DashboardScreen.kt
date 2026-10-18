@@ -1103,8 +1103,13 @@ fun DashboardBikeRegisterDialog(
                             "Yamaha R15 V4" to "155cc Liquid VVA • 18.4 PS",
                             "KTM Duke 200" to "199.5cc DOHC Liquid • 25 PS",
                             "KTM Duke 390" to "399cc Liquid Single • 46 PS",
+                            "Honda CBR 1000RR-R" to "999cc Liquid Inline-4 • 217.5 PS",
+                            "Honda CB350 RS" to "348.36cc PGM-FI • 21.07 PS",
                             "Honda Activa 6G" to "109.51cc PGM-FI eSP • 7.84 PS",
-                            "Honda CB350 RS" to "348.36cc PGM-FI • 21.07 PS"
+                            "Kawasaki Ninja ZX-10R" to "998cc Liquid Inline-4 • 203 PS",
+                            "Kawasaki Z900" to "948cc Liquid Inline-4 • 125 PS",
+                            "Kawasaki Ninja 300" to "296cc Parallel Twin • 39 PS",
+                            "Kawasaki Ninja H2" to "998cc Supercharged • 231 PS"
                         ).forEach { (m, s) ->
                             Box(
                                 modifier = Modifier
@@ -1886,9 +1891,27 @@ fun resolveSketchfabModelForBike(bikeModel: String): Pair<String, String> {
         listOf("duke 200", "duke200", "ktm 200", "rc 200") to ("1850a6e40e92493192f1a656c4803525" to "KTM Duke 200"),
         listOf("duke 390", "duke390", "ktm 390", "duke 250", "duke", "ktm") to ("7dae0168e23b45888b170c46a34443cc" to "KTM 390 Duke"),
         listOf("rc 390", "rc390", "ktm rc", "rc") to ("d15e9521f5244d788556766272f5d1e0" to "KTM RC 390"),
-        listOf("activa", "activa 6g", "activa 125", "dio", "jupiter", "scooter") to ("7d9b81d5b40a4ea79dd3a9e4b2c0216a" to "Honda Activa 6G"),
-        listOf("cb350", "cb 350", "hness", "cb350rs", "honda") to ("57da4074452c42a09cf2ecf52d994e2e" to "Honda CB350 RS"),
-        listOf("ninja", "kawasaki", "h2", "zx10r", "zx6r", "z900") to ("0ab38d6e39664b25bfaf9f5c3e0c767c" to "Kawasaki Ninja H2"),
+        // Honda Motorcycles
+        listOf("cbr 1000rr-r", "cbr1000rr-r", "cbr 1000rr", "cbr1000rr", "cbr 1000", "cbr1000", "fireblade", "honda fireblade") to ("c3a767939b9847109081b9e5653ab804" to "Honda CBR 1000RR-R Fireblade SP"),
+        listOf("cbr 600rr", "cbr600rr", "cbr 600", "cbr600", "cbr 650r", "cbr650r", "cb650r", "cb 650r") to ("ae97bba35caf4c07b1d131427464e014" to "Honda CBR 600RR"),
+        listOf("cbr 300r", "cbr300r", "cbr 300", "cbr 250r", "cbr250r", "cbr 250", "cbr250") to ("caee3823b5394cb1b3d01b649cf14cb4" to "Honda CBR 300R / CBR 250R"),
+        listOf("cbr 150r", "cbr150r", "cbr 150", "cbr150") to ("7c3e868f811d4ff2849b80810125c28a" to "Honda CBR 150R"),
+        listOf("africa twin", "crf1100l", "crf 1100", "crf1000l", "transalp", "xl750", "crf300l") to ("9486b2638448488ea7e86a753aec0b80" to "Honda CRF1100L Africa Twin"),
+        listOf("hornet 2.0", "hornet", "cb hornet", "hornet 160r", "cb300f", "cb 300f") to ("d4b21ec12111483284493b15e84154be" to "Honda Hornet 2.0 / CB Hornet"),
+        listOf("cb350 rs", "cb350rs", "cb350", "cb 350", "hness", "h'ness", "cb350 hness", "honda cb350") to ("57da4074452c42a09cf2ecf52d994e2e" to "Honda CB350 RS"),
+        listOf("sp 125", "sp125", "shine 125", "shine", "honda shine", "honda sp") to ("57da4074452c42a09cf2ecf52d994e2e" to "Honda SP 125 / Shine"),
+        listOf("activa", "activa 6g", "activa 125", "activa 7g", "dio", "dio 125", "honda dio", "honda activa") to ("7d9b81d5b40a4ea79dd3a9e4b2c0216a" to "Honda Activa 6G"),
+        listOf("honda", "cbr") to ("ae97bba35caf4c07b1d131427464e014" to "Honda Motorcycle"),
+
+        // Kawasaki Motorcycles
+        listOf("ninja h2", "ninja h2r", "h2r", "h2", "kawasaki h2", "kawasaki ninja h2") to ("0ab38d6e39664b25bfaf9f5c3e0c767c" to "Kawasaki Ninja H2"),
+        listOf("zx-10r", "zx10r", "ninja zx-10r", "ninja zx10r", "zx 10r", "zx10", "kawasaki zx-10r") to ("2b8c4ecdac4d46f68de1c6e0f27d6e6a" to "Kawasaki Ninja ZX-10R"),
+        listOf("zx-6r", "zx6r", "ninja zx-6r", "ninja zx6r", "zx 6r", "zx6", "zx-4r", "zx4r", "zx-4rr", "zx4rr", "ninja zx-4r") to ("93d6591f39884a198fa3217d90764395" to "Kawasaki Ninja ZX-6R"),
+        listOf("ninja 400", "ninja400", "ninja 500", "ninja500", "ninja 650", "ninja650", "kawasaki ninja 400", "kawasaki ninja 650") to ("8b42f4c9436f4d51a741ad030598dd13" to "Kawasaki Ninja 400"),
+        listOf("ninja 300", "ninja300", "ninja 250", "ninja250", "kawasaki ninja 300", "kawasaki 300") to ("9547013212f241128b21ccb064997cc0" to "Kawasaki Ninja 300"),
+        listOf("z900", "z 900", "kawasaki z900", "z900 se", "z800", "z 800") to ("ffde1136537448178fbd82d4066b4704" to "Kawasaki Z900"),
+        listOf("z1000", "z 1000", "kawasaki z1000", "z650", "z 650", "versys 650", "versys", "versys 1000", "vulcan s", "vulcan") to ("70cecfa5568347428c5ad72e9a156be9" to "Kawasaki Z1000"),
+        listOf("kawasaki", "ninja") to ("0ab38d6e39664b25bfaf9f5c3e0c767c" to "Kawasaki Ninja"),
         listOf("bmw", "s1000rr", "s1000", "m1000rr", "g310r") to ("1873aed292d6465694119bd81860a0c2" to "BMW S1000 RR"),
         listOf("ducati", "panigale", "monster", "streetfighter") to ("69496f15d0f14cb198e0e3d09123dcaf" to "Ducati Panigale V4"),
         listOf("hayabusa", "suzuki", "gsxr") to ("1dca4ddcf6b94515905adf0343ea92ce" to "Suzuki Hayabusa"),

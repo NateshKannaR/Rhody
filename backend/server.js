@@ -165,7 +165,16 @@ app.post('/api/auth/register', async (req, res) => {
       user: {
         id: userDoc._id.toString(),
         email: userDoc.email,
-        name: userDoc.name
+        name: userDoc.name,
+        avatar: userDoc.avatar || '',
+        bio: userDoc.bio || '',
+        bikeModel: userDoc.bikeModel || '',
+        bikeSpecs: userDoc.bikeSpecs || '',
+        bikePlate: userDoc.bikePlate || '',
+        tireSetup: userDoc.tireSetup || '',
+        emergencyContactName: userDoc.emergencyContactName || '',
+        emergencyContactPhone: userDoc.emergencyContactPhone || '',
+        speedUnit: userDoc.speedUnit || 'kmh'
       }
     });
   } catch (err) {
@@ -206,7 +215,16 @@ app.post('/api/auth/login', async (req, res) => {
       user: {
         id: user._id.toString(),
         email: user.email,
-        name: user.name || user.email.split('@')[0]
+        name: user.name || user.email.split('@')[0],
+        avatar: user.avatar || '',
+        bio: user.bio || '',
+        bikeModel: user.bikeModel || '',
+        bikeSpecs: user.bikeSpecs || '',
+        bikePlate: user.bikePlate || '',
+        tireSetup: user.tireSetup || '',
+        emergencyContactName: user.emergencyContactName || '',
+        emergencyContactPhone: user.emergencyContactPhone || '',
+        speedUnit: user.speedUnit || 'kmh'
       }
     });
   } catch (err) {
@@ -300,8 +318,8 @@ app.get('/api/user/profile', async (req, res) => {
   }
 });
 
-// POST /api/user/profile
-app.post('/api/user/profile', async (req, res) => {
+// POST & PUT /api/user/profile
+const handleProfileUpdate = async (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
   const decoded = verifyToken(token);
@@ -343,7 +361,10 @@ app.post('/api/user/profile', async (req, res) => {
     message: 'Profile updated successfully',
     profile: guestProfileCache
   });
-});
+};
+
+app.post('/api/user/profile', handleProfileUpdate);
+app.put('/api/user/profile', handleProfileUpdate);
 
 const defaultMotorcyclePlaces = [
   {
