@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -1378,7 +1379,7 @@ fun DashboardDocUploadDialog(
                         containerColor = ObsidianGlass,
                         contentColor = HyperCyan
                     ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, HyperCyan.copy(alpha = 0.5f)),
+                    border = BorderStroke(1.dp, HyperCyan.copy(alpha = 0.5f)),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Icon(imageVector = Icons.Default.Bookmark, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -2585,7 +2586,7 @@ fun DocVaultRow(
                 containerColor = if (isUploaded) OptimalGreen.copy(alpha = 0.2f) else HyperCyan.copy(alpha = 0.2f),
                 contentColor = if (isUploaded) OptimalGreen else HyperCyan
             ),
-            border = androidx.compose.foundation.BorderStroke(1.dp, if (isUploaded) OptimalGreen.copy(alpha = 0.5f) else HyperCyan.copy(alpha = 0.5f)),
+            border = BorderStroke(1.dp, if (isUploaded) OptimalGreen.copy(alpha = 0.5f) else HyperCyan.copy(alpha = 0.5f)),
             shape = RoundedCornerShape(6.dp)
         ) {
             Text(
@@ -2706,7 +2707,7 @@ fun DashboardRiderConsentAndActionsSection(
                     onClick = onDeclineConsent,
                     modifier = Modifier.weight(0.6f),
                     shape = RoundedCornerShape(10.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                    border = BorderStroke(1.dp, CardBorder)
                 ) {
                     Text("Decline", fontSize = 11.sp, color = TextMuted)
                 }
@@ -2933,7 +2934,7 @@ fun DashboardBikeStatusSection(
                     modifier = Modifier.weight(1f).height(42.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                    border = BorderStroke(1.dp, CardBorder)
                 ) {
                     Text("RIDE UNCONFIGURED", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
@@ -3193,7 +3194,7 @@ fun DashboardSpeedometerAndControlsSection(
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = SportAmber
                             ),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, SportAmber)
+                            border = BorderStroke(1.dp, SportAmber)
                         ) {
                             Icon(imageVector = Icons.Default.Pause, contentDescription = null)
                             Spacer(modifier = Modifier.width(6.dp))
