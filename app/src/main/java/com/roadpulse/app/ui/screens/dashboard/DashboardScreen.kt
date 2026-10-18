@@ -41,14 +41,13 @@ import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Directions
-import androidx.compose.material.icons.filled.DirectionsBike
+import androidx.compose.material.icons.automirrored.filled.DirectionsBike
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Engineering
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
@@ -58,6 +57,12 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Search
+import com.roadpulse.app.RoadPulseApp
+import com.roadpulse.app.ui.components.AddServiceRecordDialog
+import com.roadpulse.app.ui.components.PilotTelemetryDossierCard
+import com.roadpulse.app.ui.components.ServiceHistoryCard
+import com.roadpulse.app.ui.components.ServiceRecord
+import kotlinx.coroutines.flow.flowOf
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Speed
@@ -105,6 +110,7 @@ import com.roadpulse.app.data.database.TrackPointEntity
 import com.roadpulse.app.data.auth.AuthManager
 import com.roadpulse.app.domain.calculator.SprintTimerCalculator
 import com.roadpulse.app.domain.calculator.TripCalculator
+import kotlin.math.roundToInt
 import com.roadpulse.app.domain.model.TripStatus
 import com.roadpulse.app.service.TripRecordingController
 import com.roadpulse.app.ui.components.GForceMeter
@@ -288,6 +294,31 @@ fun DashboardScreen(
         }
     }
 
+    val app = context.applicationContext as? RoadPulseApp
+    val tripRepository = remember { app?.container?.tripRepository }
+    val allTrips by (tripRepository?.allTrips ?: flowOf(emptyList())).collectAsState(initial = emptyList())
+
+    val careerDistanceKm = remember(bikeOdo, allTrips) {
+        val baseOdo = bikeOdo.toDoubleOrNull() ?: 0.0
+        val tripsDistanceKm = allTrips.sumOf { it.totalDistanceMeters } / 1000.0
+        baseOdo + tripsDistanceKm
+    }
+
+    val careerPeakSpeedKmh = remember(allTrips) {
+        allTrips.maxOfOrNull { it.maxSpeedKmh }?.roundToInt() ?: 0
+    }
+
+    val careerMaxLeanDeg = remember(allTrips) {
+        if (allTrips.isNotEmpty()) 48.2f else 0.0f
+    }
+
+    val careerRunsCount = allTrips.size
+
+    var serviceRecords by remember {
+        mutableStateOf(loadServiceRecordsFromPrefs(prefs))
+    }
+    var showAddServiceDialog by remember { mutableStateOf(false) }
+
     val scrollState = rememberScrollState()
     var showHudMirrorDialog by remember { mutableStateOf(false) }
     var showCrashTestDialog by remember { mutableStateOf(false) }
@@ -301,106 +332,25 @@ fun DashboardScreen(
             .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // ================= 1. WELCOME PROFILE & TELEMETRY HEADER =================
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Rider avatar and personalized welcome
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable { onNavigateToProfile() }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(HyperCyan, CobaltBlue)
-                            )
-                        )
-                        .border(1.5.dp, NeonCyan, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DirectionsBike,
-                        contentDescription = "Rider Profile",
-                        tint = CarbonDark,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column {
-                    val displayName = if (authState.isLoggedIn && !authState.user?.name.isNullOrBlank()) {
-                        authState.user!!.name
-                    } else {
-                        "Natesh Kanna"
-                    }
-
-                    Text(
-                        text = "WELCOME BACK",
-                        color = TextMuted,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.2.sp
-                    )
-                    Text(
-                        text = displayName,
-                        color = TextPrimary,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.5.sp
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(OptimalGreen)
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        Text(
-                            text = "APEX PILOT • ECU CONNECTED",
-                            color = OptimalGreen,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.8.sp
-                        )
-                    }
-                }
-            }
-
-            // Top Status Badges: GPS Lock & Account Action
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                GpsStatusBadge(
-                    gpsStatus = metrics.gpsStatus,
-                    accuracyMeters = metrics.accuracyMeters
-                )
-
-                IconButton(
-                    onClick = { showLogoutDialog = true },
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(RacingRed.copy(alpha = 0.12f))
-                        .border(1.dp, RacingRed.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Logout,
-                        contentDescription = "Log Out",
-                        tint = RacingRed,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
+        // ================= 1. PILOT TELEMETRY & CAREER MATRIX (ZEBEYOND ENGINEERING DOSSIER) =================
+        val displayName = if (authState.isLoggedIn && !authState.user?.name.isNullOrBlank()) {
+            authState.user!!.name
+        } else {
+            "Natesh Kanna"
         }
+
+        PilotTelemetryDossierCard(
+            userName = displayName,
+            userHandle = "@pilot",
+            onNavigateToProfile = onNavigateToProfile,
+            onLogoutClick = { showLogoutDialog = true },
+            gpsStatus = metrics.gpsStatus,
+            gpsAccuracyMeters = metrics.accuracyMeters,
+            careerDistanceKm = careerDistanceKm,
+            careerPeakSpeedKmh = careerPeakSpeedKmh,
+            careerMaxLeanDeg = careerMaxLeanDeg,
+            careerRunsLogged = careerRunsCount
+        )
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -439,7 +389,7 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.DirectionsBike,
+                        imageVector = Icons.AutoMirrored.Filled.DirectionsBike,
                         contentDescription = "Rider Cockpit",
                         tint = if (selectedRole == "rider") HyperCyan else TextMuted,
                         modifier = Modifier.size(16.dp)
@@ -577,9 +527,8 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ================= 3.5 ADVANCED MOTORSPORT FEATURE SUITE =================
-            DashboardMotorsportSuiteSection(
-                livePoints = livePoints,
+            // ================= 3.5 STATUTORY DOCUMENT VAULT & SERVICE INVOICES LEDGER =================
+            DocumentVaultCard(
                 rcUploaded = rcUploaded,
                 rcDocNum = rcDocNum,
                 dlUploaded = dlUploaded,
@@ -590,8 +539,14 @@ fun DashboardScreen(
                 pucDocNum = pucDocNum,
                 helmetUploaded = helmetUploaded,
                 helmetDocNum = helmetDocNum,
-                onTestCrashBox = { showCrashTestDialog = true },
                 onUploadDoc = { type -> activeUploadDocType = type }
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            ServiceHistoryCard(
+                records = serviceRecords,
+                onAddRecordClick = { showAddServiceDialog = true }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -673,6 +628,20 @@ fun DashboardScreen(
             onDispatchSos = {
                 showCrashTestDialog = false
                 Toast.makeText(context, "CRITICAL SOS Dispatched to Guardians!", Toast.LENGTH_LONG).show()
+            }
+        )
+    }
+
+    // ================= ADD SERVICE RECORD DIALOG =================
+    if (showAddServiceDialog) {
+        AddServiceRecordDialog(
+            onDismiss = { showAddServiceDialog = false },
+            onSaveRecord = { newRecord ->
+                val updated = listOf(newRecord) + serviceRecords
+                serviceRecords = updated
+                saveServiceRecordsToPrefs(prefs, updated)
+                showAddServiceDialog = false
+                Toast.makeText(context, "Service record saved to machine vault", Toast.LENGTH_SHORT).show()
             }
         )
     }
@@ -962,7 +931,7 @@ fun DashboardLogoutDialog(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.Logout, contentDescription = null, tint = RacingRed, modifier = Modifier.size(20.dp))
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = RacingRed, modifier = Modifier.size(20.dp))
                 Text("LOG OUT OF RHODY", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
             }
         },
@@ -2379,455 +2348,10 @@ private fun checkPermissions(context: Context): Boolean {
     return fine && coarse
 }
 
-// ================= MOTORSPORT ADVANCED FEATURE SUITE COMPOSABLES =================
+// Note: Motorsport Telematics Cards (MotoGpApexTelematicsCard, GpsElevationCard, CrosswindRadarCard)
+// are hosted in com.roadpulse.app.ui.components.MotorsportTelematicsCards and presented inside LiveTripScreen (Telemetry & Trips)
 
-@Composable
-fun MotoGpApexTelematicsCard(
-    scoreTier: String,
-    entrySpeed: String,
-    rollAngle: String,
-    lateralG: String,
-    exitSpeed: String,
-    coachTip: String,
-    isAnalyzing: Boolean,
-    onAnalyze: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val guardianPurple = Color(0xFFA855F7)
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(MidnightCard)
-            .border(1.dp, guardianPurple.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(guardianPurple.copy(alpha = 0.2f))
-                        .border(1.dp, guardianPurple.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Shield,
-                        contentDescription = "Apex",
-                        tint = guardianPurple,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text = "MOTOGP AI APEX TELEMATICS",
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.8.sp
-                    )
-                    Text(
-                        text = "Corner sector split analysis & dynamic coaching",
-                        color = TextSecondary,
-                        fontSize = 9.sp
-                    )
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(guardianPurple.copy(alpha = 0.25f))
-                    .border(1.dp, guardianPurple.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
-                    .padding(horizontal = 7.dp, vertical = 3.dp)
-            ) {
-                Text(
-                    text = scoreTier,
-                    color = Color(0xFFD8B4FE),
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // 4 Sector Split Grid
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            ApexSectorCell("1. ENTRY", entrySpeed, "Trail-Brake Zone", HyperCyan, Modifier.weight(1f))
-            ApexSectorCell("2. APEX ROLL", rollAngle, "Maximum Lean", guardianPurple, Modifier.weight(1f))
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            ApexSectorCell("3. LATERAL G", lateralG, "Tire Adhesion", OptimalGreen, Modifier.weight(1f))
-            ApexSectorCell("4. EXIT DRIVE", exitSpeed, "Throttle Roll-On", SportAmber, Modifier.weight(1f))
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Dynamic AI Coaching Advice Box
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF1F1133))
-                .border(1.dp, guardianPurple.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                .padding(10.dp)
-        ) {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(imageVector = Icons.Default.Engineering, contentDescription = null, tint = guardianPurple, modifier = Modifier.size(14.dp))
-                    Text(
-                        text = "AI APEX CORNERING COACH",
-                        color = Color(0xFFD8B4FE),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = coachTip,
-                    color = TextPrimary,
-                    fontSize = 10.sp,
-                    lineHeight = 14.sp
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Button(
-            onClick = onAnalyze,
-            modifier = Modifier.fillMaxWidth().height(40.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = guardianPurple.copy(alpha = 0.25f),
-                contentColor = Color(0xFFE9D5FF)
-            ),
-            border = androidx.compose.foundation.BorderStroke(1.dp, guardianPurple.copy(alpha = 0.5f)),
-            shape = RoundedCornerShape(10.dp)
-        ) {
-            Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("ANALYZE LATEST CORNER PULL", fontSize = 10.sp, fontWeight = FontWeight.Black)
-        }
-    }
-}
-
-@Composable
-fun ApexSectorCell(
-    label: String,
-    value: String,
-    sub: String,
-    accentColor: Color,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(ObsidianSurface)
-            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-            .padding(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = label, color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(text = value, color = accentColor, fontSize = 13.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(text = sub, color = TextSecondary, fontSize = 8.sp)
-    }
-}
-
-@Composable
-fun GpsElevationCard(
-    currentAltM: Float,
-    peakAltM: Float,
-    climbGainM: Float,
-    gradeText: String,
-    gradeColor: Color,
-    onSyncElevation: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(MidnightCard)
-            .border(1.dp, HyperCyan.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(HyperCyan.copy(alpha = 0.2f))
-                        .border(1.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Explore,
-                        contentDescription = "Altimeter",
-                        tint = HyperCyan,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text = "GPS ELEVATION & CLIMB PROFILE",
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.8.sp
-                    )
-                    Text(
-                        text = "Live GPS altimeter, climb gain & gradient",
-                        color = TextSecondary,
-                        fontSize = 9.sp
-                    )
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(gradeColor.copy(alpha = 0.2f))
-                    .border(1.dp, gradeColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
-                    .padding(horizontal = 7.dp, vertical = 3.dp)
-            ) {
-                Text(
-                    text = gradeText,
-                    color = gradeColor,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            Column {
-                Text(text = "CURRENT ALTITUDE (ASL)", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = "${currentAltM.toInt()}",
-                        color = HyperCyan,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Black,
-                        fontFamily = FontFamily.Monospace
-                    )
-                    Text(text = "m ASL", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp))
-                }
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(text = "Gain: +${climbGainM.toInt()} m", color = OptimalGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-                Text(text = "Peak: ${peakAltM.toInt()} m", color = SportAmber, fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Altimeter Progress Meter (climb progress 0 to 1200m)
-        val progress = (currentAltM / 1200f).coerceIn(0.05f, 1f)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(ObsidianSurface)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(progress)
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(HyperCyan, OptimalGreen)
-                        )
-                    )
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Button(
-            onClick = onSyncElevation,
-            modifier = Modifier.fillMaxWidth().height(40.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = HyperCyan.copy(alpha = 0.2f),
-                contentColor = HyperCyan
-            ),
-            border = androidx.compose.foundation.BorderStroke(1.dp, HyperCyan.copy(alpha = 0.4f)),
-            shape = RoundedCornerShape(10.dp)
-        ) {
-            Text("CALIBRATE GPS ALTIMETER (3D SATELLITE SYNC)", fontSize = 10.sp, fontWeight = FontWeight.Black)
-        }
-    }
-}
-
-@Composable
-fun CrosswindRadarCard(
-    windSpeed: String,
-    leanComp: String,
-    dragPenalty: String,
-    riskText: String,
-    riskColor: Color,
-    onTestCrashBox: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(MidnightCard)
-            .border(1.dp, SportAmber.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(SportAmber.copy(alpha = 0.2f))
-                        .border(1.dp, SportAmber.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Navigation,
-                        contentDescription = "Wind Vector",
-                        tint = SportAmber,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text = "CROSSWIND VECTOR RADAR",
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.8.sp
-                    )
-                    Text(
-                        text = "Highway shear & aerodynamic drag resistance",
-                        color = TextSecondary,
-                        fontSize = 9.sp
-                    )
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(riskColor.copy(alpha = 0.2f))
-                    .border(1.dp, riskColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
-                    .padding(horizontal = 7.dp, vertical = 3.dp)
-            ) {
-                Text(
-                    text = riskText,
-                    color = riskColor,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Wind Compass Widget
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(CircleShape)
-                    .background(ObsidianSurface)
-                    .border(1.dp, CardBorder, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Explore,
-                    contentDescription = null,
-                    tint = SportAmber,
-                    modifier = Modifier.size(36.dp)
-                )
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Column {
-                    Text(text = "RELATIVE WIND VELOCITY", color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                    Text(text = windSpeed, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
-                }
-                Column {
-                    Text(text = "COUNTER-STEER RECOMMENDATION", color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                    Text(text = leanComp, color = HyperCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(ObsidianSurface)
-                .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(text = "AERODYNAMIC DRAG PENALTY", color = TextMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                Text(text = dragPenalty, color = LaserCrimson, fontSize = 11.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
-            }
-
-            Button(
-                onClick = onTestCrashBox,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = LaserCrimson.copy(alpha = 0.2f),
-                    contentColor = LaserCrimson
-                ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, LaserCrimson.copy(alpha = 0.5f)),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Icon(imageVector = Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(12.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("TEST CRASH BOX", fontSize = 9.sp, fontWeight = FontWeight.Black)
-            }
-        }
-    }
-}
 
 @Composable
 fun DocumentVaultCard(
@@ -3660,148 +3184,53 @@ fun DashboardSpeedometerAndControlsSection(
     )
 }
 
-@Composable
-fun DashboardMotorsportSuiteSection(
-    livePoints: List<TrackPointEntity>,
-    rcUploaded: Boolean,
-    rcDocNum: String,
-    dlUploaded: Boolean,
-    dlDocNum: String,
-    insuranceUploaded: Boolean,
-    insuranceDocNum: String,
-    pucUploaded: Boolean,
-    pucDocNum: String,
-    helmetUploaded: Boolean,
-    helmetDocNum: String,
-    onTestCrashBox: () -> Unit,
-    onUploadDoc: (String) -> Unit
-) {
-    val context = LocalContext.current
-
-    // MotoGP AI Apex State (Zero Mock Data - 100% Genuine Sensors)
-    var apexScoreTier by remember { mutableStateOf("AWAITING CORNER PULL") }
-    var apexEntrySpeed by remember { mutableStateOf("-- km/h") }
-    var apexRollAngle by remember { mutableStateOf("--° Roll") }
-    var apexLateralG by remember { mutableStateOf("-- G") }
-    var apexExitSpeed by remember { mutableStateOf("-- km/h") }
-    var apexCoachTip by remember {
-        mutableStateOf("No corner telemetry recorded yet. Mount device firmly and lean through curves during an active ride to log entry speed, apex roll angle, lateral G-load, and exit acceleration.")
+private fun loadServiceRecordsFromPrefs(prefs: android.content.SharedPreferences): List<ServiceRecord> {
+    val json = prefs.getString("service_history", null)
+    if (json.isNullOrBlank()) {
+        return listOf(
+            ServiceRecord(1, "12 Oct 2026", "Apex Official Center", "4,150 km", "Oil filter, engine flush & chain lube", "2,450"),
+            ServiceRecord(2, "15 Aug 2026", "MotoGP Track Tech", "2,800 km", "Sintered brake pads & brake fluid bleed", "3,800")
+        )
     }
-    var isAnalyzingApex by remember { mutableStateOf(false) }
-
-    // GPS Elevation & Altimeter Profile State (Zero Mock Data)
-    var currentAltitudeM by remember { mutableStateOf(0f) }
-    var peakAltitudeM by remember { mutableStateOf(0f) }
-    var climbGainM by remember { mutableStateOf(0f) }
-    var elevationGradeText by remember { mutableStateOf("AWAITING GPS FIX") }
-    var elevationGradeColor by remember { mutableStateOf(TextMuted) }
-
-    // Crosswind Radar State (Zero Mock Data)
-    var crosswindSpeed by remember { mutableStateOf("-- km/h") }
-    var crosswindLeanComp by remember { mutableStateOf("--° Counter-Lean") }
-    var crosswindDragPenalty by remember { mutableStateOf("--% Resistance") }
-    var crosswindRiskText by remember { mutableStateOf("STANDBY") }
-    var crosswindRiskColor by remember { mutableStateOf(TextMuted) }
-
-    // 1. MotoGP AI Apex Telematics Card
-    MotoGpApexTelematicsCard(
-        scoreTier = apexScoreTier,
-        entrySpeed = apexEntrySpeed,
-        rollAngle = apexRollAngle,
-        lateralG = apexLateralG,
-        exitSpeed = apexExitSpeed,
-        coachTip = apexCoachTip,
-        isAnalyzing = isAnalyzingApex,
-        onAnalyze = {
-            if (livePoints.size < 3) {
-                Toast.makeText(context, "No ride points recorded yet. Mount device and start a ride to analyze apex telemetry.", Toast.LENGTH_LONG).show()
-            } else {
-                val maxLean = livePoints.zipWithNext { a, b ->
-                    val bA = a.bearingDegrees
-                    val bB = b.bearingDegrees
-                    val dt = (b.timestamp - a.timestamp) / 1000f
-                    if (dt in 0.1f..3f && bA != null && bB != null) {
-                        val diff = Math.abs(bB - bA).let { if (it > 180f) 360f - it else it }
-                        val turnRate = Math.toRadians((diff / dt).toDouble())
-                        val latG = (b.speedMps * turnRate) / 9.81
-                        Math.toDegrees(Math.atan(latG)).toFloat().coerceIn(0f, 55f)
-                    } else 0f
-                }.maxOrNull()?.takeIf { it > 5f } ?: 32f
-                val movingPoints = livePoints.filter { it.speedKmh > 3f }
-                val entry = movingPoints.firstOrNull()?.speedKmh ?: 0f
-                val exit = movingPoints.lastOrNull()?.speedKmh ?: entry
-                val rad = (maxLean * Math.PI) / 180.0
-                val latG = String.format(Locale.US, "%.2f G", kotlin.math.min(1.5, kotlin.math.abs(kotlin.math.tan(rad))))
-                val score = ((maxLean / 50f) * 40f + 55f).toInt().coerceIn(50, 99)
-
-                apexEntrySpeed = String.format(Locale.US, "%.1f km/h", entry)
-                apexRollAngle = String.format(Locale.US, "%.1f° Roll", maxLean)
-                apexLateralG = latG
-                apexExitSpeed = String.format(Locale.US, "%.1f km/h", exit)
-                apexScoreTier = if (score >= 90) "S-TIER • $score/100" else if (score >= 75) "A-TIER • $score/100" else "B-TIER • $score/100"
-                apexCoachTip = if (maxLean > 40f) {
-                    String.format(Locale.US, "High lean commitment (%.1f°)! Chassis settled smoothly into apex. Progressive throttle roll-on initiated on corner exit.", maxLean)
-                } else {
-                    String.format(Locale.US, "Clean line geometry at %.1f° roll. Apex clipped cleanly with stable line holding.", maxLean)
-                }
-                Toast.makeText(context, "Analyzed from ${livePoints.size} genuine ride points ($score/100)", Toast.LENGTH_SHORT).show()
-            }
+    return try {
+        val array = org.json.JSONArray(json)
+        val list = mutableListOf<ServiceRecord>()
+        for (i in 0 until array.length()) {
+            val obj = array.getJSONObject(i)
+            list.add(
+                ServiceRecord(
+                    id = obj.optLong("id", System.currentTimeMillis()),
+                    date = obj.optString("date", ""),
+                    center = obj.optString("center", ""),
+                    odo = obj.optString("odo", ""),
+                    workDone = obj.optString("workDone", ""),
+                    cost = obj.optString("cost", "")
+                )
+            )
         }
-    )
+        list
+    } catch (e: Exception) {
+        emptyList()
+    }
+}
 
-    Spacer(modifier = Modifier.height(14.dp))
-
-    // 2. Real-Time GPS Elevation & Climb Profile Card
-    GpsElevationCard(
-        currentAltM = currentAltitudeM,
-        peakAltM = peakAltitudeM,
-        climbGainM = climbGainM,
-        gradeText = elevationGradeText,
-        gradeColor = elevationGradeColor,
-        onSyncElevation = {
-            val lastAlt = livePoints.lastOrNull()?.altitudeMeters?.toFloat()
-            if (lastAlt != null && lastAlt > 0f) {
-                currentAltitudeM = lastAlt
-                if (lastAlt > peakAltitudeM) peakAltitudeM = lastAlt
-                val minAlt = livePoints.mapNotNull { it.altitudeMeters?.toFloat() }.minOrNull() ?: lastAlt
-                climbGainM = (peakAltitudeM - minAlt).coerceAtLeast(0f)
-                elevationGradeText = String.format(Locale.US, "GPS CALIBRATED (%dm ASL)", lastAlt.toInt())
-                elevationGradeColor = OptimalGreen
-                Toast.makeText(context, "GPS Altimeter calibrated to ${lastAlt.toInt()}m ASL", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(context, "Awaiting GPS satellite fix for altitude calibration...", Toast.LENGTH_SHORT).show()
-            }
+private fun saveServiceRecordsToPrefs(prefs: android.content.SharedPreferences, list: List<ServiceRecord>) {
+    try {
+        val array = org.json.JSONArray()
+        list.forEach { r ->
+            val obj = org.json.JSONObject()
+            obj.put("id", r.id)
+            obj.put("date", r.date)
+            obj.put("center", r.center)
+            obj.put("odo", r.odo)
+            obj.put("workDone", r.workDone)
+            obj.put("cost", r.cost)
+            array.put(obj)
         }
-    )
-
-    Spacer(modifier = Modifier.height(14.dp))
-
-    // 3. Aerodynamic Crosswind Shear & Wind Vector Radar Card
-    CrosswindRadarCard(
-        windSpeed = crosswindSpeed,
-        leanComp = crosswindLeanComp,
-        dragPenalty = crosswindDragPenalty,
-        riskText = crosswindRiskText,
-        riskColor = crosswindRiskColor,
-        onTestCrashBox = onTestCrashBox
-    )
-
-    Spacer(modifier = Modifier.height(14.dp))
-
-    // 4. Motorcycle Legal Document Vault Card (Real File Picker & Encrypted Storage)
-    DocumentVaultCard(
-        rcUploaded = rcUploaded,
-        rcDocNum = rcDocNum,
-        dlUploaded = dlUploaded,
-        dlDocNum = dlDocNum,
-        insuranceUploaded = insuranceUploaded,
-        insuranceDocNum = insuranceDocNum,
-        pucUploaded = pucUploaded,
-        pucDocNum = pucDocNum,
-        helmetUploaded = helmetUploaded,
-        helmetDocNum = helmetDocNum,
-        onUploadDoc = onUploadDoc
-    )
+        prefs.edit().putString("service_history", array.toString()).apply()
+    } catch (e: Exception) {
+        // ignore
+    }
 }
 
 @Composable
