@@ -33,6 +33,8 @@ import com.roadpulse.app.ui.screens.analytics.AnalyticsScreen
 import com.roadpulse.app.ui.screens.dashboard.DashboardScreen
 import com.roadpulse.app.ui.screens.history.HistoryScreen
 import com.roadpulse.app.ui.screens.history.TripDetailScreen
+import android.content.Context
+import com.roadpulse.app.ui.screens.parent.ParentPanelScreen
 import com.roadpulse.app.ui.screens.livetrip.LiveTripScreen
 import com.roadpulse.app.ui.screens.profile.ProfileScreen
 import com.roadpulse.app.ui.theme.CarbonDark
@@ -107,12 +109,14 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             RoadPulseTheme {
+                val parentPrefs = remember { getSharedPreferences("rhody_parent_prefs", Context.MODE_PRIVATE) }
+                val isParentLoggedIn = remember { parentPrefs.getBoolean("is_parent_logged_in", false) }
                 val authState by AuthManager.authState.collectAsState()
-                var guestModeActive by remember { mutableStateOf(false) }
-                var activeRole by remember { mutableStateOf("rider") }
+                var guestModeActive by remember { mutableStateOf(isParentLoggedIn) }
+                var activeRole by remember { mutableStateOf(if (isParentLoggedIn) "parent" else "rider") }
 
                 LaunchedEffect(authState.isLoggedIn) {
-                    if (!authState.isLoggedIn) {
+                    if (!authState.isLoggedIn && activeRole != "parent") {
                         guestModeActive = false
                     }
                 }
@@ -132,10 +136,12 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         containerColor = CarbonDark,
                         bottomBar = {
-                            BottomBar(
-                                navController = navController,
-                                isRecording = metrics.isRecording
-                            )
+                            if (activeRole == "rider") {
+                                BottomBar(
+                                    navController = navController,
+                                    isRecording = metrics.isRecording
+                                )
+                            }
                         }
                     ) { innerPadding ->
                         NavHost(
@@ -144,15 +150,28 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.padding(innerPadding)
                         ) {
                             composable(Screen.Dashboard.route) {
-                                DashboardScreen(
-                                    initialRole = activeRole,
-                                    onNavigateToLiveTrip = {
-                                        navController.navigate(Screen.Trips.route)
-                                    },
-                                    onNavigateToProfile = {
-                                        navController.navigate(Screen.Settings.route)
-                                    }
-                                )
+                                if (activeRole == "parent") {
+                                    ParentPanelScreen(
+                                        onNavigateToTripDetail = { tripId ->
+                                            navController.navigate(Screen.createTripDetailRoute(tripId))
+                                        },
+                                        onLogout = {
+                                            parentPrefs.edit().clear().apply()
+                                            AuthManager.logout()
+                                            activeRole = "rider"
+                                            guestModeActive = false
+                                        }
+                                    )
+                                } else {
+                                    DashboardScreen(
+                                        onNavigateToLiveTrip = {
+                                            navController.navigate(Screen.Trips.route)
+                                        },
+                                        onNavigateToProfile = {
+                                            navController.navigate(Screen.Settings.route)
+                                        }
+                                    )
+                                }
                             }
 
                             composable(Screen.Trips.route) {
