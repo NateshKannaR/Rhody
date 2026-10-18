@@ -498,8 +498,9 @@ function switchMainView(viewName) {
 
   // Re-invalidate map sizes on tab change
   setTimeout(function() {
-    if (viewName === 'trips' && tripsMapInstance) {
-      tripsMapInstance.invalidateSize();
+    if (viewName === 'trips') {
+      if (tripsMapInstance) tripsMapInstance.invalidateSize();
+      if (typeof renderElevationProfile === 'function') renderElevationProfile();
     }
     if (viewName === 'analysis') {
       if (analysisMapInstance) analysisMapInstance.invalidateSize();
@@ -1389,7 +1390,7 @@ function renderBikeManagement() {
   if (specEngine) specEngine.textContent = specs.engine || (isConfigured ? 'Standard Specification' : 'Not Configured');
   if (specPower) specPower.textContent = specs.power || (isConfigured ? 'Pending Dyno / Spec' : 'Not Configured');
   if (specGearbox) specGearbox.textContent = specs.gearbox || (isConfigured ? 'Multi-Plate Clutch' : 'Not Configured');
-  if (specFuelTank) specFuelTank.textContent = specs.fuelTank || (isConfigured ? 'Fuel Reservoir' : 'Not Configured');
+  if (specFuelTank) specFuelTank.textContent = specs.frame || specs.chassis || specs.fuelTank || (isConfigured ? 'Tubular Steel Diamond' : 'Not Configured');
   if (specBrakes) specBrakes.textContent = specs.brakes || (isConfigured ? 'Hydraulic Disc ABS' : 'Not Configured');
   if (specWeight) specWeight.textContent = specs.kerbWeight || (isConfigured ? 'Motorcycle Mass' : 'Not Configured');
   if (odoDisplay) {
@@ -1516,9 +1517,6 @@ function renderBikeManagement() {
 
   // 4. Service History Ledger
   renderServiceHistoryTable();
-
-  // 5. Fuel Economy & Mileage Calculator
-  renderFuelEconomyStats();
 }
 
 function updateComponentHealthBar(compKey, compObj, curOdo, isConfigured = true) {
@@ -1619,32 +1617,7 @@ function renderServiceHistoryTable() {
 }
 
 function renderFuelEconomyStats() {
-  const logs = bikeManagementData.fuelLogs || [];
-  const avgMileageEl = document.getElementById('fuelAvgMileage');
-  const costPerKmEl = document.getElementById('fuelCostPerKm');
-  const totalLitersEl = document.getElementById('fuelTotalLiters');
-  const totalExpenseEl = document.getElementById('fuelTotalExpense');
-
-  if (logs.length === 0) return;
-
-  let totalLiters = 0;
-  let totalCost = 0;
-  let totalMileage = 0;
-  let count = logs.length;
-
-  logs.forEach(l => {
-    totalLiters += parseFloat(l.liters || 0);
-    totalCost += parseFloat(l.totalCost || 0);
-    totalMileage += parseFloat(l.mileageKmPerL || 45);
-  });
-
-  const avgMileage = (totalMileage / count).toFixed(1);
-  const costPerKm = (totalCost / (totalLiters * parseFloat(avgMileage))).toFixed(2);
-
-  if (avgMileageEl) avgMileageEl.textContent = `${avgMileage} KM/L`;
-  if (costPerKmEl) costPerKmEl.textContent = `₹${costPerKm} / KM`;
-  if (totalLitersEl) totalLitersEl.textContent = `${totalLiters.toFixed(1)} L`;
-  if (totalExpenseEl) totalExpenseEl.textContent = `₹${Math.round(totalCost).toLocaleString()}`;
+  // Fuel & mileage calculations removed per user preference
 }
 
 // ----------------------------------------------------
@@ -1707,68 +1680,9 @@ function submitServiceRecord(e) {
   showToast('Service record recorded in maintenance ledger!', 'success');
 }
 
-function openFuelLogModal() {
-  const modal = document.getElementById('fuelLogModal');
-  if (!modal) return;
-  modal.classList.remove('hidden');
-
-  const odoInput = document.getElementById('fuelOdoInput');
-  if (odoInput && bikeManagementData.specs) {
-    odoInput.value = bikeManagementData.specs.currentOdometer || 14850;
-  }
-}
-
-function closeFuelLogModal() {
-  const modal = document.getElementById('fuelLogModal');
-  if (modal) modal.classList.add('hidden');
-}
-
-function submitFuelRecord(e) {
-  e.preventDefault();
-  const liters = parseFloat(document.getElementById('fuelLitersInput')?.value) || 0;
-  const odo = parseInt(document.getElementById('fuelOdoInput')?.value) || (bikeManagementData.specs.currentOdometer || 14850);
-  const grade = document.getElementById('fuelGradeInput')?.value || 'XP95 Octane';
-  const totalCost = parseFloat(document.getElementById('fuelTotalCostInput')?.value) || 0;
-
-  if (liters <= 0 || totalCost <= 0) {
-    showToast('Please enter valid fuel liters and invoice amount', 'error');
-    return;
-  }
-
-  // Calculate mileage based on distance from last fuel fill
-  let mileage = 47.5;
-  if (bikeManagementData.fuelLogs && bikeManagementData.fuelLogs.length > 0) {
-    const lastFill = bikeManagementData.fuelLogs[0];
-    const distRun = odo - (lastFill.odo || 0);
-    if (distRun > 20 && liters > 0) {
-      mileage = parseFloat((distRun / liters).toFixed(1));
-    }
-  }
-
-  const newLog = {
-    id: 'fuel_' + Date.now(),
-    date: new Date().toISOString().split('T')[0],
-    odo,
-    liters,
-    costPerLiter: parseFloat((totalCost / liters).toFixed(1)),
-    totalCost,
-    fuelGrade: grade,
-    mileageKmPerL: mileage
-  };
-
-  if (!bikeManagementData.fuelLogs) bikeManagementData.fuelLogs = [];
-  bikeManagementData.fuelLogs.unshift(newLog);
-
-  if (odo > (bikeManagementData.specs.currentOdometer || 0)) {
-    bikeManagementData.specs.currentOdometer = odo;
-  }
-
-  saveBikeManagementToStorage(true);
-  renderBikeManagement();
-  closeFuelLogModal();
-  document.getElementById('fuelLogForm')?.reset();
-  showToast(`Logged ${liters}L of ${grade} • Calculated ${mileage} KM/L!`, 'success');
-}
+function openFuelLogModal() {}
+function closeFuelLogModal() {}
+function submitFuelRecord(e) { if (e && e.preventDefault) e.preventDefault(); }
 
 function logComponentService(type) {
   const curOdo = bikeManagementData.specs.currentOdometer || 14850;

@@ -553,7 +553,7 @@
                 <h3 class="text-sm font-bold text-white tracking-wide">Active Motorcycle Cockpit &amp; Live Telemetry</h3>
                 <span id="garageEcuBadge" class="px-2 py-0.2 text-[9px] font-mono font-bold rounded bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">ECU STANDBY</span>
               </div>
-              <p class="text-[11px] text-slate-400 mt-0.5">Powertrain vitals, fuel range telemetry &amp; sensor diagnostic telemetry</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Powertrain vitals, chassis specifications &amp; sensor diagnostic telemetry</p>
             </div>
           </div>
 
@@ -907,9 +907,9 @@
             </div>
 
             <div class="bg-[#07090E]/80 p-3 rounded-xl border border-white/[0.08]">
-              <span class="text-[10px] uppercase font-bold text-slate-500 block">Fuel Tank</span>
+              <span class="text-[10px] uppercase font-bold text-slate-500 block">Chassis &amp; Frame</span>
               <span id="specFuelTank" class="text-xs font-bold text-white block mt-1">Not Set</span>
-              <span class="text-[10px] text-amber-400 block mt-0.5">Capacity &amp; Reserve</span>
+              <span class="text-[10px] text-amber-400 block mt-0.5">Tubular Steel / Perimeter</span>
             </div>
 
             <div class="bg-[#07090E]/80 p-3 rounded-xl border border-white/[0.08]">
@@ -1261,87 +1261,176 @@
           </div>
         </div>
 
-        <!-- 4. PAST SERVICE HISTORY LOG & FUEL MILEAGE CALCULATOR -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-1">
-          
-          <!-- Service Records Log (8 Columns) -->
-          <div class="lg:col-span-8 bg-[#07090E]/80 p-5 rounded-2xl border border-white/[0.08] space-y-3">
-            <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
-              <div>
-                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Service History &amp; Workshop Invoices</h4>
-                <p class="text-[11px] text-slate-400">Complete historical maintenance ledger recorded for your machine</p>
-              </div>
-              <button onclick="openServiceLogModal()" class="px-3 py-1.5 text-[11px] font-bold rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-400/40 transition">
-                + Add Record
-              </button>
+        <!-- 4. PAST SERVICE HISTORY LOG -->
+        <div class="w-full bg-[#07090E]/80 p-5 rounded-2xl border border-white/[0.08] space-y-3 pt-1">
+          <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
+            <div>
+              <h4 class="text-xs font-bold text-white uppercase tracking-wider">Service History &amp; Workshop Invoices</h4>
+              <p class="text-[11px] text-slate-400">Complete historical maintenance ledger recorded for your machine</p>
             </div>
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs">
-                <thead>
-                  <tr class="border-b border-white/[0.08] text-slate-500 text-[10px] uppercase font-bold tracking-wider">
-                    <th class="py-2.5 px-3">Service Date</th>
-                    <th class="py-2.5 px-3">Service Center</th>
-                    <th class="py-2.5 px-3">Odometer</th>
-                    <th class="py-2.5 px-3">Work Done</th>
-                    <th class="py-2.5 px-3 text-right">Invoice (₹)</th>
-                  </tr>
-                </thead>
-                <tbody id="serviceHistoryTableBody" class="divide-y divide-white/[0.04]">
-                  <!-- Injected via JavaScript -->
-                </tbody>
-              </table>
-            </div>
+            <button onclick="openServiceLogModal()" class="px-3 py-1.5 text-[11px] font-bold rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-400/40 transition">
+              + Add Record
+            </button>
           </div>
 
-          <!-- Fuel Economy & Mileage Calculator (4 Columns) -->
-          <div class="lg:col-span-4 bg-[#07090E]/80 p-5 rounded-2xl border border-white/[0.08] space-y-4">
-            <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
-              <div class="flex items-center space-x-2">
-                <div class="w-6 h-6 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
-                  <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"/><path d="M13 10h4a2 2 0 0 1 2 2v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-9l-3-3"/><rect x="6" y="6" width="4" height="4"/>
-                  </svg>
-                </div>
-                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Fuel &amp; Mileage Calculator</h4>
-              </div>
-              <button onclick="openFuelLogModal()" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-amber-500/20 text-amber-300 border border-amber-400/30 transition">
-                + Add Fill
-              </button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
-                <span class="text-[10px] text-slate-400 block">Avg Motorcycle Mileage</span>
-                <span id="fuelAvgMileage" class="text-base font-black text-emerald-400 font-mono-numbers block mt-0.5">48.4 KM/L</span>
-                <span class="text-[9px] text-slate-500 block mt-0.5">Real Tank-to-Tank</span>
-              </div>
-
-              <div class="p-3 rounded-xl bg-[#0E131F] border border-white/[0.06]">
-                <span class="text-[10px] text-slate-400 block">Running Cost per KM</span>
-                <span id="fuelCostPerKm" class="text-base font-black text-cyan-300 font-mono-numbers block mt-0.5">₹ 2.16 / KM</span>
-                <span class="text-[9px] text-slate-500 block mt-0.5">Petrol ₹104.5/L</span>
-              </div>
-            </div>
-
-            <div class="space-y-1.5 text-xs text-slate-300 pt-1">
-              <div class="flex justify-between text-[11px]">
-                <span class="text-slate-400">Total Fuel Recorded:</span>
-                <span id="fuelTotalLiters" class="font-mono-numbers font-bold text-white">174.0 Liters</span>
-              </div>
-              <div class="flex justify-between text-[11px]">
-                <span class="text-slate-400">Total Fuel Expense:</span>
-                <span id="fuelTotalExpense" class="font-mono-numbers font-bold text-amber-300">₹ 18,183</span>
-              </div>
-              <div class="flex justify-between text-[11px]">
-                <span class="text-slate-400">Full Tank Range:</span>
-                <span class="font-mono-numbers font-bold text-emerald-400">~ 480 KM</span>
-              </div>
-            </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-white/[0.08] text-slate-500 text-[10px] uppercase font-bold tracking-wider">
+                  <th class="py-2.5 px-3">Service Date</th>
+                  <th class="py-2.5 px-3">Service Center</th>
+                  <th class="py-2.5 px-3">Odometer</th>
+                  <th class="py-2.5 px-3">Work Done</th>
+                  <th class="py-2.5 px-3 text-right">Invoice (₹)</th>
+                </tr>
+              </thead>
+              <tbody id="serviceHistoryTableBody" class="divide-y divide-white/[0.04]">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
           </div>
-
         </div>
 
+      </div>
+
+      <!-- SEARCH YOUTUBE VIDEOS (100% REAL YOUTUBE STREAMING) -->
+      <div class="glass-panel p-6 space-y-4 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-red-600/20 text-red-500 border border-red-500/30 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h3 class="text-sm sm:text-base font-bold text-white">YouTube Machine &amp; Road Video Guides</h3>
+                <span class="px-2.5 py-0.5 text-[9px] font-black rounded-full bg-red-600/20 text-red-400 border border-red-500/30">REAL YOUTUBE PLAYER</span>
+              </div>
+              <p class="text-xs text-slate-400">Search and stream actual motorcycle ride vlogs, reviews, and route breakdowns inside Rhody</p>
+            </div>
+          </div>
+
+          <!-- Real YouTube Search Input -->
+          <div class="relative min-w-[280px]">
+            <input id="youtubeSearchInput" type="text" placeholder="Search any bike, road, or ride vlog..." onkeydown="if(event.key==='Enter'){event.preventDefault();searchCustomYoutube();}" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500/60 transition pr-9" />
+            <button onclick="searchCustomYoutube()" class="absolute right-3 top-2.5 text-slate-400 hover:text-red-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dynamic 1-Click Search Pills (Generated from user's bike & maintenance) -->
+        <div id="youtubePillsContainer" class="flex flex-wrap items-center gap-2 text-xs"></div>
+
+        <!-- Video Cards Grid -->
+        <div id="youtubeVideoGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2"></div>
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: TRIPS                                             -->
+    <!-- Start Trip, Real Timestamps, Live Speedometer, Lean      -->
+    <!-- ======================================================== -->
+    <div id="viewTrips" class="space-y-6 hidden">
+      
+      <!-- ================= MODERN ACTIVE TRIP TELEMETRY RECORDER HERO ================= -->
+      <div class="glass-panel p-5 sm:p-7 bg-gradient-to-br from-[#070A11]/95 via-[#0A0E18]/95 to-[#0D1526]/90 rounded-3xl border border-cyan-500/25 space-y-6 shadow-[0_20px_60px_rgba(0,0,0,0.85)] relative overflow-hidden backdrop-blur-2xl">
+        <!-- Laser Top Ambient Edge -->
+        <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-80"></div>
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+          <div class="space-y-1.5">
+            <div class="flex items-center space-x-2.5">
+              <span id="tripRecordingStatusDot" class="w-3 h-3 rounded-full bg-emerald-400 status-pulse shadow-[0_0_12px_#10B981]"></span>
+              <h2 id="tripRecordingStateTitle" class="text-base sm:text-lg font-black text-white tracking-wide uppercase font-mono" data-i18n="trip_recorder_title">Active Trip Telemetry Recorder</h2>
+              <span id="tripLiveStatusPill" class="px-2.5 py-0.5 text-[10px] sm:text-xs font-mono font-black uppercase rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/40 shadow-[0_0_12px_rgba(16,185,129,0.25)]" data-i18n="trip_ready">READY TO RIDE</span>
+            </div>
+            
+            <p id="tripStartTimestampDisplay" class="text-xs text-slate-400 font-mono-numbers leading-relaxed max-w-2xl" data-i18n="trip_start_hint">
+              Tap &quot;START RECORDING TRIP&quot; below when mounted. Rhody connects directly to your device's high-precision GPS and IMU gyroscope.
+            </p>
+          </div>
+
+          <!-- PRIMARY TRIP CONTROLS -->
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- START BUTTON -->
+            <button id="btnStartTrip" onclick="startNewTripSession()" class="w-full sm:w-auto px-7 py-3.5 text-xs font-black rounded-2xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 text-black hover:opacity-95 transition flex items-center justify-center space-x-2.5 shadow-[0_0_30px_rgba(0,240,255,0.4)] active:scale-95 font-mono tracking-wider cursor-pointer">
+              <svg class="w-4 h-4 text-black fill-current" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"/></svg>
+              <span data-i18n="trip_start">START RECORDING TRIP</span>
+            </button>
+
+            <!-- PAUSE / RESUME BUTTON -->
+            <button id="btnPauseTrip" onclick="togglePauseTripSession()" class="hidden px-5 py-3 text-xs font-bold rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 transition active:scale-95 font-mono">
+              <span id="pauseBtnLabel" data-i18n="trip_pause">Pause Recording</span>
+            </button>
+
+            <!-- FINISH TRIP BUTTON -->
+            <button id="btnFinishTrip" onclick="finishTripSession()" class="hidden px-6 py-3 text-xs font-black rounded-2xl bg-rose-500 hover:bg-rose-400 text-white shadow-[0_0_25px_rgba(244,63,94,0.4)] transition active:scale-95 font-mono tracking-wider">
+              <span data-i18n="trip_finish">FINISH &amp; SAVE RUN</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 REAL-TIME TELEMETRY HUD METRIC CARDS -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 pt-1">
+          <!-- CARD 1: STOPWATCH -->
+          <div class="glass-panel p-4 sm:p-5 rounded-2xl border border-white/[0.08] hover:border-cyan-400/40 bg-[#060910]/90 transition shadow-lg relative overflow-hidden group">
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-cyan-400/60"></div>
+            <div class="flex items-center justify-between text-slate-400">
+              <span class="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider" data-i18n="elapsed_timer">Stopwatch</span>
+              <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <span id="liveElapsedTimer" class="text-2xl sm:text-3xl font-black text-white font-mono-numbers block mt-2 tracking-wider drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">00:00:00</span>
+            <div class="flex items-center space-x-1.5 mt-1.5 text-[10px] text-cyan-400 font-mono">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+              <span data-i18n="realtime_counter">10Hz Telemetry Counter</span>
+            </div>
+          </div>
+
+          <!-- CARD 2: REAL GPS SPEED -->
+          <div class="glass-panel p-4 sm:p-5 rounded-2xl border border-white/[0.08] hover:border-cyan-400/40 bg-[#060910]/90 transition shadow-lg relative overflow-hidden group">
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-cyan-400"></div>
+            <div class="flex items-center justify-between text-slate-400">
+              <span class="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider" data-i18n="gps_speed">Real GPS Speed</span>
+              <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 3 12 12 17 8"/></svg>
+            </div>
+            <div class="mt-2 flex items-baseline space-x-1.5">
+              <span id="liveCurrentSpeed" class="text-2xl sm:text-3xl font-black text-cyan-300 font-mono-numbers drop-shadow-[0_0_12px_rgba(0,240,255,0.4)]">0.0</span>
+              <span class="text-xs font-mono font-bold text-slate-400">KM/H</span>
+            </div>
+            <span id="liveMovementStatus" class="text-[10px] text-amber-400 font-mono font-bold block mt-1.5 truncate">BIKE IS STOPPED — 0.0 KM/H</span>
+          </div>
+
+          <!-- CARD 3: DISTANCE COVERED -->
+          <div class="glass-panel p-4 sm:p-5 rounded-2xl border border-white/[0.08] hover:border-emerald-400/40 bg-[#060910]/90 transition shadow-lg relative overflow-hidden group">
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-emerald-400"></div>
+            <div class="flex items-center justify-between text-slate-400">
+              <span class="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider" data-i18n="distance_covered">Distance</span>
+              <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            </div>
+            <div class="mt-2 flex items-baseline space-x-1.5">
+              <span id="liveCurrentDist" class="text-2xl sm:text-3xl font-black text-emerald-300 font-mono-numbers drop-shadow-[0_0_12px_rgba(16,185,129,0.35)]">0.00</span>
+              <span class="text-xs font-mono font-bold text-slate-400">KM</span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-mono block mt-1.5" data-i18n="haversine_gps">Haversine RTK Geodesic</span>
+          </div>
+
+          <!-- CARD 4: APEX LEAN ANGLE -->
+          <div class="glass-panel p-4 sm:p-5 rounded-2xl border border-white/[0.08] hover:border-amber-400/40 bg-[#060910]/90 transition shadow-lg relative overflow-hidden group">
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-amber-400"></div>
+            <div class="flex items-center justify-between text-slate-400">
+              <span class="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider" data-i18n="lean_angle">Apex Lean Angle</span>
+              <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            <div id="liveLeanAngleReadout" class="mt-2 text-xl sm:text-2xl font-black font-mono-numbers text-cyan-300 drop-shadow-[0_0_10px_rgba(0,240,255,0.3)]">
+              0.0&deg; <span class="text-xs text-slate-400 font-normal">UPRIGHT</span>
+            </div>
+            <div class="mt-2 w-full bg-white/[0.06] rounded-full h-1 overflow-hidden">
+              <div class="bg-gradient-to-r from-cyan-400 to-amber-400 h-full w-1/2 mx-auto rounded-full"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ================= ADVANCED MOTORSPORT TELEMATICS SUITE ================= -->
@@ -1676,7 +1765,7 @@
                 <span id="crosswindDragPenaltyVal" class="text-sm font-black text-rose-400 font-mono-numbers">--% Resistance</span>
               </div>
               <button onclick="triggerCrashDetection(4.2, 78.5)" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition flex items-center space-x-1" title="Test Autonomous Fall & Impact Detection">
-                <svg class="w-3 h-3 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 <span>Test Crash Box</span>
               </button>
             </div>
@@ -1687,146 +1776,6 @@
           </div>
         </div>
 
-      </div>
-
-      <!-- SEARCH YOUTUBE VIDEOS (100% REAL YOUTUBE STREAMING) -->
-      <div class="glass-panel p-6 space-y-4 shadow-xl">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-red-600/20 text-red-500 border border-red-500/30 flex items-center justify-center shrink-0">
-              <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
-            </div>
-            <div>
-              <div class="flex items-center space-x-2">
-                <h3 class="text-sm sm:text-base font-bold text-white">YouTube Machine &amp; Road Video Guides</h3>
-                <span class="px-2.5 py-0.5 text-[9px] font-black rounded-full bg-red-600/20 text-red-400 border border-red-500/30">REAL YOUTUBE PLAYER</span>
-              </div>
-              <p class="text-xs text-slate-400">Search and stream actual motorcycle ride vlogs, reviews, and route breakdowns inside Rhody</p>
-            </div>
-          </div>
-
-          <!-- Real YouTube Search Input -->
-          <div class="relative min-w-[280px]">
-            <input id="youtubeSearchInput" type="text" placeholder="Search any bike, road, or ride vlog..." onkeydown="if(event.key==='Enter'){event.preventDefault();searchCustomYoutube();}" class="w-full bg-[#07090E] border border-white/[0.08] rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500/60 transition pr-9" />
-            <button onclick="searchCustomYoutube()" class="absolute right-3 top-2.5 text-slate-400 hover:text-red-400">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Dynamic 1-Click Search Pills (Generated from user's bike & maintenance) -->
-        <div id="youtubePillsContainer" class="flex flex-wrap items-center gap-2 text-xs"></div>
-
-        <!-- Video Cards Grid -->
-        <div id="youtubeVideoGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2"></div>
-      </div>
-
-    </div>
-
-    <!-- ======================================================== -->
-    <!-- TAB 2: TRIPS                                             -->
-    <!-- Start Trip, Real Timestamps, Live Speedometer, Lean      -->
-    <!-- ======================================================== -->
-    <div id="viewTrips" class="space-y-6 hidden">
-      
-      <!-- ================= MODERN ACTIVE TRIP TELEMETRY RECORDER HERO ================= -->
-      <div class="glass-panel p-5 sm:p-7 bg-gradient-to-br from-[#070A11]/95 via-[#0A0E18]/95 to-[#0D1526]/90 rounded-3xl border border-cyan-500/25 space-y-6 shadow-[0_20px_60px_rgba(0,0,0,0.85)] relative overflow-hidden backdrop-blur-2xl">
-        <!-- Laser Top Ambient Edge -->
-        <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-80"></div>
-        <div class="absolute -top-24 -right-24 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
-          <div class="space-y-1.5">
-            <div class="flex items-center space-x-2.5">
-              <span id="tripRecordingStatusDot" class="w-3 h-3 rounded-full bg-emerald-400 status-pulse shadow-[0_0_12px_#10B981]"></span>
-              <h2 id="tripRecordingStateTitle" class="text-base sm:text-lg font-black text-white tracking-wide uppercase font-mono" data-i18n="trip_recorder_title">Active Trip Telemetry Recorder</h2>
-              <span id="tripLiveStatusPill" class="px-2.5 py-0.5 text-[10px] sm:text-xs font-mono font-black uppercase rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/40 shadow-[0_0_12px_rgba(16,185,129,0.25)]" data-i18n="trip_ready">READY TO RIDE</span>
-            </div>
-            
-            <p id="tripStartTimestampDisplay" class="text-xs text-slate-400 font-mono-numbers leading-relaxed max-w-2xl" data-i18n="trip_start_hint">
-              Tap &quot;START RECORDING TRIP&quot; below when mounted. Rhody connects directly to your device's high-precision GPS and IMU gyroscope.
-            </p>
-          </div>
-
-          <!-- PRIMARY TRIP CONTROLS -->
-          <div class="flex flex-wrap items-center gap-3">
-            <!-- START BUTTON -->
-            <button id="btnStartTrip" onclick="startNewTripSession()" class="w-full sm:w-auto px-7 py-3.5 text-xs font-black rounded-2xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 text-black hover:opacity-95 transition flex items-center justify-center space-x-2.5 shadow-[0_0_30px_rgba(0,240,255,0.4)] active:scale-95 font-mono tracking-wider cursor-pointer">
-              <svg class="w-4 h-4 text-black fill-current" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"/></svg>
-              <span data-i18n="trip_start">START RECORDING TRIP</span>
-            </button>
-
-            <!-- PAUSE / RESUME BUTTON -->
-            <button id="btnPauseTrip" onclick="togglePauseTripSession()" class="hidden px-5 py-3 text-xs font-bold rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 transition active:scale-95 font-mono">
-              <span id="pauseBtnLabel" data-i18n="trip_pause">Pause Recording</span>
-            </button>
-
-            <!-- FINISH TRIP BUTTON -->
-            <button id="btnFinishTrip" onclick="finishTripSession()" class="hidden px-6 py-3 text-xs font-black rounded-2xl bg-rose-500 hover:bg-rose-400 text-white shadow-[0_0_25px_rgba(244,63,94,0.4)] transition active:scale-95 font-mono tracking-wider">
-              <span data-i18n="trip_finish">FINISH &amp; SAVE RUN</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- 4 REAL-TIME TELEMETRY HUD METRIC CARDS -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 pt-1">
-          <!-- CARD 1: STOPWATCH -->
-          <div class="glass-panel p-4 sm:p-5 rounded-2xl border border-white/[0.08] hover:border-cyan-400/40 bg-[#060910]/90 transition shadow-lg relative overflow-hidden group">
-            <div class="absolute top-0 left-0 right-0 h-[2px] bg-cyan-400/60"></div>
-            <div class="flex items-center justify-between text-slate-400">
-              <span class="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider" data-i18n="elapsed_timer">Stopwatch</span>
-              <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <span id="liveElapsedTimer" class="text-2xl sm:text-3xl font-black text-white font-mono-numbers block mt-2 tracking-wider drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">00:00:00</span>
-            <div class="flex items-center space-x-1.5 mt-1.5 text-[10px] text-cyan-400 font-mono">
-              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-              <span data-i18n="realtime_counter">10Hz Telemetry Counter</span>
-            </div>
-          </div>
-
-          <!-- CARD 2: REAL GPS SPEED -->
-          <div class="glass-panel p-4 sm:p-5 rounded-2xl border border-white/[0.08] hover:border-cyan-400/40 bg-[#060910]/90 transition shadow-lg relative overflow-hidden group">
-            <div class="absolute top-0 left-0 right-0 h-[2px] bg-cyan-400"></div>
-            <div class="flex items-center justify-between text-slate-400">
-              <span class="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider" data-i18n="gps_speed">Real GPS Speed</span>
-              <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 3 12 12 17 8"/></svg>
-            </div>
-            <div class="mt-2 flex items-baseline space-x-1.5">
-              <span id="liveCurrentSpeed" class="text-2xl sm:text-3xl font-black text-cyan-300 font-mono-numbers drop-shadow-[0_0_12px_rgba(0,240,255,0.4)]">0.0</span>
-              <span class="text-xs font-mono font-bold text-slate-400">KM/H</span>
-            </div>
-            <span id="liveMovementStatus" class="text-[10px] text-amber-400 font-mono font-bold block mt-1.5 truncate">BIKE IS STOPPED — 0.0 KM/H</span>
-          </div>
-
-          <!-- CARD 3: DISTANCE COVERED -->
-          <div class="glass-panel p-4 sm:p-5 rounded-2xl border border-white/[0.08] hover:border-emerald-400/40 bg-[#060910]/90 transition shadow-lg relative overflow-hidden group">
-            <div class="absolute top-0 left-0 right-0 h-[2px] bg-emerald-400"></div>
-            <div class="flex items-center justify-between text-slate-400">
-              <span class="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider" data-i18n="distance_covered">Distance</span>
-              <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-            </div>
-            <div class="mt-2 flex items-baseline space-x-1.5">
-              <span id="liveCurrentDist" class="text-2xl sm:text-3xl font-black text-emerald-300 font-mono-numbers drop-shadow-[0_0_12px_rgba(16,185,129,0.35)]">0.00</span>
-              <span class="text-xs font-mono font-bold text-slate-400">KM</span>
-            </div>
-            <span class="text-[10px] text-slate-400 font-mono block mt-1.5" data-i18n="haversine_gps">Haversine RTK Geodesic</span>
-          </div>
-
-          <!-- CARD 4: APEX LEAN ANGLE -->
-          <div class="glass-panel p-4 sm:p-5 rounded-2xl border border-white/[0.08] hover:border-amber-400/40 bg-[#060910]/90 transition shadow-lg relative overflow-hidden group">
-            <div class="absolute top-0 left-0 right-0 h-[2px] bg-amber-400"></div>
-            <div class="flex items-center justify-between text-slate-400">
-              <span class="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider" data-i18n="lean_angle">Apex Lean Angle</span>
-              <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            </div>
-            <div id="liveLeanAngleReadout" class="mt-2 text-xl sm:text-2xl font-black font-mono-numbers text-cyan-300 drop-shadow-[0_0_10px_rgba(0,240,255,0.3)]">
-              0.0&deg; <span class="text-xs text-slate-400 font-normal">UPRIGHT</span>
-            </div>
-            <div class="mt-2 w-full bg-white/[0.06] rounded-full h-1 overflow-hidden">
-              <div class="bg-gradient-to-r from-cyan-400 to-amber-400 h-full w-1/2 mx-auto rounded-full"></div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- ================= TWIN GAUGES & HIGH-PRECISION MAP ================= -->
@@ -2832,65 +2781,6 @@
           </button>
           <button type="submit" class="px-5 py-2 text-xs font-bold rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_0_15px_rgba(0,240,255,0.3)] transition active:scale-95">
             Save Service Record
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ================= ADD FUEL FILL-UP MODAL ================= -->
-  <div id="fuelLogModal" onclick="if(event.target === this) closeFuelLogModal()" class="fixed inset-0 z-50 bg-[#07090E]/90 backdrop-blur-xl flex items-center justify-center p-4 hidden">
-    <div class="glass-panel max-w-lg w-full p-6 shadow-2xl relative border border-amber-500/25 my-auto">
-      
-      <div class="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-4">
-        <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-400/30 flex items-center justify-center text-base shadow-[0_0_15px_rgba(245,158,11,0.25)]">
-            <svg class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11V9a2 2 0 00-2-2m2 4a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h8a2 2 0 012 2v12m4-8h.01M9 11h4M9 15h4"/></svg>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-white tracking-wide">Log Fuel Fill-Up &amp; Mileage</h3>
-            <p class="text-[11px] text-slate-400">Calculate real fuel consumption &amp; cost per kilometer</p>
-          </div>
-        </div>
-        <button onclick="closeFuelLogModal()" class="text-slate-400 hover:text-white p-2 rounded-lg bg-white/[0.05] hover:bg-white/10 transition" title="Close">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
-      </div>
-
-      <form id="fuelLogForm" onsubmit="submitFuelRecord(event)" class="space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Fuel Filled (Liters)</label>
-            <input type="number" step="0.01" id="fuelLitersInput" required placeholder="8.5" class="w-full px-3.5 py-2.5 bg-[#07090E] border border-white/10 rounded-xl text-white text-xs font-mono focus:outline-none focus:border-amber-400 transition" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Current Odometer (km)</label>
-            <input type="number" id="fuelOdoInput" required placeholder="8420" class="w-full px-3.5 py-2.5 bg-[#07090E] border border-white/10 rounded-xl text-white text-xs font-mono focus:outline-none focus:border-amber-400 transition" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Fuel Type</label>
-            <select id="fuelGradeInput" class="w-full px-3.5 py-2.5 bg-[#07090E] border border-white/10 rounded-xl text-white text-xs focus:outline-none focus:border-amber-400 transition">
-              <option value="XP95">IndianOil XP95 (High Octane)</option>
-              <option value="Speed97">BPCL Speed 97</option>
-              <option value="VPower">Shell V-Power</option>
-              <option value="Regular">Regular Unleaded 91</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Total Bill Amount (₹)</label>
-            <input type="number" step="any" id="fuelTotalCostInput" required placeholder="888" class="w-full px-3.5 py-2.5 bg-[#07090E] border border-white/10 rounded-xl text-white text-xs font-mono focus:outline-none focus:border-amber-400 transition" />
-          </div>
-        </div>
-
-        <div class="flex items-center justify-end space-x-3 pt-3 border-t border-white/[0.08]">
-          <button type="button" onclick="closeFuelLogModal()" class="px-4 py-2 text-xs font-medium rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 transition">
-            Cancel
-          </button>
-          <button type="submit" class="px-5 py-2 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.3)] transition active:scale-95">
-            Calculate &amp; Save Fill
           </button>
         </div>
       </form>
