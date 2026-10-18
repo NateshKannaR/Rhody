@@ -48,6 +48,11 @@ import kotlinx.coroutines.launch
 
 class TripRecordingService : LifecycleService() {
 
+    companion object {
+        var isServiceRunning: Boolean = false
+            private set
+    }
+
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var repository: TripRepository
     private var wakeLock: PowerManager.WakeLock? = null
@@ -105,6 +110,7 @@ class TripRecordingService : LifecycleService() {
 
     override fun onCreate() {
         super.onCreate()
+        isServiceRunning = true
         repository = TripRepository(RoadPulseDatabase.getInstance(this))
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as? SensorManager
@@ -237,6 +243,16 @@ class TripRecordingService : LifecycleService() {
         tripStatus = TripStatus.FINISHED
 
         lifecycleScope.launch {
+            if (activeTripId == 0L) {
+                val orphan = repository.getActiveOrPausedTrip()
+                if (orphan != null) {
+                    activeTripId = orphan.id
+                    if (cumulativeDistanceMeters <= 0.0) {
+                        cumulativeDistanceMeters = orphan.totalDistanceMeters
+                    }
+                }
+            }
+
             if (activeTripId > 0L) {
                 // Failsafe for 0 KM: recalculate from recorded points if distance is 0
                 if (cumulativeDistanceMeters <= 0.0) {
@@ -258,7 +274,6 @@ class TripRecordingService : LifecycleService() {
                     currentSpeedKmh = 0f,
                     totalDistanceMeters = cumulativeDistanceMeters
                 )
-                TripRecordingController.updateMetrics(finalMetrics)
                 repository.finishTrip(activeTripId, finalMetrics)
 
                 // Inform parents ride has concluded safely
@@ -270,13 +285,12 @@ class TripRecordingService : LifecycleService() {
                         batteryPercent = getBatteryPercentage()
                     )
                 } catch (_: Exception) {}
-            } else {
-                val finalMetrics = currentMetrics.copy(
-                    tripStatus = TripStatus.FINISHED,
-                    currentSpeedKmh = 0f
-                )
-                TripRecordingController.updateMetrics(finalMetrics)
             }
+
+            // Return controller metrics to IDLE immediately so UI displays 'START RECORDING RIDE'
+            TripRecordingController.updateMetrics(TripMetrics(tripStatus = TripStatus.IDLE))
+            TripRecordingController.clearLivePoints()
+
             releaseWakeLock()
             ServiceCompat.stopForeground(this@TripRecordingService, ServiceCompat.STOP_FOREGROUND_REMOVE)
             stopSelf()
@@ -588,6 +602,7 @@ class TripRecordingService : LifecycleService() {
     }
 
     override fun onDestroy() {
+        isServiceRunning = false
         stopLocationUpdates()
         stopTicker()
         releaseWakeLock()

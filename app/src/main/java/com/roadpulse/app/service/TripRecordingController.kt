@@ -88,6 +88,10 @@ object TripRecordingController {
         val intent = Intent(context, TripRecordingService::class.java).apply {
             action = ACTION_FINISH
         }
-        context.startService(intent)
+        try {
+            context.startService(intent)
+        } catch (_: Exception) {}
+        _metrics.value = TripMetrics(tripStatus = TripStatus.IDLE)
+        _livePoints.value = emptyList()
     }
 }

@@ -8,7 +8,10 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
+import android.view.MotionEvent
 import android.view.ViewGroup
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -181,7 +184,7 @@ fun DashboardScreen(
     // Upfront Role Gateway Selection ("rider" vs "parent")
     var selectedRole by remember(initialRole) { mutableStateOf(initialRole) }
     var isGuardianAuthorized by remember { mutableStateOf(false) }
-    var hasPendingRiderConsent by remember { mutableStateOf(true) }
+    var hasPendingRiderConsent by remember { mutableStateOf(false) }
 
     // Persistent Motorcycle State (Zero Mock Data)
     val prefs = remember { context.getSharedPreferences("rhody_bike_prefs", Context.MODE_PRIVATE) }
@@ -241,10 +244,6 @@ fun DashboardScreen(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
         hasPermissions = results.values.all { it }
-        if (hasPermissions && metrics.tripStatus == TripStatus.IDLE) {
-            TripRecordingController.startTrip(context)
-            onNavigateToLiveTrip()
-        }
     }
 
     // Search and filter state
@@ -375,110 +374,44 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // ================= ROLE SELECTOR (RIDER COCKPIT vs PARENT PORTAL) =================
-        val guardianPurple = Color(0xFFA855F7)
-        val guardianPurpleDark = Color(0xFF1E1035)
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(ObsidianGlass)
-                .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            // Rider Cockpit Mode Button
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(
-                        if (selectedRole == "rider") HyperCyan.copy(alpha = 0.18f) else Color.Transparent
-                    )
-                    .border(
-                        1.dp,
-                        if (selectedRole == "rider") HyperCyan.copy(alpha = 0.5f) else Color.Transparent,
-                        RoundedCornerShape(10.dp)
-                    )
-                    .clickable { selectedRole = "rider" }
-                    .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.DirectionsBike,
-                        contentDescription = "Rider Cockpit",
-                        tint = if (selectedRole == "rider") HyperCyan else TextMuted,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "RIDER COCKPIT",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (selectedRole == "rider") HyperCyan else TextMuted,
-                        letterSpacing = 0.8.sp
-                    )
-                }
-            }
-
-            // Parent / Guardian Portal Button
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(
-                        if (selectedRole == "parent") guardianPurple.copy(alpha = 0.22f) else Color.Transparent
-                    )
-                    .border(
-                        1.dp,
-                        if (selectedRole == "parent") guardianPurple.copy(alpha = 0.6f) else Color.Transparent,
-                        RoundedCornerShape(10.dp)
-                    )
-                    .clickable { selectedRole = "parent" }
-                    .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(7.dp)
-                            .clip(CircleShape)
-                            .background(if (selectedRole == "parent") OptimalGreen else guardianPurple)
-                    )
-                    Text(
-                        text = "PARENT PORTAL",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (selectedRole == "parent") Color.White else TextMuted,
-                        letterSpacing = 0.8.sp
-                    )
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(RacingRed.copy(alpha = 0.25f))
-                            .padding(horizontal = 4.dp, vertical = 1.dp)
-                    ) {
-                        Text(
-                            text = "LIVE",
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Black,
-                            color = RacingRed
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
+        // Show Parent / Guardian Portal ONLY when explicitly in parent mode
         if (selectedRole == "parent") {
+            // Quick return banner to switch back to rider cockpit
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(ObsidianGlass)
+                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                    .clickable { selectedRole = "rider" }
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFA855F7))
+                    )
+                    Text(
+                        text = "PARENT GUARDIAN MODE ACTIVE",
+                        color = Color(0xFFA855F7),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+                Text(
+                    text = "SWITCH TO RIDER COCKPIT →",
+                    color = HyperCyan,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             ParentGuardianPortalView(
                 riderName = if (authState.isLoggedIn && !authState.user?.name.isNullOrBlank()) authState.user!!.name else "Guest Pilot",
                 riderEmail = "pilot@rhody.io",
@@ -2015,14 +1948,15 @@ fun Bike3dSketchfabViewer(
 ) {
     val (uid, displayName) = remember(bikeModel) { resolveSketchfabModelForBike(bikeModel) }
     val embedUrl = "https://sketchfab.com/models/$uid/embed?autostart=1&internal=1&ui_infos=0&ui_watermark=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_annotations=0&ui_stop=0&transparent=1&dnt=1"
+    var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(200.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .height(230.dp)
+            .clip(RoundedCornerShape(16.dp))
             .background(Color(0xFF020307))
-            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+            .border(1.dp, CardBorderGlow, RoundedCornerShape(16.dp))
     ) {
         AndroidView(
             factory = { ctx ->
@@ -2032,15 +1966,38 @@ fun Bike3dSketchfabViewer(
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
                     setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    settings.databaseEnabled = true
+                    settings.allowFileAccess = true
+                    settings.allowContentAccess = true
+                    settings.mediaPlaybackRequiresUserGesture = false
                     settings.loadWithOverviewMode = true
                     settings.useWideViewPort = true
+                    settings.cacheMode = WebSettings.LOAD_DEFAULT
+                    webChromeClient = WebChromeClient()
                     webViewClient = WebViewClient()
+
+                    // Ensure touch rotation does not get hijacked by Compose verticalScroll
+                    setOnTouchListener { v, event ->
+                        when (event.action) {
+                            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                                v.parent?.requestDisallowInterceptTouchEvent(true)
+                            }
+                            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                                v.parent?.requestDisallowInterceptTouchEvent(false)
+                            }
+                        }
+                        false
+                    }
+
                     loadUrl(embedUrl)
+                    webViewRef = this
                 }
             },
             update = { webView ->
+                webViewRef = webView
                 if (webView.url != embedUrl) {
                     webView.loadUrl(embedUrl)
                 }
@@ -2048,14 +2005,15 @@ fun Bike3dSketchfabViewer(
             modifier = Modifier.fillMaxSize()
         )
 
+        // Bottom Model Pill Badge
         Row(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(8.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(Color.Black.copy(alpha = 0.8f))
-                .border(0.5.dp, HyperCyan.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(10.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Black.copy(alpha = 0.85f))
+                .border(0.5.dp, HyperCyan.copy(alpha = 0.45f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 9.dp, vertical = 5.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
@@ -2068,16 +2026,46 @@ fun Bike3dSketchfabViewer(
             Text(
                 text = displayName.uppercase(Locale.ROOT),
                 color = HyperCyan,
-                fontSize = 9.sp,
+                fontSize = 9.5.sp,
                 fontWeight = FontWeight.Black,
                 fontFamily = FontFamily.Monospace
             )
             Text(
                 text = "• 360° DIGITAL TWIN",
-                color = TextMuted,
+                color = TextSecondary,
                 fontSize = 8.sp,
                 fontWeight = FontWeight.Bold
             )
+        }
+
+        // Top Right Reset Camera / Reload Button
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(10.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Black.copy(alpha = 0.8f))
+                .border(0.5.dp, CardBorder, RoundedCornerShape(8.dp))
+                .clickable { webViewRef?.loadUrl(embedUrl) }
+                .padding(horizontal = 8.dp, vertical = 5.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Reset 3D Camera",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(12.dp)
+                )
+                Text(
+                    text = "RESET 3D",
+                    color = TextSecondary,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
@@ -2829,275 +2817,187 @@ fun DashboardBikeStatusSection(
 ) {
     val context = LocalContext.current
 
-    if (!isMachineConfigured) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(MidnightCard, ObsidianGlass)
-                    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(MidnightCard, ObsidianGlass)
                 )
-                .border(1.dp, CardBorderGlow, RoundedCornerShape(22.dp))
-                .padding(18.dp)
+            )
+            .border(1.dp, CardBorderGlow, RoundedCornerShape(22.dp))
+            .padding(16.dp)
+    ) {
+        // Bike Header Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(SportAmber.copy(alpha = 0.15f))
-                            .border(1.dp, SportAmber.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.TwoWheeler,
-                            contentDescription = "Unconfigured",
-                            tint = SportAmber,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "UNCONFIGURED MOTORCYCLE",
-                            color = TextPrimary,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp
-                        )
-                        Text(
-                            text = "Awaiting machine registration & telemetry lock",
-                            color = SportAmber,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(SportAmber.copy(alpha = 0.15f))
-                        .border(1.dp, SportAmber.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
-                        .padding(horizontal = 9.dp, vertical = 4.dp)
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(HyperCyan.copy(alpha = 0.15f))
+                        .border(1.dp, HyperCyan.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
+                    Icon(
+                        imageVector = Icons.Default.TwoWheeler,
+                        contentDescription = "Active Bike",
+                        tint = HyperCyan,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
                     Text(
-                        text = "AWAITING SETUP",
-                        color = SportAmber,
-                        fontSize = 9.sp,
+                        text = if (isMachineConfigured && bikeModel.isNotBlank()) bikeModel.uppercase() else "BAJAJ PULSAR 150",
+                        color = TextPrimary,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
-                        letterSpacing = 0.8.sp
+                        letterSpacing = 0.8.sp,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = if (isMachineConfigured) {
+                            "${bikeEngineSpec.ifBlank { "Configured Motorcycle" }} • ${bikePlate.ifBlank { "No Plate" }}"
+                        } else {
+                            "Interactive 3D Digital Twin • Tap to Configure"
+                        },
+                        color = if (isMachineConfigured) HyperCyan else SportAmber,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "Register your motorcycle to view engineering specs, preventative component lifecycles, and legal documents. Or ride in unconfigured mode.",
-                color = TextSecondary,
-                fontSize = 11.sp,
-                lineHeight = 16.sp
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            // Action: Edit / Register Button
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (isMachineConfigured) ObsidianSurface else HyperCyan.copy(alpha = 0.15f))
+                    .border(
+                        1.dp,
+                        if (isMachineConfigured) CardBorder else HyperCyan.copy(alpha = 0.6f),
+                        RoundedCornerShape(10.dp)
+                    )
+                    .clickable { onOpenRegisterDialog() }
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
-                Button(
-                    onClick = onOpenRegisterDialog,
-                    modifier = Modifier.weight(1f).height(42.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = HyperCyan,
-                        contentColor = CarbonDark
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.Engineering, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("REGISTER MACHINE", fontSize = 11.sp, fontWeight = FontWeight.Black)
-                }
-
-                OutlinedButton(
-                    onClick = {
-                        Toast.makeText(context, "Cockpit armed in unconfigured mode", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.weight(1f).height(42.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
-                    border = BorderStroke(1.dp, CardBorder)
-                ) {
-                    Text("RIDE UNCONFIGURED", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
+                Text(
+                    text = if (isMachineConfigured) "SWITCH" else "REGISTER",
+                    color = HyperCyan,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
+                )
             }
         }
-    } else {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(MidnightCard, ObsidianGlass)
-                    )
-                )
-                .border(1.dp, CardBorderGlow, RoundedCornerShape(22.dp))
-                .padding(16.dp)
-        ) {
-            // Bike Header Row
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 3D Motorcycle Digital Twin (Sketchfab Interactive 360 Viewer - Always Visible)
+        Bike3dSketchfabViewer(
+            bikeModel = if (isMachineConfigured && bikeModel.isNotBlank()) bikeModel else "Bajaj Pulsar 150",
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (!isMachineConfigured) {
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(ObsidianGlass)
+                    .border(0.5.dp, SportAmber.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+                    .clickable { onOpenRegisterDialog() }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(HyperCyan.copy(alpha = 0.15f))
-                            .border(1.dp, HyperCyan.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.TwoWheeler,
-                            contentDescription = "Active Bike",
-                            tint = HyperCyan,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = bikeModel.ifBlank { "ACTIVE MACHINE" }.uppercase(),
-                            color = TextPrimary,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp
-                        )
-                        Text(
-                            text = "${bikeEngineSpec.ifBlank { "Registered Motorcycle" }} • ${bikePlate.ifBlank { "No Plate" }}",
-                            color = HyperCyan,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                // Status pill & Edit trigger
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(OptimalGreen.copy(alpha = 0.15f))
-                            .border(1.dp, OptimalGreen.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
-                            .padding(horizontal = 9.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "READY TO RIDE",
-                            color = OptimalGreen,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 0.8.sp
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(ObsidianSurface)
-                            .border(1.dp, CardBorder, RoundedCornerShape(8.dp))
-                            .clickable { onOpenRegisterDialog() }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text("EDIT", color = HyperCyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
+                Text(
+                    text = "Awaiting custom bike setup. Tap to register Honda, Kawasaki, KTM...",
+                    color = TextSecondary,
+                    fontSize = 9.5.sp
+                )
+                Text(
+                    text = "SETUP →",
+                    color = SportAmber,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black
+                )
             }
+        }
 
-            Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-            // 3D Motorcycle Digital Twin (Sketchfab Interactive 360 Viewer)
-            Bike3dSketchfabViewer(
-                bikeModel = bikeModel,
-                modifier = Modifier.fillMaxWidth()
+        // Authentic Device Sensors Telemetry (Battery & GNSS Accuracy)
+        val (phoneBatteryPct, isPhoneCharging) = remember(context) {
+            try {
+                val bm = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
+                val level = bm?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1
+                val ifilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+                val batteryStatus = context.registerReceiver(null, ifilter)
+                val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+                val charging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
+                val validLevel = if (level in 0..100) level else 100
+                validLevel to charging
+            } catch (e: Exception) {
+                100 to false
+            }
+        }
+
+        // 4-Quadrant Vitals Grid (Zero Fake Data)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            BikeVitalMiniPill(
+                title = "DEVICE BATTERY",
+                value = "$phoneBatteryPct",
+                unit = "%",
+                status = if (isPhoneCharging) "CHARGING" else "BATTERY",
+                accentColor = if (isPhoneCharging) OptimalGreen else HyperCyan,
+                modifier = Modifier.weight(1f)
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            BikeVitalMiniPill(
+                title = "GPS ACCURACY",
+                value = if (metrics.accuracyMeters > 0f) "±${metrics.accuracyMeters.toInt().coerceAtLeast(1)}" else "LIVE",
+                unit = if (metrics.accuracyMeters > 0f) "M" else "",
+                status = if (metrics.accuracyMeters in 0.1f..15f) "GNSS LOCK" else "ACQUIRING",
+                accentColor = if (metrics.accuracyMeters in 0.1f..15f) OptimalGreen else SportAmber,
+                modifier = Modifier.weight(1f)
+            )
+        }
 
-            // Authentic Device Sensors Telemetry (Battery & GNSS Accuracy)
-            val (phoneBatteryPct, isPhoneCharging) = remember(context) {
-                try {
-                    val bm = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
-                    val level = bm?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1
-                    val ifilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-                    val batteryStatus = context.registerReceiver(null, ifilter)
-                    val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
-                    val charging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
-                    val validLevel = if (level in 0..100) level else 100
-                    validLevel to charging
-                } catch (e: Exception) {
-                    100 to false
-                }
-            }
+        Spacer(modifier = Modifier.height(10.dp))
 
-            // 4-Quadrant Vitals Grid (Zero Fake Data)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                BikeVitalMiniPill(
-                    title = "DEVICE BATTERY",
-                    value = "$phoneBatteryPct",
-                    unit = "%",
-                    status = if (isPhoneCharging) "CHARGING" else "BATTERY",
-                    accentColor = if (isPhoneCharging) OptimalGreen else HyperCyan,
-                    modifier = Modifier.weight(1f)
-                )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            BikeVitalMiniPill(
+                title = "6-AXIS IMU",
+                value = "ACTIVE",
+                unit = "GYRO",
+                status = "60 HZ LIVE",
+                accentColor = HyperCyan,
+                modifier = Modifier.weight(1f)
+            )
 
-                BikeVitalMiniPill(
-                    title = "GPS ACCURACY",
-                    value = if (metrics.accuracyMeters > 0f) "±${metrics.accuracyMeters.toInt().coerceAtLeast(1)}" else "LIVE",
-                    unit = if (metrics.accuracyMeters > 0f) "M" else "",
-                    status = if (metrics.accuracyMeters in 0.1f..15f) "GNSS LOCK" else "ACQUIRING",
-                    accentColor = if (metrics.accuracyMeters in 0.1f..15f) OptimalGreen else SportAmber,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                BikeVitalMiniPill(
-                    title = "6-AXIS IMU",
-                    value = "ACTIVE",
-                    unit = "GYRO",
-                    status = "60 HZ LIVE",
-                    accentColor = HyperCyan,
-                    modifier = Modifier.weight(1f)
-                )
-
-                BikeVitalMiniPill(
-                    title = "ODOMETER",
-                    value = bikeOdo.ifBlank { "0" },
-                    unit = "KM",
-                    status = "LOGGED",
-                    accentColor = SportAmber,
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            BikeVitalMiniPill(
+                title = "ODOMETER",
+                value = bikeOdo.ifBlank { "0" },
+                unit = "KM",
+                status = "LOGGED",
+                accentColor = SportAmber,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

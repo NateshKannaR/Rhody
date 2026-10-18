@@ -21,6 +21,7 @@ import com.roadpulse.app.domain.calculator.TripCalculator
 import com.roadpulse.app.domain.model.TripMetrics
 import com.roadpulse.app.domain.model.TripStatus
 import com.roadpulse.app.service.TripRecordingController
+import com.roadpulse.app.service.TripRecordingService
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,36 +44,64 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Check for unfinished/paused trip on launch to recover safely
+        // Check for unfinished/paused trip on launch to recover safely or clear stale sessions
         val repository = (application as RoadPulseApp).container.tripRepository
         lifecycleScope.launch {
             val activeTrip = repository.getActiveOrPausedTrip()
             if (activeTrip != null) {
-                val status = try {
-                    TripStatus.valueOf(activeTrip.status)
-                } catch (e: Exception) {
-                    TripStatus.PAUSED
+                val now = System.currentTimeMillis()
+                val isStale = (now - activeTrip.startTime > 5 * 60 * 1000L) || activeTrip.totalDistanceMeters <= 0.0
+
+                // If background service is NOT actively running and trip is stale, finalize it
+                if (!TripRecordingService.isServiceRunning && isStale) {
+                    val finalMetrics = TripMetrics(
+                        currentSpeedKmh = 0f,
+                        maxSpeedKmh = activeTrip.maxSpeedKmh,
+                        totalDistanceMeters = activeTrip.totalDistanceMeters,
+                        tripStatus = TripStatus.FINISHED
+                    )
+                    repository.finishTrip(activeTrip.id, finalMetrics)
+                    TripRecordingController.updateMetrics(TripMetrics(tripStatus = TripStatus.IDLE))
+                    TripRecordingController.clearLivePoints()
+                } else if (TripRecordingService.isServiceRunning) {
+                    val status = try {
+                        TripStatus.valueOf(activeTrip.status)
+                    } catch (e: Exception) {
+                        TripStatus.PAUSED
+                    }
+
+                    val points = repository.getPoints(activeTrip.id)
+                    TripRecordingController.setLivePoints(points)
+
+                    val recoveredMetrics = TripMetrics(
+                        currentSpeedKmh = 0f,
+                        maxSpeedKmh = activeTrip.maxSpeedKmh,
+                        avgMovingSpeedKmh = activeTrip.avgMovingSpeedKmh,
+                        avgOverallSpeedKmh = activeTrip.avgOverallSpeedKmh,
+                        totalDistanceMeters = activeTrip.totalDistanceMeters,
+                        elapsedTimeMs = activeTrip.totalDurationMs,
+                        movingDurationMs = activeTrip.movingDurationMs,
+                        pauseDurationMs = activeTrip.pauseDurationMs,
+                        activeTripId = activeTrip.id,
+                        tripStatus = status,
+                        recordedPointsCount = points.size,
+                        currentLatitude = points.lastOrNull()?.latitude,
+                        currentLongitude = points.lastOrNull()?.longitude
+                    )
+                    TripRecordingController.updateMetrics(recoveredMetrics)
+                } else {
+                    // Previous session died without service, finalize so user starts fresh
+                    val finalMetrics = TripMetrics(
+                        currentSpeedKmh = 0f,
+                        totalDistanceMeters = activeTrip.totalDistanceMeters,
+                        tripStatus = TripStatus.FINISHED
+                    )
+                    repository.finishTrip(activeTrip.id, finalMetrics)
+                    TripRecordingController.updateMetrics(TripMetrics(tripStatus = TripStatus.IDLE))
+                    TripRecordingController.clearLivePoints()
                 }
-
-                val points = repository.getPoints(activeTrip.id)
-                TripRecordingController.setLivePoints(points)
-
-                val recoveredMetrics = TripMetrics(
-                    currentSpeedKmh = 0f,
-                    maxSpeedKmh = activeTrip.maxSpeedKmh,
-                    avgMovingSpeedKmh = activeTrip.avgMovingSpeedKmh,
-                    avgOverallSpeedKmh = activeTrip.avgOverallSpeedKmh,
-                    totalDistanceMeters = activeTrip.totalDistanceMeters,
-                    elapsedTimeMs = activeTrip.totalDurationMs,
-                    movingDurationMs = activeTrip.movingDurationMs,
-                    pauseDurationMs = activeTrip.pauseDurationMs,
-                    activeTripId = activeTrip.id,
-                    tripStatus = status,
-                    recordedPointsCount = points.size,
-                    currentLatitude = points.lastOrNull()?.latitude,
-                    currentLongitude = points.lastOrNull()?.longitude
-                )
-                TripRecordingController.updateMetrics(recoveredMetrics)
+            } else {
+                TripRecordingController.updateMetrics(TripMetrics(tripStatus = TripStatus.IDLE))
             }
         }
 

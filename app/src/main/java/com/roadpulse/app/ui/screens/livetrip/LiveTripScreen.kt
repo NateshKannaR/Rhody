@@ -399,14 +399,14 @@ fun LiveTripScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = "PARENT LIVE SAFETY MONITOR",
+                            text = "LIVE TELEMETRY BEACON",
                             color = TextPrimary,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
                         )
                         Text(
-                            text = if (metrics.tripStatus == TripStatus.RECORDING) "Broadcasting live GPS & speed to parents" else "Tap to share live tracking link",
+                            text = if (metrics.tripStatus == TripStatus.RECORDING) "Broadcasting live GPS & telemetry beacon" else "Tap to share live tracking link",
                             color = TextSecondary,
                             fontSize = 8.sp
                         )

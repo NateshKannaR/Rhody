@@ -151,42 +151,6 @@ fun PilotTelemetryDossierCard(
                             fontFamily = FontFamily.Monospace
                         )
                     }
-
-                    // Hardware Bus Status Indicators
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(5.dp)
-                                .clip(CircleShape)
-                                .background(OptimalGreen)
-                        )
-                        Text(
-                            text = "ECU K-LINE: 60Hz",
-                            color = OptimalGreen,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        )
-                        Text(text = "•", color = TextMuted, fontSize = 8.sp)
-                        Text(
-                            text = "GPS RTK: 10Hz",
-                            color = HyperCyan,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        )
-                        Text(text = "•", color = TextMuted, fontSize = 8.sp)
-                        Text(
-                            text = "BLACK BOX: ARMED",
-                            color = purpleAccent,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        )
-                    }
                 }
             }
 
@@ -215,6 +179,79 @@ fun PilotTelemetryDossierCard(
                         modifier = Modifier.size(16.dp)
                     )
                 }
+            }
+        }
+
+        // Dedicated Hardware Bus Status Strip (Zero text wrap, full-width precision banner)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(CarbonDark)
+                .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                .padding(horizontal = 12.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(5.dp)
+                        .clip(CircleShape)
+                        .background(OptimalGreen)
+                )
+                Text(
+                    text = "ECU K-LINE: 60Hz",
+                    color = OptimalGreen,
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+
+            Text(text = "•", color = TextMuted, fontSize = 8.5.sp)
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(5.dp)
+                        .clip(CircleShape)
+                        .background(HyperCyan)
+                )
+                Text(
+                    text = "GPS RTK: 10Hz",
+                    color = HyperCyan,
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+
+            Text(text = "•", color = TextMuted, fontSize = 8.5.sp)
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(5.dp)
+                        .clip(CircleShape)
+                        .background(purpleAccent)
+                )
+                Text(
+                    text = "BLACK BOX: ARMED",
+                    color = purpleAccent,
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
             }
         }
 
