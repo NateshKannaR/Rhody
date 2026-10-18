@@ -98,6 +98,8 @@ import com.roadpulse.app.ui.theme.SuccessGreen
 import com.roadpulse.app.ui.theme.TextMuted
 import com.roadpulse.app.ui.theme.TextPrimary
 import com.roadpulse.app.ui.theme.TextSecondary
+import androidx.compose.runtime.LaunchedEffect
+import com.roadpulse.app.ui.screens.dashboard.DashboardBikeRegisterDialog
 import kotlinx.coroutines.launch
 
 @Composable
@@ -121,6 +123,13 @@ fun ProfileScreen(
     var bloodGroup by remember { mutableStateOf("O+") }
     var emergencyContactName by remember { mutableStateOf("Parents / ICE") }
     var emergencyContactPhone by remember { mutableStateOf("+91 98765 43210") }
+    var showBikeRegisterDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(authState.isLoggedIn) {
+        if (authState.isLoggedIn) {
+            CloudSyncManager.fetchUserProfileAndBike(context)
+        }
+    }
 
     // Auth form state
     var isLoginMode by remember { mutableStateOf(true) }
@@ -494,12 +503,30 @@ fun ProfileScreen(
                     )
                 }
 
-                Text(
-                    text = "PRIMARY BIKE",
-                    color = HyperCyan,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "PRIMARY BIKE",
+                        color = TextSecondary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(HyperCyan.copy(alpha = 0.15f))
+                            .border(1.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                            .clickable { showBikeRegisterDialog = true }
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "EDIT / SWITCH",
+                            color = HyperCyan,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
             }
 
             val bikePrefs = remember { context.getSharedPreferences("rhody_bike_prefs", Context.MODE_PRIVATE) }
@@ -962,6 +989,44 @@ fun ProfileScreen(
                 text = "Designed for high-performance telemetry & rider safety.",
                 color = TextMuted,
                 fontSize = 9.sp
+            )
+        }
+
+        if (showBikeRegisterDialog) {
+            val bikePrefs = remember { context.getSharedPreferences("rhody_bike_prefs", Context.MODE_PRIVATE) }
+            DashboardBikeRegisterDialog(
+                initialModel = bikePrefs.getString("bike_model", "") ?: "",
+                initialPlate = bikePrefs.getString("bike_plate", "") ?: "",
+                initialSpecs = bikePrefs.getString("bike_specs", "") ?: "",
+                initialOdo = bikePrefs.getString("bike_odo", "0") ?: "0",
+                onDismiss = { showBikeRegisterDialog = false },
+                onSaveBike = { cleanModel, cleanPlate, cleanSpecs, cleanOdo ->
+                    if (cleanModel.isNotBlank()) {
+                        val finalOdo = cleanOdo.ifBlank { "0" }
+                        bikePrefs.edit()
+                            .putBoolean("is_configured", true)
+                            .putString("bike_model", cleanModel)
+                            .putString("bike_plate", cleanPlate)
+                            .putString("bike_specs", cleanSpecs)
+                            .putString("bike_odo", finalOdo)
+                            .apply()
+
+                        coroutineScope.launch {
+                            val res = CloudSyncManager.saveUserProfileAndBike(
+                                context = context,
+                                bikeModel = cleanModel,
+                                bikePlate = cleanPlate,
+                                bikeSpecs = cleanSpecs,
+                                bikeOdo = finalOdo
+                            )
+                            if (res.isSuccess) {
+                                Toast.makeText(context, "Motorcycle Synced with MongoDB Atlas!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        showBikeRegisterDialog = false
+                        Toast.makeText(context, "Motorcycle Registered: $cleanModel", Toast.LENGTH_SHORT).show()
+                    }
+                }
             )
         }
 

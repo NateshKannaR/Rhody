@@ -3,10 +3,12 @@ package com.roadpulse.app.data.auth
 import android.content.Context
 import android.content.SharedPreferences
 import com.roadpulse.app.data.sync.CloudSyncManager
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.OutputStreamWriter
@@ -34,11 +36,13 @@ object AuthManager {
     private const val KEY_TOKEN = "auth_token"
 
     private var prefs: SharedPreferences? = null
+    private var appContext: Context? = null
 
     private val _authState = MutableStateFlow(AuthState())
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     fun init(context: Context) {
+        appContext = context.applicationContext
         if (prefs == null) {
             prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val isLoggedIn = prefs?.getBoolean(KEY_IS_LOGGED_IN, false) ?: false
@@ -54,6 +58,12 @@ object AuthManager {
                         user = AuthUser(id = userId, email = email, name = name),
                         token = token
                     )
+                    // Asynchronously sync latest bike and profile from MongoDB Atlas
+                    appContext?.let { ctx ->
+                        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                            CloudSyncManager.fetchUserProfileAndBike(ctx)
+                        }
+                    }
                 }
             }
         }
@@ -96,6 +106,11 @@ object AuthManager {
                 )
 
                 saveSession(user, token)
+                appContext?.let { ctx ->
+                    try {
+                        CloudSyncManager.fetchUserProfileAndBike(ctx)
+                    } catch (_: Exception) {}
+                }
                 Result.success(user)
             } else {
                 val errText = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
@@ -151,6 +166,11 @@ object AuthManager {
                 )
 
                 saveSession(user, token)
+                appContext?.let { ctx ->
+                    try {
+                        CloudSyncManager.fetchUserProfileAndBike(ctx)
+                    } catch (_: Exception) {}
+                }
                 Result.success(user)
             } else {
                 val errText = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""

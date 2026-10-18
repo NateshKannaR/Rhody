@@ -83,12 +83,17 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
+import com.roadpulse.app.data.sync.CloudSyncManager
+import com.roadpulse.app.domain.model.MotorcycleCatalog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -170,6 +175,7 @@ fun DashboardScreen(
     val metrics by TripRecordingController.metrics.collectAsState()
     val liveGForce by TripRecordingController.liveGForce.collectAsState()
     val livePoints by TripRecordingController.livePoints.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
 
     // Upfront Role Gateway Selection ("rider" vs "parent")
     var selectedRole by remember(initialRole) { mutableStateOf(initialRole) }
@@ -183,6 +189,20 @@ fun DashboardScreen(
     var bikePlate by remember { mutableStateOf(prefs.getString("bike_plate", "") ?: "") }
     var bikeOdo by remember { mutableStateOf(prefs.getString("bike_odo", "0") ?: "0") }
     var bikeEngineSpec by remember { mutableStateOf(prefs.getString("bike_specs", "") ?: "") }
+
+    LaunchedEffect(Unit) {
+        val auth = AuthManager.authState.value
+        if (auth.isLoggedIn) {
+            val syncRes = CloudSyncManager.fetchUserProfileAndBike(context)
+            if (syncRes.isSuccess) {
+                bikeModel = prefs.getString("bike_model", "") ?: ""
+                bikePlate = prefs.getString("bike_plate", "") ?: ""
+                bikeOdo = prefs.getString("bike_odo", "0") ?: "0"
+                bikeEngineSpec = prefs.getString("bike_specs", "") ?: ""
+                isMachineConfigured = prefs.getBoolean("is_configured", false)
+            }
+        }
+    }
 
     var showBikeRegisterDialog by remember { mutableStateOf(false) }
 
@@ -627,7 +647,19 @@ fun DashboardScreen(
             },
             onDispatchSos = {
                 showCrashTestDialog = false
-                Toast.makeText(context, "CRITICAL SOS Dispatched to Guardians!", Toast.LENGTH_LONG).show()
+                val auth = AuthManager.authState.value
+                coroutineScope.launch {
+                    CloudSyncManager.dispatchCrashSosToMongo(
+                        latitude = metrics.currentLatitude ?: 12.9716,
+                        longitude = metrics.currentLongitude ?: 77.5946,
+                        speedKmh = metrics.currentSpeedKmh,
+                        gForce = liveGForce.lateralG,
+                        tiltAngle = 78.5f,
+                        riderName = auth.user?.name ?: "Pilot",
+                        riderEmail = auth.user?.email ?: "pilot@rhody.io"
+                    )
+                }
+                Toast.makeText(context, "CRITICAL SOS Dispatched to Guardians & MongoDB Atlas!", Toast.LENGTH_LONG).show()
             }
         )
     }
@@ -670,6 +702,20 @@ fun DashboardScreen(
                         .putString("bike_specs", cleanSpecs)
                         .putString("bike_odo", finalOdo)
                         .apply()
+
+                    // Sync bike details directly to MongoDB Atlas
+                    coroutineScope.launch {
+                        val res = CloudSyncManager.saveUserProfileAndBike(
+                            context = context,
+                            bikeModel = cleanModel,
+                            bikePlate = cleanPlate,
+                            bikeSpecs = cleanSpecs,
+                            bikeOdo = finalOdo
+                        )
+                        if (res.isSuccess) {
+                            Toast.makeText(context, "Motorcycle Synced with MongoDB Atlas!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
 
                     showBikeRegisterDialog = false
                     Toast.makeText(context, "Motorcycle Registered: $cleanModel", Toast.LENGTH_SHORT).show()
@@ -1019,6 +1065,20 @@ fun DashboardBikeRegisterDialog(
     var inputPlate by remember { mutableStateOf(initialPlate) }
     var inputSpecs by remember { mutableStateOf(initialSpecs) }
     var inputOdo by remember { mutableStateOf(initialOdo) }
+    var selectedBrandFilter by remember { mutableStateOf("ALL") }
+    var bikeSearchQuery by remember { mutableStateOf("") }
+
+    val filteredBikes = remember(selectedBrandFilter, bikeSearchQuery) {
+        MotorcycleCatalog.allBikes.filter { bike ->
+            val matchesBrand = if (selectedBrandFilter == "ALL") true else bike.category == selectedBrandFilter
+            val matchesSearch = if (bikeSearchQuery.isBlank()) true else {
+                bike.model.contains(bikeSearchQuery, ignoreCase = true) ||
+                bike.brand.contains(bikeSearchQuery, ignoreCase = true) ||
+                bike.engineSpec.contains(bikeSearchQuery, ignoreCase = true)
+            }
+            matchesBrand && matchesSearch
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1036,17 +1096,22 @@ fun DashboardBikeRegisterDialog(
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Text(
-                    text = "Enter your actual machine details. No mock data will be stored.",
+                    text = "Select from complete Honda, Kawasaki, Yamaha, KTM, RE models or enter custom specs. Automatically persists to MongoDB Atlas.",
                     color = TextSecondary,
                     fontSize = 11.sp
                 )
 
-                // Quick Indian Motorcycle Selection Chips
+                // Quick Brand Selection Chips
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "QUICK INDIAN BIKES (1-TAP AUTOFILL):",
+                        text = "FILTER BY MOTORCYCLE BRAND:",
                         color = HyperCyan,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Black,
@@ -1058,45 +1123,89 @@ fun DashboardBikeRegisterDialog(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        listOf(
-                            "Bajaj Pulsar 150" to "149.5cc DTS-i Single • 14 PS",
-                            "Bajaj Pulsar NS 200" to "199.5cc Triple Spark 4V Liquid • 24.5 PS",
-                            "Bajaj Pulsar 220F" to "220cc DTS-i Oil Cooled • 20.4 PS",
-                            "TVS Apache RTR 200 4V" to "197.75cc 4V Oil Cooled • 20.8 PS",
-                            "Hero Splendor Plus" to "97.2cc Air Cooled • 8.02 PS",
-                            "Hero Xpulse 200 4V" to "199.6cc 4V Oil Cooled • 19.1 PS",
-                            "Royal Enfield Classic 350" to "349cc J-Series Single • 20.2 bhp",
-                            "Royal Enfield Bullet 350" to "349cc J-Series Single • 20.2 bhp",
-                            "Royal Enfield Continental GT 650" to "648cc Parallel Twin • 47 PS",
-                            "Yamaha MT-15 V2" to "155cc Liquid VVA • 18.4 PS",
-                            "Yamaha R15 V4" to "155cc Liquid VVA • 18.4 PS",
-                            "KTM Duke 200" to "199.5cc DOHC Liquid • 25 PS",
-                            "KTM Duke 390" to "399cc Liquid Single • 46 PS",
-                            "Honda CBR 1000RR-R" to "999cc Liquid Inline-4 • 217.5 PS",
-                            "Honda CB350 RS" to "348.36cc PGM-FI • 21.07 PS",
-                            "Honda Activa 6G" to "109.51cc PGM-FI eSP • 7.84 PS",
-                            "Kawasaki Ninja ZX-10R" to "998cc Liquid Inline-4 • 203 PS",
-                            "Kawasaki Z900" to "948cc Liquid Inline-4 • 125 PS",
-                            "Kawasaki Ninja 300" to "296cc Parallel Twin • 39 PS",
-                            "Kawasaki Ninja H2" to "998cc Supercharged • 231 PS"
-                        ).forEach { (m, s) ->
+                        MotorcycleCatalog.brands.forEach { brand ->
+                            val isSelected = selectedBrandFilter == brand
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (inputModel == m) HyperCyan.copy(alpha = 0.2f) else CarbonDark)
-                                    .border(1.dp, if (inputModel == m) HyperCyan else CardBorder, RoundedCornerShape(8.dp))
-                                    .clickable {
-                                        inputModel = m
-                                        inputSpecs = s
-                                    }
-                                    .padding(horizontal = 8.dp, vertical = 5.dp)
+                                    .background(if (isSelected) HyperCyan else CarbonDark)
+                                    .border(1.dp, if (isSelected) HyperCyan else CardBorder, RoundedCornerShape(8.dp))
+                                    .clickable { selectedBrandFilter = brand }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
                             ) {
                                 Text(
-                                    text = m,
-                                    color = if (inputModel == m) HyperCyan else TextPrimary,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
+                                    text = brand,
+                                    color = if (isSelected) CarbonDark else TextSecondary,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Black
                                 )
+                            }
+                        }
+                    }
+                }
+
+                // Search Bar for 35+ Bikes
+                OutlinedTextField(
+                    value = bikeSearchQuery,
+                    onValueChange = { bikeSearchQuery = it },
+                    placeholder = { Text("Search 35+ bikes (e.g. H2, ZX-10R, CBR, Duke...)", fontSize = 10.sp, color = TextMuted) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null, tint = HyperCyan, modifier = Modifier.size(16.dp))
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = HyperCyan,
+                        unfocusedBorderColor = CardBorder,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = CarbonDark,
+                        unfocusedContainerColor = CarbonDark
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                // Quick Motorcycle Selection Chips
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = "AVAILABLE PRESETS (${filteredBikes.size} BIKES):",
+                        color = OptimalGreen,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        filteredBikes.forEach { bike ->
+                            val isChosen = inputModel == bike.model
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isChosen) HyperCyan.copy(alpha = 0.2f) else CarbonDark)
+                                    .border(1.dp, if (isChosen) HyperCyan else CardBorder, RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        inputModel = bike.model
+                                        inputSpecs = bike.engineSpec
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Column {
+                                    Text(
+                                        text = bike.model,
+                                        color = if (isChosen) HyperCyan else TextPrimary,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = bike.engineSpec,
+                                        color = TextMuted,
+                                        fontSize = 8.sp
+                                    )
+                                }
                             }
                         }
                     }

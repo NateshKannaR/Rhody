@@ -210,5 +210,210 @@ object CloudSyncManager {
             connection?.disconnect()
         }
     }
+
+    suspend fun fetchUserProfileAndBike(context: Context): Result<JSONObject> = withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
+        try {
+            val authState = com.roadpulse.app.data.auth.AuthManager.authState.value
+            val url = URL("$serverBaseUrl/api/user/profile")
+            connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                setRequestProperty("Accept", "application/json")
+                if (!authState.token.isNullOrEmpty()) {
+                    setRequestProperty("Authorization", "Bearer ${authState.token}")
+                }
+                connectTimeout = 6000
+                readTimeout = 8000
+            }
+
+            val responseCode = connection.responseCode
+            if (responseCode in 200..299) {
+                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                val root = JSONObject(responseText)
+                val profile = root.optJSONObject("profile")
+                if (profile != null) {
+                    val bikeModel = profile.optString("bikeModel", "")
+                    val bikeSpecs = profile.optString("bikeSpecs", "")
+                    val bikePlate = profile.optString("bikePlate", "")
+
+                    val bikePrefs = context.applicationContext.getSharedPreferences("rhody_bike_prefs", Context.MODE_PRIVATE)
+                    val editor = bikePrefs.edit()
+                    if (bikeModel.isNotBlank()) {
+                        editor.putString("bike_model", bikeModel)
+                        editor.putBoolean("is_configured", true)
+                    }
+                    if (bikeSpecs.isNotBlank()) editor.putString("bike_specs", bikeSpecs)
+                    if (bikePlate.isNotBlank()) editor.putString("bike_plate", bikePlate)
+                    editor.apply()
+                }
+                Result.success(root)
+            } else {
+                Result.failure(Exception("HTTP $responseCode"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        } finally {
+            connection?.disconnect()
+        }
+    }
+
+    suspend fun saveUserProfileAndBike(
+        context: Context,
+        name: String? = null,
+        bikeModel: String,
+        bikePlate: String,
+        bikeSpecs: String,
+        bikeOdo: String,
+        emergencyContactName: String? = null,
+        emergencyContactPhone: String? = null
+    ): Result<Boolean> = withContext(Dispatchers.IO) {
+        var profileConn: HttpURLConnection? = null
+        var bikeConn: HttpURLConnection? = null
+        try {
+            val authState = com.roadpulse.app.data.auth.AuthManager.authState.value
+
+            // 1. Save to /api/user/profile
+            val profileUrl = URL("$serverBaseUrl/api/user/profile")
+            profileConn = (profileUrl.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                setRequestProperty("Accept", "application/json")
+                if (!authState.token.isNullOrEmpty()) {
+                    setRequestProperty("Authorization", "Bearer ${authState.token}")
+                }
+                connectTimeout = 8000
+                readTimeout = 12000
+                doOutput = true
+                doInput = true
+            }
+
+            val profilePayload = JSONObject().apply {
+                if (name != null) put("name", name)
+                put("bikeModel", bikeModel)
+                put("bikePlate", bikePlate)
+                put("bikeSpecs", bikeSpecs)
+                if (emergencyContactName != null) put("emergencyContactName", emergencyContactName)
+                if (emergencyContactPhone != null) put("emergencyContactPhone", emergencyContactPhone)
+            }
+
+            OutputStreamWriter(profileConn.outputStream, "UTF-8").use {
+                it.write(profilePayload.toString())
+                it.flush()
+            }
+            val profileCode = profileConn.responseCode
+
+            // 2. Save to /api/user/bike-management
+            val bikeUrl = URL("$serverBaseUrl/api/user/bike-management")
+            bikeConn = (bikeUrl.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                setRequestProperty("Accept", "application/json")
+                if (!authState.token.isNullOrEmpty()) {
+                    setRequestProperty("Authorization", "Bearer ${authState.token}")
+                }
+                connectTimeout = 8000
+                readTimeout = 12000
+                doOutput = true
+                doInput = true
+            }
+
+            val bikePayload = JSONObject().apply {
+                put("isConfigured", true)
+                put("specs", JSONObject().apply {
+                    put("makeModel", bikeModel)
+                    put("engine", bikeSpecs)
+                    put("currentOdometer", bikeOdo.toDoubleOrNull() ?: 0.0)
+                })
+                put("documents", JSONObject().apply {
+                    put("rcNumber", bikePlate)
+                })
+            }
+
+            OutputStreamWriter(bikeConn.outputStream, "UTF-8").use {
+                it.write(bikePayload.toString())
+                it.flush()
+            }
+            val bikeCode = bikeConn.responseCode
+
+            // Also persist locally in SharedPreferences
+            val bikePrefs = context.applicationContext.getSharedPreferences("rhody_bike_prefs", Context.MODE_PRIVATE)
+            bikePrefs.edit()
+                .putString("bike_model", bikeModel)
+                .putString("bike_plate", bikePlate)
+                .putString("bike_specs", bikeSpecs)
+                .putString("bike_odo", bikeOdo)
+                .putBoolean("is_configured", true)
+                .apply()
+
+            if (profileCode in 200..299 || bikeCode in 200..299) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("HTTP Profile: $profileCode, Bike: $bikeCode"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        } finally {
+            profileConn?.disconnect()
+            bikeConn?.disconnect()
+        }
+    }
+
+    suspend fun dispatchCrashSosToMongo(
+        latitude: Double,
+        longitude: Double,
+        speedKmh: Float,
+        gForce: Float,
+        tiltAngle: Float,
+        riderName: String,
+        riderEmail: String
+    ): Result<Boolean> = withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
+        try {
+            val url = URL("$serverBaseUrl/api/emergency/crash-event")
+            val authState = com.roadpulse.app.data.auth.AuthManager.authState.value
+            connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                setRequestProperty("Accept", "application/json")
+                if (!authState.token.isNullOrEmpty()) {
+                    setRequestProperty("Authorization", "Bearer ${authState.token}")
+                }
+                connectTimeout = 5000
+                readTimeout = 8000
+                doOutput = true
+                doInput = true
+            }
+
+            val payload = JSONObject().apply {
+                put("riderName", riderName)
+                put("riderEmail", riderEmail)
+                put("latitude", latitude)
+                put("longitude", longitude)
+                put("speedKmh", speedKmh.toDouble())
+                put("impactG", gForce.toDouble())
+                put("rollAngle", tiltAngle.toDouble())
+                put("timestamp", java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+                    timeZone = java.util.TimeZone.getTimeZone("UTC")
+                }.format(java.util.Date()))
+            }
+
+            OutputStreamWriter(connection.outputStream, "UTF-8").use {
+                it.write(payload.toString())
+                it.flush()
+            }
+
+            val code = connection.responseCode
+            if (code in 200..299) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("HTTP $code"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        } finally {
+            connection?.disconnect()
+        }
+    }
 }
+
 
