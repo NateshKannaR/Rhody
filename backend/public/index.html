@@ -620,24 +620,71 @@
             </div>
           </div>
 
-          <!-- Quick 1-Tap Preset Selector Chips -->
-          <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none text-[10px]">
-            <span class="text-slate-500 font-mono text-[9px] uppercase shrink-0">SELECT 3D BIKE:</span>
-            <button onclick="selectBike3dPreset('ktm_duke_390')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ KTM Duke 390</button>
-            <button onclick="selectBike3dPreset('yamaha_mt09')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Yamaha MT-15 / MT-09</button>
-            <button onclick="selectBike3dPreset('yamaha_r6_r1')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Yamaha R-Series</button>
-            <button onclick="selectBike3dPreset('kawasaki_ninja')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Kawasaki Ninja H2</button>
-            <button onclick="selectBike3dPreset('royal_enfield')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Royal Enfield GT 650</button>
-            <button onclick="selectBike3dPreset('bmw_s1000rr')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ BMW S1000RR</button>
-            <button onclick="selectBike3dPreset('ducati_panigale')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Ducati Panigale V4</button>
-            <button onclick="selectBike3dPreset('suzuki_hayabusa')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Suzuki Hayabusa</button>
-            <button onclick="selectBike3dPreset('triumph_street_triple')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Triumph 765</button>
-            <button onclick="selectBike3dPreset('harley_davidson')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Harley Cruiser</button>
+          <!-- Active Bike Model Binding & Mention Bar -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-black/40 backdrop-blur-md p-2.5 rounded-xl border border-white/[0.08]">
+            <div class="flex items-center space-x-2.5 min-w-0">
+              <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shrink-0">
+                3D TWIN
+              </span>
+              <div class="min-w-0">
+                <span id="cockpitCurrentBikeLabel" class="text-xs font-bold text-white block truncate">
+                  Unconfigured Machine
+                </span>
+                <span id="cockpitCurrentBikeSpec" class="text-[10px] text-slate-400 font-mono block truncate">
+                  Mention or type your motorcycle model to display its 3D twin
+                </span>
+              </div>
+            </div>
+
+            <!-- Mention / Set Bike Input Form -->
+            <form onsubmit="handleCockpitBikeSubmit(event)" class="flex items-center space-x-1.5 shrink-0">
+              <div class="relative flex-1 sm:flex-initial">
+                <input 
+                  type="text" 
+                  id="cockpitBikeInput" 
+                  list="indianBikesDatalist" 
+                  placeholder="Mention bike (e.g. Pulsar 150, NS 200, Apache...)" 
+                  class="w-full sm:w-64 px-3 py-1.5 text-xs rounded-lg bg-white/[0.06] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
+                  autocomplete="off"
+                />
+                <datalist id="indianBikesDatalist">
+                  <option value="Bajaj Pulsar 150"></option>
+                  <option value="Bajaj Pulsar NS 200"></option>
+                  <option value="Bajaj Pulsar 220F"></option>
+                  <option value="TVS Apache RTR 200 4V"></option>
+                  <option value="Hero Splendor Plus"></option>
+                  <option value="Hero Xpulse 200 4V"></option>
+                  <option value="Royal Enfield Classic 350"></option>
+                  <option value="Royal Enfield Bullet 350"></option>
+                  <option value="Royal Enfield Continental GT 650"></option>
+                  <option value="Yamaha MT-15 V2"></option>
+                  <option value="Yamaha R15 V4"></option>
+                  <option value="KTM Duke 200"></option>
+                  <option value="KTM Duke 390"></option>
+                  <option value="KTM RC 390"></option>
+                  <option value="Honda Activa 6G"></option>
+                  <option value="Honda CB350 RS"></option>
+                  <option value="Kawasaki Ninja H2"></option>
+                  <option value="BMW S1000 RR"></option>
+                  <option value="Ducati Panigale V4"></option>
+                  <option value="Suzuki Hayabusa"></option>
+                  <option value="Triumph Street Triple 765"></option>
+                  <option value="Harley-Davidson Cruiser"></option>
+                </datalist>
+              </div>
+              <button 
+                type="submit" 
+                class="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition shrink-0 flex items-center space-x-1 shadow-lg shadow-cyan-500/20 active:scale-95"
+              >
+                <span>Set Bike</span>
+              </button>
+            </form>
           </div>
+
 
           <!-- 3D Iframe Viewer Frame -->
           <div id="cockpit3dFrameWrapper" class="relative w-full h-[280px] sm:h-[380px] md:h-[450px] rounded-xl bg-[#020307] border border-white/[0.06] overflow-hidden group">
-            <iframe id="cockpit3dIframe" title="Motorcycle 3D Digital Twin" class="w-full h-full border-0 rounded-xl" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" src="https://sketchfab.com/models/7dae0168e23b45888b170c46a34443cc/embed?autostart=1&internal=1&ui_infos=0&ui_watermark=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_annotations=0&ui_stop=0&transparent=1&dnt=1"></iframe>
+            <iframe id="cockpit3dIframe" title="Motorcycle 3D Digital Twin" class="w-full h-full border-0 rounded-xl" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" src="https://sketchfab.com/models/99551e910fac4566bb2555700d6d8404/embed?autostart=1&internal=1&ui_infos=0&ui_watermark=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_annotations=0&ui_stop=0&transparent=1&dnt=1"></iframe>
             
             <!-- Gesture Hint Overlay (fades out on interaction) -->
             <div id="bike3dGestureHint" class="absolute bottom-2.5 left-2.5 pointer-events-none px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md border border-white/10 text-[10px] text-slate-300 flex items-center space-x-1.5 shadow-lg">

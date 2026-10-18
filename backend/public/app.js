@@ -686,41 +686,116 @@ function renderCareerStatsFromTrips() {
 // =============================================================================
 
 const SKETCHFAB_BIKE_MODELS = {
+  // Indian Motorcycles
+  bajaj_pulsar_150: {
+    name: 'Bajaj Pulsar 150',
+    uid: '99551e910fac4566bb2555700d6d8404',
+    specs: '149.5cc DTS-i Single • 14 PS • 13.25 Nm',
+    keywords: ['pulsar 150', 'pulsar150', 'pulsar-150', 'bajaj pulsar 150', 'p150', 'pulsar 125', 'pulsar 180']
+  },
+  bajaj_pulsar_ns200: {
+    name: 'Bajaj Pulsar NS200',
+    uid: 'c790c74a665340f0962ad986687f1cf3',
+    specs: '199.5cc Triple Spark 4V Liquid • 24.5 PS • 18.7 Nm',
+    keywords: ['pulsar ns 200', 'pulsar ns200', 'ns 200', 'ns200', 'ns-200', 'pulsar ns', 'ns160', 'ns 160']
+  },
+  bajaj_pulsar_220f: {
+    name: 'Bajaj Pulsar 220F',
+    uid: '8a76e4c77c46435ca5371ee10ed2956e',
+    specs: '220cc DTS-i Oil Cooled • 20.4 PS • 18.5 Nm',
+    keywords: ['pulsar 220', 'pulsar 220f', '220f', '220 f', 'pulsar220', 'pulsar', 'bajaj']
+  },
+  tvs_apache_rtr: {
+    name: 'TVS Apache RTR 200 4V',
+    uid: '98b4185db6154cffb54e41aa0888b708',
+    specs: '197.75cc 4V Oil Cooled • 20.8 PS • Race Tuned FI',
+    keywords: ['apache', 'tvs apache', 'rtr 200', 'rtr 160', 'apache 160', 'apache 200', 'apache 310', 'rr 310', 'rtr', 'tvs']
+  },
+  hero_splendor: {
+    name: 'Hero Splendor Plus',
+    uid: 'd77c9013ed194606ab5545ab8dc1105c',
+    specs: '97.2cc Air Cooled OHC • i3S Tech • 8.02 PS',
+    keywords: ['splendor', 'splendor plus', 'super splendor', 'splendor+', 'hero splendor', 'passion', 'hf deluxe', 'hero']
+  },
+  hero_xpulse: {
+    name: 'Hero Xpulse 200 4V',
+    uid: '434cdbdfad924bcd80c1f79858d887ae',
+    specs: '199.6cc 4V Oil Cooled • 19.1 PS • Dual Sport Adventure',
+    keywords: ['xpulse', 'xpulse 200', 'xpulse 200 4v', 'hero xpulse', 'x pulse']
+  },
+  royal_enfield_classic_350: {
+    name: 'Royal Enfield Classic 350',
+    uid: 'c501b415fe494cfca1bf03be420249cb',
+    specs: '349cc J-Series OHC Single • 20.2 bhp • 27 Nm',
+    keywords: ['classic 350', 'classic350', 're classic', 'royal enfield classic', 'classic']
+  },
+  royal_enfield_bullet_350: {
+    name: 'Royal Enfield Bullet 350',
+    uid: 'c281cd335877408bb541c9f5e3f647d0',
+    specs: '349cc J-Series Single • Legendary Dug-Dug • 27 Nm',
+    keywords: ['bullet 350', 'bullet350', 'bullet', 'standard 350', 'royal enfield bullet']
+  },
+  royal_enfield_gt650: {
+    name: 'Royal Enfield Continental GT 650',
+    uid: '52003bf209744ab8bad9ce2a8bd7d128',
+    specs: '648cc Parallel Twin • Harris Frame • 47 PS',
+    keywords: ['continental gt', 'gt 650', 'gt650', 'interceptor 650', 'interceptor', 'himalayan', 'hunter 350', 'hunter', 'meteor 350', 'meteor', 'royal enfield', 'enfield']
+  },
+  yamaha_mt15: {
+    name: 'Yamaha MT-15 V2',
+    uid: '5dc2c18d7aa844daa7dd1fb1919429db',
+    specs: '155cc Liquid VVA • 18.4 PS • Deltabox Frame',
+    keywords: ['mt 15', 'mt-15', 'mt15', 'yamaha mt', 'mt 09', 'mt-09', 'mt 07', 'mt-07', 'fz', 'fzs', 'fz-s', 'fz-x']
+  },
+  yamaha_r15: {
+    name: 'Yamaha R15 V4',
+    uid: 'b827360537ea41f799024e5ffcfbb354',
+    specs: '155cc Liquid VVA • Assist & Slipper Clutch • Quickshifter',
+    keywords: ['r15', 'r-15', 'r15 v4', 'r15 v3', 'r15m', 'yzf r15', 'yamaha r', 'r1', 'r6', 'r3', 'r7']
+  },
+  ktm_duke_200: {
+    name: 'KTM Duke 200',
+    uid: '1850a6e40e92493192f1a656c4803525',
+    specs: '199.5cc DOHC Liquid Single • 25 PS • Trellis Frame',
+    keywords: ['duke 200', 'duke200', 'ktm 200', 'ktm duke 200', 'rc 200']
+  },
   ktm_duke_390: {
     name: 'KTM 390 Duke',
     uid: '7dae0168e23b45888b170c46a34443cc',
     specs: '399cc Liquid Single • 46 PS • 39 Nm',
-    keywords: ['ktm', 'duke', 'rc 390', 'rc 200', 'duke 390', 'duke 250', 'duke 200', 'super duke']
+    keywords: ['duke 390', 'duke390', 'ktm 390', 'ktm duke', 'duke 250', 'duke', 'ktm']
   },
-  yamaha_mt09: {
-    name: 'Yamaha MT-15 / MT-09',
-    uid: 'cb5878baf5974167806eb8524d57f0b0',
-    specs: '155cc / 890cc Liquid VVA • Crossplane CP3',
-    keywords: ['yamaha mt', 'mt 15', 'mt-15', 'mt15', 'mt-09', 'mt 09', 'mt-07', 'mt 07', 'mt-03', 'mt03', 'fz', 'fzs', 'fz-s', 'fz-x']
+  ktm_rc_390: {
+    name: 'KTM RC 390',
+    uid: 'd15e9521f5244d788556766272f5d1e0',
+    specs: '373cc Liquid DOHC Single • Supersport Clip-ons',
+    keywords: ['rc 390', 'rc390', 'ktm rc', 'rc']
   },
-  yamaha_r6_r1: {
-    name: 'Yamaha YZF R-Series',
-    uid: 'b827360537ea41f799024e5ffcfbb354',
-    specs: 'YZF Inline-4 / Single • Aerodynamic Track Spec',
-    keywords: ['r15', 'r1', 'r6', 'yzf', 'yamaha r', 'r-15', 'r-1', 'r-6', 'r3', 'r7']
+  honda_activa: {
+    name: 'Honda Activa 6G',
+    uid: '7d9b81d5b40a4ea79dd3a9e4b2c0216a',
+    specs: '109.51cc PGM-FI eSP • Silent ACG Starter • 7.84 PS',
+    keywords: ['activa', 'activa 6g', 'activa 125', 'dio', 'jupiter', 'scooter']
   },
+  honda_cb350: {
+    name: 'Honda CB350 RS / H\'ness',
+    uid: '57da4074452c42a09cf2ecf52d994e2e',
+    specs: '348.36cc PGM-FI Air Cooled Single • 21.07 PS • HSTC',
+    keywords: ['cb350', 'cb 350', 'hness', 'h\'ness', 'cb350rs', 'honda cb', 'honda']
+  },
+
+  // Performance & Superbikes
   kawasaki_ninja: {
     name: 'Kawasaki Ninja H2 / ZX-10R',
     uid: '0ab38d6e39664b25bfaf9f5c3e0c767c',
     specs: 'Supercharged 998cc • Trellis Chassis',
-    keywords: ['ninja', 'kawasaki', 'h2', 'ninja 300', 'ninja 400', 'zx10r', 'zx-10r', 'zx6r', 'z900', 'z650', 'zx']
-  },
-  royal_enfield: {
-    name: 'Royal Enfield Continental GT 650',
-    uid: '52003bf209744ab8bad9ce2a8bd7d128',
-    specs: '648cc Parallel Twin • Harris Frame',
-    keywords: ['royal enfield', 'enfield', 'hunter', 'continental', 'gt 650', 'interceptor', 'classic 350', 'bullet', 'himalayan', 'meteor']
+    keywords: ['ninja', 'kawasaki', 'h2', 'ninja 300', 'ninja 400', 'zx10r', 'zx-10r', 'zx6r', 'z900', 'z650']
   },
   bmw_s1000rr: {
     name: 'BMW S1000 RR',
     uid: '1873aed292d6465694119bd81860a0c2',
     specs: '999cc ShiftCam Inline-4 • 207 PS',
-    keywords: ['bmw', 's1000rr', 's1000', 'm1000rr', 's 1000 rr', 's1000r', 'r1250gs', 'gs']
+    keywords: ['bmw', 's1000rr', 's1000', 'm1000rr', 's 1000 rr', 's1000r', 'g310r', 'g310gs']
   },
   ducati_panigale: {
     name: 'Ducati Panigale V4',
@@ -748,21 +823,30 @@ const SKETCHFAB_BIKE_MODELS = {
   }
 };
 
-let current3dBikeUid = '7dae0168e23b45888b170c46a34443cc';
+let current3dBikeUid = '99551e910fac4566bb2555700d6d8404'; // Default to Bajaj Pulsar 150
 let phoneSensorsInitialized = false;
 
 function getSketchfabModelForBike(bikeName) {
-  if (!bikeName || typeof bikeName !== 'string') return SKETCHFAB_BIKE_MODELS.ktm_duke_390;
+  if (!bikeName || typeof bikeName !== 'string') return SKETCHFAB_BIKE_MODELS.bajaj_pulsar_150;
   const q = bikeName.toLowerCase().trim();
+
+  // Flatten all keyword pairs and sort by keyword length descending (specific-first matching)
+  const matches = [];
   for (const key of Object.keys(SKETCHFAB_BIKE_MODELS)) {
     const item = SKETCHFAB_BIKE_MODELS[key];
     for (const kw of item.keywords) {
       if (q.includes(kw)) {
-        return item;
+        matches.push({ item, kwLen: kw.length });
       }
     }
   }
-  return SKETCHFAB_BIKE_MODELS.ktm_duke_390;
+
+  if (matches.length > 0) {
+    matches.sort((a, b) => b.kwLen - a.kwLen);
+    return matches[0].item;
+  }
+
+  return SKETCHFAB_BIKE_MODELS.bajaj_pulsar_150;
 }
 
 function updateBike3dModel(bikeName, customUid = null) {
@@ -782,22 +866,84 @@ function updateBike3dModel(bikeName, customUid = null) {
     cockpitIframe.src = embedUrl;
   }
 
-  // Update Cockpit Badge
+  // Update Cockpit Active Badge & Header
+  const activeName = (modelObj ? modelObj.name : bikeName || 'Bajaj Pulsar 150');
+  const activeSpecs = (modelObj ? modelObj.specs : 'Motorcycle 3D Digital Twin');
+
   const badge = document.getElementById('bike3dActiveBadge');
   if (badge) {
-    badge.textContent = (modelObj ? modelObj.name : bikeName || '3D DIGITAL TWIN').toUpperCase();
+    badge.textContent = activeName.toUpperCase();
   }
 
-  // Update Modal Preview 3D Iframe
+  const cockpitLabel = document.getElementById('cockpitCurrentBikeLabel');
+  if (cockpitLabel) {
+    cockpitLabel.textContent = activeName;
+  }
+
+  const cockpitSpec = document.getElementById('cockpitCurrentBikeSpec');
+  if (cockpitSpec) {
+    cockpitSpec.textContent = activeSpecs;
+  }
+
+  const cockpitInput = document.getElementById('cockpitBikeInput');
+  if (cockpitInput && bikeName && cockpitInput !== document.activeElement) {
+    cockpitInput.value = bikeName;
+  }
+
+  // Update Modal Preview 3D Iframe if open
   const modalIframe = document.getElementById('modalBike3dIframe');
   if (modalIframe && modalIframe.src !== embedUrl) {
     modalIframe.src = embedUrl;
   }
 }
 
+async function handleCockpitBikeSubmit(event) {
+  if (event) event.preventDefault();
+  const input = document.getElementById('cockpitBikeInput');
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) {
+    showToast('Please enter or mention a bike model', 'warning');
+    return;
+  }
+
+  // Bind to rider profile & bike management data
+  riderProfile.bikeModel = val;
+  if (!bikeManagementData.specs) bikeManagementData.specs = {};
+  bikeManagementData.specs.makeModel = val;
+  bikeManagementData.isConfigured = true;
+
+  // Persist locally
+  try {
+    localStorage.setItem('rhody_rider_profile', JSON.stringify(riderProfile));
+    localStorage.setItem('rhody_bike_specs', JSON.stringify(bikeManagementData.specs));
+  } catch (e) {}
+
+  // Update 3D twin and dashboard immediately
+  const matched = getSketchfabModelForBike(val);
+  if (matched) {
+    bikeManagementData.specs.engine = matched.specs;
+  }
+  updateBike3dModel(val);
+  renderDashboardBike();
+  showToast(`Loaded 3D Twin for ${val}`, 'success');
+
+  // If user is authenticated, sync with server profile
+  if (authToken) {
+    try {
+      fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({ bikeModel: val })
+      }).catch(() => {});
+    } catch (e) {}
+  }
+}
+
 function selectBike3dPreset(presetKey) {
   const model = SKETCHFAB_BIKE_MODELS[presetKey];
   if (!model) return;
+  riderProfile.bikeModel = model.name;
   updateBike3dModel(model.name, model.uid);
   showToast(`Loaded 3D Model: ${model.name}`, 'info');
 }
@@ -998,7 +1144,7 @@ function renderDashboardBike() {
     if (tiresR) tiresR.textContent = 'R: -- PSI';
     if (odoVal) odoVal.textContent = '0 km';
 
-    updateBike3dModel('KTM Duke 390');
+    updateBike3dModel('Bajaj Pulsar 150');
 
     currentYoutubeQuery = 'motorcycle service maintenance guide safe riding telemetry';
   }
