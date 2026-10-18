@@ -543,17 +543,10 @@ fun AnalyticsScreen(
                     onClick = {
                         val trip = selectedHistoricalTrip
                         if (trip != null) {
-                            coroutineScope.launch {
-                                try {
-                                    val uri = ExportManager.exportTripToGpx(context, trip, historicalPoints)
-                                    if (uri != null) {
-                                        ExportManager.shareExportedFile(context, uri, "application/gpx+xml")
-                                    } else {
-                                        Toast.makeText(context, "Export error", Toast.LENGTH_SHORT).show()
-                                    }
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, "Export error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                }
+                            try {
+                                ExportManager.shareGpx(context, trip, historicalPoints)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Export error: ${e.message}", Toast.LENGTH_SHORT).show()
                             }
                         }
                     },
@@ -575,17 +568,10 @@ fun AnalyticsScreen(
                     onClick = {
                         val trip = selectedHistoricalTrip
                         if (trip != null) {
-                            coroutineScope.launch {
-                                try {
-                                    val uri = ExportManager.exportTripToCsv(context, trip, historicalPoints)
-                                    if (uri != null) {
-                                        ExportManager.shareExportedFile(context, uri, "text/csv")
-                                    } else {
-                                        Toast.makeText(context, "Export error", Toast.LENGTH_SHORT).show()
-                                    }
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, "Export error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                }
+                            try {
+                                ExportManager.shareCsv(context, trip, historicalPoints)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Export error: ${e.message}", Toast.LENGTH_SHORT).show()
                             }
                         }
                     },

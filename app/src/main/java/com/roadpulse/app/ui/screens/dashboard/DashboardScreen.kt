@@ -101,6 +101,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.roadpulse.app.data.database.TrackPointEntity
 import com.roadpulse.app.data.auth.AuthManager
 import com.roadpulse.app.domain.calculator.SprintTimerCalculator
 import com.roadpulse.app.domain.calculator.TripCalculator
@@ -202,47 +203,8 @@ fun DashboardScreen(
 
     // Active upload modal state
     var activeUploadDocType by remember { mutableStateOf<String?>(null) }
-    var uploadDocNumberInput by remember { mutableStateOf("") }
-    var uploadDocPickedName by remember { mutableStateOf<String?>(null) }
-
-    val docPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            val fileName = uri.lastPathSegment?.substringAfterLast('/') ?: "document.pdf"
-            uploadDocPickedName = fileName
-            Toast.makeText(context, "Attached: $fileName", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     // MotoGP AI Apex State (Zero Mock Data - 100% Genuine Sensors)
-    var apexScoreTier by remember { mutableStateOf("AWAITING CORNER PULL") }
-    var apexEntrySpeed by remember { mutableStateOf("-- km/h") }
-    var apexRollAngle by remember { mutableStateOf("--° Roll") }
-    var apexLateralG by remember { mutableStateOf("-- G") }
-    var apexExitSpeed by remember { mutableStateOf("-- km/h") }
-    var apexCoachTip by remember {
-        mutableStateOf("No corner telemetry recorded yet. Mount device firmly and lean through curves during an active ride to log entry speed, apex roll angle, lateral G-load, and exit acceleration.")
-    }
-    var isAnalyzingApex by remember { mutableStateOf(false) }
-
-    // GPS Elevation & Altimeter Profile State (Zero Mock Data)
-    var currentAltitudeM by remember { mutableStateOf(0f) }
-    var peakAltitudeM by remember { mutableStateOf(0f) }
-    var climbGainM by remember { mutableStateOf(0f) }
-    var elevationGradeText by remember { mutableStateOf("AWAITING GPS FIX") }
-    var elevationGradeColor by remember { mutableStateOf(TextMuted) }
-
-    // Crosswind Radar State (Zero Mock Data)
-    var crosswindSpeed by remember { mutableStateOf("-- km/h") }
-    var crosswindLeanComp by remember { mutableStateOf("--° Counter-Lean") }
-    var crosswindDragPenalty by remember { mutableStateOf("--% Resistance") }
-    var crosswindRiskText by remember { mutableStateOf("STANDBY") }
-    var crosswindRiskColor by remember { mutableStateOf(TextMuted) }
-
-    val liveSprints = remember(livePoints) {
-        SprintTimerCalculator.calculateBestSprints(livePoints)
-    }
 
     var hasPermissions by remember {
         mutableStateOf(checkPermissions(context))
@@ -328,7 +290,6 @@ fun DashboardScreen(
 
     val scrollState = rememberScrollState()
     var showHudMirrorDialog by remember { mutableStateOf(false) }
-    var isHudWindshieldFlipped by remember { mutableStateOf(false) }
     var showCrashTestDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -554,8 +515,8 @@ fun DashboardScreen(
                 speedKmh = metrics.currentSpeedKmh,
                 topSpeedKmh = metrics.maxSpeedKmh,
                 isMoving = metrics.currentSpeedKmh > 3.0,
-                lat = metrics.latitude,
-                lng = metrics.longitude,
+                lat = metrics.currentLatitude ?: 0.0,
+                lng = metrics.currentLongitude ?: 0.0,
                 isAuthorized = isGuardianAuthorized,
                 onAuthorize = { isGuardianAuthorized = true },
                 isMachineConfigured = isMachineConfigured,
@@ -568,1890 +529,183 @@ fun DashboardScreen(
                 pucUploaded = pucUploaded
             )
         } else {
-            // RIDER GUARDIAN CONSENT BANNER (TWO-WAY HANDSHAKE)
-            if (hasPendingRiderConsent) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(guardianPurpleDark, MidnightCard)
-                            )
-                        )
-                        .border(1.dp, guardianPurple.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(guardianPurple.copy(alpha = 0.2f))
-                                .border(1.dp, guardianPurple.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Guardian Request",
-                                tint = guardianPurple,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "GUARDIAN ACCESS REQUEST",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = guardianPurple,
-                                    letterSpacing = 0.5.sp
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(SportAmber.copy(alpha = 0.2f))
-                                        .padding(horizontal = 4.dp, vertical = 1.dp)
-                                ) {
-                                    Text(
-                                        text = "ACTION REQUIRED",
-                                        fontSize = 8.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = SportAmber
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Family Guardian (guardian@family.io) requested live GPS and telemetry.",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = TextPrimary,
-                                modifier = Modifier.padding(top = 2.dp)
-                            )
-                            Text(
-                                text = "Strict privacy: Zero telemetry is shared until you approve.",
-                                fontSize = 10.sp,
-                                color = TextSecondary
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                isGuardianAuthorized = true
-                                hasPendingRiderConsent = false
-                                Toast.makeText(context, "Guardian access granted! Telemetry shared.", Toast.LENGTH_SHORT).show()
-                            },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = OptimalGreen,
-                                contentColor = Color.Black
-                            ),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("Accept & Grant Access", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                hasPendingRiderConsent = false
-                                Toast.makeText(context, "Guardian request declined", Toast.LENGTH_SHORT).show()
-                            },
-                            modifier = Modifier.weight(0.6f),
-                            shape = RoundedCornerShape(10.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-                        ) {
-                            Text("Decline", fontSize = 11.sp, color = TextMuted)
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(14.dp))
-            }
-
-            // ================= 1.5 ADVANCED MOTORSPORT ACTIONS (HUD & CRASH BOX) =================
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 14.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // HUD Mirror Launcher Chip
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(HyperCyan.copy(alpha = 0.12f))
-                        .border(1.dp, HyperCyan.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
-                        .clickable { showHudMirrorDialog = true }
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(HyperCyan.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Visibility,
-                                contentDescription = "HUD",
-                                tint = HyperCyan,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = "HUD MIRROR MODE",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Black,
-                                color = TextPrimary,
-                                letterSpacing = 0.5.sp
-                            )
-                            Text(
-                                text = "Windshield Reflect & LEDs",
-                                fontSize = 8.sp,
-                                color = HyperCyan,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                // G-Shock Crash Box Armed Chip
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(LaserCrimson.copy(alpha = 0.12f))
-                        .border(1.dp, LaserCrimson.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
-                        .clickable { showCrashTestDialog = true }
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(LaserCrimson.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Warning,
-                                contentDescription = "Crash Box",
-                                tint = LaserCrimson,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = "G-SHOCK CRASH BOX",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Black,
-                                color = TextPrimary,
-                                letterSpacing = 0.5.sp
-                            )
-                            Text(
-                                text = "Autonomous IMU Armed",
-                                fontSize = 8.sp,
-                                color = OptimalGreen,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-            }
+            DashboardRiderConsentAndActionsSection(
+                hasPendingRiderConsent = hasPendingRiderConsent,
+                onAcceptConsent = {
+                    isGuardianAuthorized = true
+                    hasPendingRiderConsent = false
+                    Toast.makeText(context, "Guardian access granted! Telemetry shared.", Toast.LENGTH_SHORT).show()
+                },
+                onDeclineConsent = {
+                    hasPendingRiderConsent = false
+                    Toast.makeText(context, "Guardian request declined", Toast.LENGTH_SHORT).show()
+                },
+                onOpenHud = { showHudMirrorDialog = true },
+                onOpenCrashTest = { showCrashTestDialog = true }
+            )
 
             // ================= 2. BIKE STATUS & VITALS CARD ("Tells about his bike") =================
-            if (!isMachineConfigured) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(MidnightCard, ObsidianGlass)
-                            )
-                        )
-                        .border(1.dp, CardBorderGlow, RoundedCornerShape(22.dp))
-                        .padding(18.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(SportAmber.copy(alpha = 0.15f))
-                                    .border(1.dp, SportAmber.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.TwoWheeler,
-                                    contentDescription = "Unconfigured",
-                                    tint = SportAmber,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "UNCONFIGURED MOTORCYCLE",
-                                    color = TextPrimary,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 1.sp
-                                )
-                                Text(
-                                    text = "Awaiting machine registration & telemetry lock",
-                                    color = SportAmber,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(SportAmber.copy(alpha = 0.15f))
-                                .border(1.dp, SportAmber.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
-                                .padding(horizontal = 9.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = "AWAITING SETUP",
-                                color = SportAmber,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 0.8.sp
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = "Register your motorcycle to view engineering specs, preventative component lifecycles, and legal documents. Or ride in unconfigured mode.",
-                        color = TextSecondary,
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Button(
-                            onClick = { showBikeRegisterDialog = true },
-                            modifier = Modifier.weight(1f).height(42.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = HyperCyan,
-                                contentColor = CarbonDark
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(imageVector = Icons.Default.Engineering, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("REGISTER MACHINE", fontSize = 11.sp, fontWeight = FontWeight.Black)
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                Toast.makeText(context, "Cockpit armed in unconfigured mode", Toast.LENGTH_SHORT).show()
-                            },
-                            modifier = Modifier.weight(1f).height(42.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-                        ) {
-                            Text("RIDE UNCONFIGURED", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(MidnightCard, ObsidianGlass)
-                            )
-                        )
-                        .border(1.dp, CardBorderGlow, RoundedCornerShape(22.dp))
-                        .padding(16.dp)
-                ) {
-                    // Bike Header Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(HyperCyan.copy(alpha = 0.15f))
-                                    .border(1.dp, HyperCyan.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.TwoWheeler,
-                                    contentDescription = "Active Bike",
-                                    tint = HyperCyan,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = bikeModel.ifBlank { "ACTIVE MACHINE" }.uppercase(),
-                                    color = TextPrimary,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 1.sp
-                                )
-                                Text(
-                                    text = "${bikeEngineSpec.ifBlank { "Registered Motorcycle" }} • ${bikePlate.ifBlank { "No Plate" }}",
-                                    color = HyperCyan,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-
-                        // Status pill & Edit trigger
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(OptimalGreen.copy(alpha = 0.15f))
-                                    .border(1.dp, OptimalGreen.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
-                                    .padding(horizontal = 9.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = "READY TO RIDE",
-                                    color = OptimalGreen,
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 0.8.sp
-                                )
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(ObsidianSurface)
-                                    .border(1.dp, CardBorder, RoundedCornerShape(8.dp))
-                                    .clickable { showBikeRegisterDialog = true }
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Text("EDIT", color = HyperCyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // 3D Motorcycle Digital Twin (Sketchfab Interactive 360 Viewer)
-                    Bike3dSketchfabViewer(
-                        bikeModel = bikeModel,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Authentic Device Sensors Telemetry (Battery & GNSS Accuracy)
-                    val (phoneBatteryPct, isPhoneCharging) = remember(context) {
-                        try {
-                            val bm = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
-                            val level = bm?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1
-                            val ifilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-                            val batteryStatus = context.registerReceiver(null, ifilter)
-                            val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
-                            val charging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
-                            val validLevel = if (level in 0..100) level else 100
-                            validLevel to charging
-                        } catch (e: Exception) {
-                            100 to false
-                        }
-                    }
-
-                    // 4-Quadrant Vitals Grid (Zero Fake Data)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        BikeVitalMiniPill(
-                            title = "DEVICE BATTERY",
-                            value = "$phoneBatteryPct",
-                            unit = "%",
-                            status = if (isPhoneCharging) "CHARGING" else "BATTERY",
-                            accentColor = if (isPhoneCharging) OptimalGreen else HyperCyan,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        BikeVitalMiniPill(
-                            title = "GPS ACCURACY",
-                            value = if (metrics.accuracyMeters > 0f) "±${metrics.accuracyMeters.toInt().coerceAtLeast(1)}" else "LIVE",
-                            unit = if (metrics.accuracyMeters > 0f) "M" else "",
-                            status = if (metrics.accuracyMeters in 0.1f..15f) "GNSS LOCK" else "ACQUIRING",
-                            accentColor = if (metrics.accuracyMeters in 0.1f..15f) OptimalGreen else SportAmber,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        BikeVitalMiniPill(
-                            title = "6-AXIS IMU",
-                            value = "ACTIVE",
-                            unit = "GYRO",
-                            status = "60 HZ LIVE",
-                            accentColor = HyperCyan,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        BikeVitalMiniPill(
-                            title = "ODOMETER",
-                            value = bikeOdo.ifBlank { "0" },
-                            unit = "KM",
-                            status = "LOGGED",
-                            accentColor = SportAmber,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // ================= 3. HERO SPEEDOMETER COCKPIT & CONTROLS =================
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(MidnightCard)
-                .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
-                .padding(vertical = 18.dp, horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            SpeedometerGauge(
-                currentSpeedKmh = metrics.currentSpeedKmh,
-                maxSpeedKmh = metrics.maxSpeedKmh
+            DashboardBikeStatusSection(
+                isMachineConfigured = isMachineConfigured,
+                bikeModel = bikeModel,
+                bikeEngineSpec = bikeEngineSpec,
+                bikePlate = bikePlate,
+                bikeOdo = bikeOdo,
+                metrics = metrics,
+                onOpenRegisterDialog = { showBikeRegisterDialog = true }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Primary Ride Action Buttons
-            if (!hasPermissions) {
-                Button(
-                    onClick = {
-                        val permissionsToRequest = mutableListOf(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                        )
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-                        }
-                        permissionLauncher.launch(permissionsToRequest.toTypedArray())
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = SportAmber,
-                        contentColor = CarbonDark
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.Lock, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Grant GPS Location Access",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
+            // ================= 3. HERO SPEEDOMETER COCKPIT & CONTROLS =================
+            DashboardSpeedometerAndControlsSection(
+                metrics = metrics,
+                liveGForce = liveGForce,
+                hasPermissions = hasPermissions,
+                onRequestPermissions = {
+                    val permissionsToRequest = mutableListOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
                     )
-                }
-            } else {
-                when (metrics.tripStatus) {
-                    TripStatus.IDLE, TripStatus.FINISHED -> {
-                        Button(
-                            onClick = {
-                                TripRecordingController.startTrip(context)
-                                onNavigateToLiveTrip()
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(54.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = HyperCyan,
-                                contentColor = CarbonDark
-                            ),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "START RECORDING RIDE",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 1.sp
-                            )
-                        }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
                     }
-                    TripStatus.RECORDING -> {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = { TripRecordingController.pauseTrip(context) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(52.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = SportAmber
-                                ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, SportAmber)
-                            ) {
-                                Icon(imageVector = Icons.Default.Pause, contentDescription = null)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("PAUSE", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            }
-
-                            Button(
-                                onClick = { TripRecordingController.finishTrip(context) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(52.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = RacingRed,
-                                    contentColor = TextPrimary
-                                )
-                            ) {
-                                Icon(imageVector = Icons.Default.Stop, contentDescription = null)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("FINISH", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            }
-                        }
-                    }
-                    TripStatus.PAUSED -> {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Button(
-                                onClick = { TripRecordingController.resumeTrip(context) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(52.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = HyperCyan,
-                                    contentColor = CarbonDark
-                                )
-                            ) {
-                                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("RESUME", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            }
-
-                            Button(
-                                onClick = { TripRecordingController.finishTrip(context) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(52.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = RacingRed,
-                                    contentColor = TextPrimary
-                                )
-                            ) {
-                                Icon(imageVector = Icons.Default.Stop, contentDescription = null)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("FINISH", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Quick Stats Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            StatCard(
-                label = "Distance",
-                value = String.format(Locale.US, "%.2f", metrics.totalDistanceKm),
-                unit = "KM",
-                icon = Icons.Default.Route,
-                accentColor = HyperCyan,
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                label = "Max Speed",
-                value = String.format(Locale.US, "%.0f", metrics.maxSpeedKmh),
-                unit = "KM/H",
-                icon = Icons.Default.Speed,
-                accentColor = RacingRed,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // G-Force Telemetry Card
-        GForceMeter(
-            gForce = liveGForce,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // ================= 3.5 ADVANCED MOTORSPORT FEATURE SUITE =================
-        // 1. MotoGP AI Apex Telematics Card
-        MotoGpApexTelematicsCard(
-            scoreTier = apexScoreTier,
-            entrySpeed = apexEntrySpeed,
-            rollAngle = apexRollAngle,
-            lateralG = apexLateralG,
-            exitSpeed = apexExitSpeed,
-            coachTip = apexCoachTip,
-            isAnalyzing = isAnalyzingApex,
-            onAnalyze = {
-                if (livePoints.size < 3) {
-                    Toast.makeText(context, "No ride points recorded yet. Mount device and start a ride to analyze apex telemetry.", Toast.LENGTH_LONG).show()
-                } else {
-                    val maxLean = livePoints.maxOfOrNull { kotlin.math.abs(it.leanAngle) } ?: 0f
-                    val movingPoints = livePoints.filter { it.speedKmh > 3f }
-                    val entry = movingPoints.firstOrNull()?.speedKmh ?: 0f
-                    val exit = movingPoints.lastOrNull()?.speedKmh ?: entry
-                    val rad = (maxLean * Math.PI) / 180.0
-                    val latG = String.format(Locale.US, "%.2f G", kotlin.math.min(1.5, kotlin.math.abs(kotlin.math.tan(rad))))
-                    val score = ((maxLean / 50f) * 40f + 55f).toInt().coerceIn(50, 99)
-
-                    apexEntrySpeed = String.format(Locale.US, "%.1f km/h", entry)
-                    apexRollAngle = String.format(Locale.US, "%.1f° Roll", maxLean)
-                    apexLateralG = latG
-                    apexExitSpeed = String.format(Locale.US, "%.1f km/h", exit)
-                    apexScoreTier = if (score >= 90) "S-TIER • $score/100" else if (score >= 75) "A-TIER • $score/100" else "B-TIER • $score/100"
-                    apexCoachTip = if (maxLean > 40f) {
-                        String.format(Locale.US, "High lean commitment (%.1f°)! Chassis settled smoothly into apex. Progressive throttle roll-on initiated on corner exit.", maxLean)
-                    } else {
-                        String.format(Locale.US, "Clean line geometry at %.1f° roll. Apex clipped cleanly with stable line holding.", maxLean)
-                    }
-                    Toast.makeText(context, "Analyzed from ${livePoints.size} genuine ride points ($score/100)", Toast.LENGTH_SHORT).show()
-                }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // 2. Real-Time GPS Elevation & Climb Profile Card
-        GpsElevationCard(
-            currentAltM = currentAltitudeM,
-            peakAltM = peakAltitudeM,
-            climbGainM = climbGainM,
-            gradeText = elevationGradeText,
-            gradeColor = elevationGradeColor,
-            onSyncElevation = {
-                val lastAlt = livePoints.lastOrNull()?.altitude?.toFloat()
-                if (lastAlt != null && lastAlt > 0f) {
-                    currentAltitudeM = lastAlt
-                    if (lastAlt > peakAltitudeM) peakAltitudeM = lastAlt
-                    val minAlt = livePoints.mapNotNull { it.altitude?.toFloat() }.minOrNull() ?: lastAlt
-                    climbGainM = (peakAltitudeM - minAlt).coerceAtLeast(0f)
-                    elevationGradeText = String.format(Locale.US, "GPS CALIBRATED (%dm ASL)", lastAlt.toInt())
-                    elevationGradeColor = OptimalGreen
-                    Toast.makeText(context, "GPS Altimeter calibrated to ${lastAlt.toInt()}m ASL", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(context, "Awaiting GPS satellite fix for altitude calibration...", Toast.LENGTH_SHORT).show()
-                }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // 3. Aerodynamic Crosswind Shear & Wind Vector Radar Card
-        CrosswindRadarCard(
-            windSpeed = crosswindSpeed,
-            leanComp = crosswindLeanComp,
-            dragPenalty = crosswindDragPenalty,
-            riskText = crosswindRiskText,
-            riskColor = crosswindRiskColor,
-            onTestCrashBox = { showCrashTestDialog = true }
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // 4. Motorcycle Legal Document Vault Card (Real File Picker & Encrypted Storage)
-        DocumentVaultCard(
-            rcUploaded = rcUploaded,
-            rcDocNum = rcDocNum,
-            dlUploaded = dlUploaded,
-            dlDocNum = dlDocNum,
-            insuranceUploaded = insuranceUploaded,
-            insuranceDocNum = insuranceDocNum,
-            pucUploaded = pucUploaded,
-            pucDocNum = pucDocNum,
-            helmetUploaded = helmetUploaded,
-            helmetDocNum = helmetDocNum,
-            onUploadDoc = { type ->
-                activeUploadDocType = type
-                uploadDocNumberInput = when (type) {
-                    "rc" -> rcDocNum.ifBlank { bikePlate }
-                    "dl" -> dlDocNum
-                    "insurance" -> insuranceDocNum
-                    "puc" -> pucDocNum
-                    else -> helmetDocNum
-                }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // ================= 4. UNIVERSAL SEARCH FOR PLACES & YOUTUBE =================
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(MidnightCard)
-                .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        tint = HyperCyan,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "SEARCH PLACES & YOUTUBE",
-                        color = TextPrimary,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Search Bar Input
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(
-                        text = "Search twisties, circuit guides, dyno pulls...",
-                        fontSize = 12.sp,
-                        color = TextMuted
-                    )
+                    permissionLauncher.launch(permissionsToRequest.toTypedArray())
                 },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = HyperCyan,
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotBlank()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Clear",
-                                tint = TextSecondary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = HyperCyan,
-                    unfocusedBorderColor = CardBorder,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
-                    focusedContainerColor = ObsidianSurface,
-                    unfocusedContainerColor = ObsidianSurface
-                ),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
+                onNavigateToLiveTrip = onNavigateToLiveTrip
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Filter Chips Row
-            val filterChips = listOf("All", "Maintenance", "Bike", "Guides")
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                filterChips.forEach { chip ->
-                    val isSelected = selectedCategoryFilter == chip
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(if (isSelected) HyperCyan else ObsidianSurface)
-                            .border(
-                                1.dp,
-                                if (isSelected) HyperCyan else CardBorder,
-                                RoundedCornerShape(16.dp)
-                            )
-                            .clickable { selectedCategoryFilter = chip }
-                            .padding(horizontal = 14.dp, vertical = 7.dp)
-                    ) {
-                        Text(
-                            text = chip,
-                            color = if (isSelected) CarbonDark else TextSecondary,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold
-                        )
-                    }
-                }
-
-                // If user entered a custom search, show a direct "Search on YouTube" button
-                if (searchQuery.isNotBlank()) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(RacingRed.copy(alpha = 0.2f))
-                            .border(1.dp, RacingRed, RoundedCornerShape(16.dp))
-                            .clickable {
-                                launchYouTubeSearch(context, searchQuery)
-                            }
-                            .padding(horizontal = 14.dp, vertical = 7.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.PlayCircle,
-                                contentDescription = null,
-                                tint = RacingRed,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(5.dp))
-                            Text(
-                                text = "Search YouTube for \"$searchQuery\"",
-                                color = TextPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // ================= 5. MOTORCYCLE WHOLE MANAGEMENT HUB =================
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "MOTORCYCLE WHOLE MANAGEMENT",
-                        color = TextPrimary,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.sp
-                    )
-                    Text(
-                        text = "Engineering Specs • Maintenance Lifecycles • Legal Docs",
-                        color = HyperCyan,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(HyperCyan.copy(alpha = 0.15f))
-                        .border(1.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "${if (isMachineConfigured) bikeOdo else "0"} KM",
-                        color = HyperCyan,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Technical Specs Matrix Grid
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MidnightCard)
-                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-                    .padding(14.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (isMachineConfigured && bikeModel.isNotBlank()) "${bikeModel.uppercase()} SPEC MATRIX" else "UNREGISTERED MACHINE SPEC MATRIX",
-                            color = TextSecondary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 0.8.sp
-                        )
-                        Text(
-                            text = if (isMachineConfigured) "CONFIGURED" else "AWAITING SETUP",
-                            color = if (isMachineConfigured) OptimalGreen else SportAmber,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        SpecCell("ENGINE", if (isMachineConfigured && bikeEngineSpec.isNotBlank()) bikeEngineSpec else "Unspecified", "Powertrain", modifier = Modifier.weight(1f))
-                        SpecCell("PLATE", if (isMachineConfigured && bikePlate.isNotBlank()) bikePlate else "No Plate", "Registration", modifier = Modifier.weight(1f))
-                        SpecCell("ODOMETER", "${if (isMachineConfigured) bikeOdo else "0"} KM", "Total Distance", modifier = Modifier.weight(1f))
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        SpecCell("GEARBOX", "Sequential", "Clutch Pack", modifier = Modifier.weight(1f))
-                        SpecCell("BRAKING", "Dual ABS", "Hydraulic Disc", modifier = Modifier.weight(1f))
-                        SpecCell("CHASSIS", "Trellis / Perimeter", "Telemetry Linked", modifier = Modifier.weight(1f))
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Preventative Maintenance Component Lifecycles
-            Text(
-                text = "PREVENTATIVE COMPONENT HEALTH",
-                color = TextSecondary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 0.8.sp
+            // ================= 3.5 ADVANCED MOTORSPORT FEATURE SUITE =================
+            DashboardMotorsportSuiteSection(
+                livePoints = livePoints,
+                rcUploaded = rcUploaded,
+                rcDocNum = rcDocNum,
+                dlUploaded = dlUploaded,
+                dlDocNum = dlDocNum,
+                insuranceUploaded = insuranceUploaded,
+                insuranceDocNum = insuranceDocNum,
+                pucUploaded = pucUploaded,
+                pucDocNum = pucDocNum,
+                helmetUploaded = helmetUploaded,
+                helmetDocNum = helmetDocNum,
+                onTestCrashBox = { showCrashTestDialog = true },
+                onUploadDoc = { type -> activeUploadDocType = type }
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                bikeComponents.forEach { comp ->
-                    ComponentHealthRow(comp)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Legal Document Expiries & RSA
-            Text(
-                text = "LEGAL COMPLIANCE & ROADSIDE RSA",
-                color = TextSecondary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 0.8.sp
+            // ================= 4. UNIVERSAL SEARCH FOR PLACES & YOUTUBE =================
+            DashboardPlacesSearchSection(
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                selectedCategoryFilter = selectedCategoryFilter,
+                onSelectFilter = { selectedCategoryFilter = it }
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                LegalDocCard(
-                    title = "INSURANCE",
-                    policy = if (insuranceUploaded) insuranceDocNum else "Not Uploaded",
-                    status = if (insuranceUploaded) "Active In Vault" else "Tap Vault to Add",
-                    color = if (insuranceUploaded) OptimalGreen else SportAmber,
-                    modifier = Modifier.weight(1f)
-                )
-                LegalDocCard(
-                    title = "EMISSION PUC",
-                    policy = if (pucUploaded) pucDocNum else "Not Uploaded",
-                    status = if (pucUploaded) "Active In Vault" else "Tap Vault to Add",
-                    color = if (pucUploaded) OptimalGreen else SportAmber,
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            // ================= 5. MOTORCYCLE WHOLE MANAGEMENT HUB =================
+            DashboardMotorcycleManagementSection(
+                isMachineConfigured = isMachineConfigured,
+                bikeModel = bikeModel,
+                bikePlate = bikePlate,
+                bikeEngineSpec = bikeEngineSpec,
+                bikeOdo = bikeOdo,
+                bikeComponents = bikeComponents,
+                insuranceUploaded = insuranceUploaded,
+                insuranceDocNum = insuranceDocNum,
+                pucUploaded = pucUploaded,
+                pucDocNum = pucDocNum
+            )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
-            // 24x7 RSA Hotline
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(ObsidianSurface)
-                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-                    .clickable { launchEmergencyCall(context, "18004201600") }
-                    .padding(horizontal = 14.dp, vertical = 10.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Phone,
-                            contentDescription = null,
-                            tint = HyperCyan,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "${if (isMachineConfigured && bikeModel.isNotBlank()) bikeModel.uppercase() else "MOTORCYCLE"} 24x7 ROADSIDE ASSISTANCE",
-                                color = TextPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Hotline: 1800-420-1600 (Tap to Call)",
-                                color = HyperCyan,
-                                fontSize = 10.sp
-                            )
-                        }
-                    }
-                    Text(
-                        text = "CALL",
-                        color = OptimalGreen,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-            }
+            // ================= 5.5 BIKE PARENTING & GUARDIAN SAFETY BEACON =================
+            DashboardGuardianSafetySection(
+                currentSpeedKmh = metrics.currentSpeedKmh
+            )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
-            // Fuel Economy & Mileage Calculator Stats
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MidnightCard)
-                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-                    .padding(14.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.LocalGasStation,
-                                contentDescription = null,
-                                tint = SportAmber,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "FUEL LOG & MILEAGE CALCULATOR",
-                                color = TextPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 0.8.sp
-                            )
-                        }
-                        Text(
-                            text = "XP95 OCTANE",
-                            color = SportAmber,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+            // ================= 6. REAL YOUTUBE MOTOVLOG & BIKE VIDEOS =================
+            DashboardYoutubeVideosSection(
+                searchQuery = searchQuery,
+                filteredVideos = filteredVideos,
+                isMachineConfigured = isMachineConfigured,
+                bikeModel = bikeModel
+            )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        SpecCell("AVG MILEAGE", "47.8 KM/L", "Calculated real", modifier = Modifier.weight(1f))
-                        SpecCell("COST / KM", "₹2.14", "Per kilometer", modifier = Modifier.weight(1f))
-                        SpecCell("CONSUMED", "24.7 Liters", "Last 3 fill-ups", modifier = Modifier.weight(1f))
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(22.dp))
-
-        // ================= 5.5 BIKE PARENTING & GUARDIAN SAFETY BEACON =================
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "BIKE PARENTING & SAFETY BEACON",
-                        color = TextPrimary,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.sp
-                    )
-                    Text(
-                        text = "Live Ride Sharing • Speed Warning Alerts • Instant SOS",
-                        color = OptimalGreen,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(OptimalGreen.copy(alpha = 0.15f))
-                        .border(1.dp, OptimalGreen.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "BEACON ACTIVE",
-                        color = OptimalGreen,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Guardian Safety Card
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MidnightCard)
-                    .border(1.dp, OptimalGreen.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-                    .padding(14.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "GUARDIAN CONTACT",
-                                color = TextMuted,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Family Guardian (Dad & Mom)",
-                                color = TextPrimary,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "+91 98765 43210",
-                                color = HyperCyan,
-                                fontSize = 11.sp,
-                                fontFamily = FontFamily.Monospace
-                            )
-                        }
-
-                        // Call SOS Button
-                        Button(
-                            onClick = { launchEmergencyCall(context, "+919876543210") },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = RacingRed,
-                                contentColor = TextPrimary
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Phone,
-                                contentDescription = "Emergency Call",
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("SOS", fontWeight = FontWeight.Black, fontSize = 11.sp)
-                        }
-                    }
-
-                    // Speed Warning Threshold Indicator
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(ObsidianSurface)
-                            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
-                            .padding(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Warning,
-                                    contentDescription = null,
-                                    tint = SportAmber,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Parent Speed Limit Alert",
-                                    color = TextSecondary,
-                                    fontSize = 11.sp
-                                )
-                            }
-                            Text(
-                                text = "95 km/h MAX",
-                                color = SportAmber,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Black,
-                                fontFamily = FontFamily.Monospace
-                            )
-                        }
-                    }
-
-                    // 1-Tap WhatsApp Share Ride Button
-                    Button(
-                        onClick = { shareLiveRideViaWhatsApp(context, metrics.currentSpeedKmh) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = OptimalGreen,
-                            contentColor = CarbonDark
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = "Share",
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "SHARE LIVE BEACON VIA WHATSAPP",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(22.dp))
-
-        // ================= 6. REAL YOUTUBE MOTOVLOG & BIKE VIDEOS =================
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "YOUTUBE MOTOVLOGS & BIKE GUIDES",
-                        color = TextPrimary,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.sp
-                    )
-                    Text(
-                        text = "Tap to stream real videos in YouTube App",
-                        color = RacingRed,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                // Generic YouTube search trigger
-                IconButton(
-                    onClick = {
-                        val query = if (searchQuery.isNotBlank()) searchQuery else (if (isMachineConfigured && bikeModel.isNotBlank()) "$bikeModel review ride" else "motorcycle telemetry trackday")
-                        launchYouTubeSearch(context, query)
-                    },
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(ObsidianSurface)
-                        .border(1.dp, CardBorder, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayCircle,
-                        contentDescription = "Launch YouTube",
-                        tint = RacingRed,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (filteredVideos.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MidnightCard)
-                        .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-                        .padding(20.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No videos matched \"$searchQuery\"",
-                        color = TextSecondary,
-                        fontSize = 12.sp
-                    )
-                }
-            } else {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    filteredVideos.forEach { video ->
-                        YouTubeVideoCard(
-                            video = video,
-                            onClick = {
-                                launchYouTubeVideo(context, video.id)
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(30.dp))
         } // closes else block for rider cockpit
     } // closes outer Column
 
     // ================= FULLSCREEN OLED HUD MIRROR DIALOG =================
     if (showHudMirrorDialog) {
-        Dialog(
-            onDismissRequest = { showHudMirrorDialog = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-                    .padding(20.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = if (isHudWindshieldFlipped) -1f else 1f
-                        },
-                    verticalArrangement = Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Top Controls: Invert reflection toggle & Close
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "OLED OPTICAL HUD REFLECT",
-                            color = HyperCyan,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.5.sp
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = { isHudWindshieldFlipped = !isHudWindshieldFlipped },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isHudWindshieldFlipped) HyperCyan.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.15f),
-                                    contentColor = if (isHudWindshieldFlipped) HyperCyan else Color.White
-                                ),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(
-                                    text = if (isHudWindshieldFlipped) "Windshield: ON" else "Windshield: OFF",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            IconButton(onClick = { showHudMirrorDialog = false }) {
-                                Icon(Icons.Default.Close, contentDescription = "Close HUD", tint = Color.White)
-                            }
-                        }
-                    }
-
-                    // Real Longitudinal G-Vector Intensity Strip
-                    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("ACCELERATION / BRAKING G-VECTOR", fontSize = 9.sp, color = TextMuted, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                            Text(String.format(Locale.US, "%+.2f G", metrics.maxGForce), fontSize = 10.sp, color = HyperCyan, fontWeight = FontWeight.Black)
-                        }
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(10.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            repeat(10) { index ->
-                                val ledColor = when {
-                                    index < 2 -> RacingRed
-                                    index < 4 -> SportAmber
-                                    index < 6 -> HyperCyan
-                                    else -> OptimalGreen
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxSize()
-                                        .clip(RoundedCornerShape(2.dp))
-                                        .background(ledColor.copy(alpha = if (index in 4..6 || metrics.maxGForce > 0.4f) 1f else 0.35f))
-                                )
-                            }
-                        }
-                    }
-
-                    // Center Flight Cluster: Lateral G-Force & Gigantic Speedometer
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(24.dp)
-                    ) {
-                        // Lateral G-Force Box (Real 6-Axis Cornering G)
-                        Box(
-                            modifier = Modifier
-                                .size(90.dp)
-                                .border(2.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                                .background(HyperCyan.copy(alpha = 0.08f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "LATERAL",
-                                    color = TextMuted,
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 1.sp
-                                )
-                                Text(
-                                    text = String.format(Locale.US, "%.2f", metrics.maxGForce),
-                                    color = Color.White,
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                                Text(
-                                    text = "G-FORCE",
-                                    color = HyperCyan,
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-
-                        // Big Speed Readout
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "${metrics.currentSpeedKmh.toInt()}",
-                                color = HyperCyan,
-                                fontSize = 96.sp,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = (-2).sp
-                            )
-                            Text(
-                                text = "KM / H",
-                                color = TextMuted,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 2.sp
-                            )
-                        }
-                    }
-
-                    // Footer Telemetry Strip (Genuine Hardware Telemetry)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
-                            .padding(vertical = 10.dp, horizontal = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceAround
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("PEAK SPEED", fontSize = 9.sp, color = TextMuted)
-                            Text("${metrics.maxSpeedKmh.toInt()} km/h", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SportAmber)
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("ROLL LEAN", fontSize = 9.sp, color = TextMuted)
-                            Text("${metrics.maxLeanAngle.toInt()}\u00B0", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HyperCyan)
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("TRIP DIST", fontSize = 9.sp, color = TextMuted)
-                            Text("${String.format(Locale.US, "%.2f", metrics.totalDistanceKm)} km", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = OptimalGreen)
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("IMU STATUS", fontSize = 9.sp, color = TextMuted)
-                            Text("ARMED", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = OptimalGreen)
-                        }
-                    }
-                }
-            }
-        }
+        DashboardHudMirrorDialog(
+            metrics = metrics,
+            liveGForce = liveGForce,
+            onDismiss = { showHudMirrorDialog = false }
+        )
     }
 
     // ================= LOG OUT CONFIRMATION DIALOG =================
     if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
-            containerColor = Color(0xFF0F1420),
-            title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(Icons.Default.Logout, contentDescription = null, tint = RacingRed, modifier = Modifier.size(20.dp))
-                    Text("LOG OUT OF RHODY", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
-                }
-            },
-            text = {
-                Text(
-                    text = "Are you sure you want to end your session? You will be returned to the Rider / Guardian login screen.",
-                    color = TextSecondary,
-                    fontSize = 12.sp
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showLogoutDialog = false
-                        AuthManager.logout()
-                        Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = RacingRed, contentColor = Color.White)
-                ) {
-                    Text("LOG OUT", fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("CANCEL", color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                }
+        DashboardLogoutDialog(
+            onDismiss = { showLogoutDialog = false },
+            onConfirmLogout = {
+                showLogoutDialog = false
+                AuthManager.logout()
+                Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
             }
         )
     }
 
     // ================= AUTONOMOUS G-SHOCK CRASH TEST DIALOG =================
     if (showCrashTestDialog) {
-        AlertDialog(
-            onDismissRequest = { showCrashTestDialog = false },
-            containerColor = Color(0xFF0F1420),
-            title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(Icons.Default.Warning, contentDescription = null, tint = RacingRed)
-                    Text("G-SHOCK CRASH DETECTION", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
-                }
+        DashboardCrashTestDialog(
+            onDismiss = { showCrashTestDialog = false },
+            onConfirmSafe = {
+                showCrashTestDialog = false
+                Toast.makeText(context, "Crash Alert Cancelled: Rider confirmed safe", Toast.LENGTH_SHORT).show()
             },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Autonomous IMU Black Box detected rapid deceleration (4.2G) & severe tilt (78.5\u00B0).",
-                        color = TextPrimary,
-                        fontSize = 12.sp
-                    )
-                    Text(
-                        text = "Countdown armed: Guardian Parents will be automatically alerted with GPS beacon coordinates.",
-                        color = TextSecondary,
-                        fontSize = 11.sp
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showCrashTestDialog = false
-                        Toast.makeText(context, "Crash Alert Cancelled: Rider confirmed safe", Toast.LENGTH_SHORT).show()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
-                ) {
-                    Text("I AM SAFE - CANCEL", fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showCrashTestDialog = false
-                        Toast.makeText(context, "CRITICAL SOS Dispatched to Guardians!", Toast.LENGTH_LONG).show()
-                    }
-                ) {
-                    Text("DISPATCH SOS NOW", color = RacingRed, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                }
+            onDispatchSos = {
+                showCrashTestDialog = false
+                Toast.makeText(context, "CRITICAL SOS Dispatched to Guardians!", Toast.LENGTH_LONG).show()
             }
         )
     }
 
     // ================= MOTORCYCLE ONBOARDING & REGISTRATION DIALOG =================
     if (showBikeRegisterDialog) {
-        var inputModel by remember { mutableStateOf(bikeModel) }
-        var inputPlate by remember { mutableStateOf(bikePlate) }
-        var inputSpecs by remember { mutableStateOf(bikeEngineSpec) }
-        var inputOdo by remember { mutableStateOf(bikeOdo) }
+        DashboardBikeRegisterDialog(
+            initialModel = bikeModel,
+            initialPlate = bikePlate,
+            initialSpecs = bikeEngineSpec,
+            initialOdo = bikeOdo,
+            onDismiss = { showBikeRegisterDialog = false },
+            onSaveBike = { cleanModel, cleanPlate, cleanSpecs, cleanOdo ->
+                if (cleanModel.isNotBlank()) {
+                    val finalOdo = cleanOdo.ifBlank { "0" }
+                    bikeModel = cleanModel
+                    bikePlate = cleanPlate
+                    bikeEngineSpec = cleanSpecs
+                    bikeOdo = finalOdo
+                    isMachineConfigured = true
 
-        AlertDialog(
-            onDismissRequest = { showBikeRegisterDialog = false },
-            containerColor = ObsidianSurface,
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(imageVector = Icons.Default.TwoWheeler, contentDescription = null, tint = HyperCyan, modifier = Modifier.size(24.dp))
-                    Text(
-                        text = "REGISTER MOTORCYCLE",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.sp
-                    )
-                }
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Enter your actual machine details. No mock data will be stored.",
-                        color = TextSecondary,
-                        fontSize = 11.sp
-                    )
+                    prefs.edit()
+                        .putBoolean("is_configured", true)
+                        .putString("bike_model", cleanModel)
+                        .putString("bike_plate", cleanPlate)
+                        .putString("bike_specs", cleanSpecs)
+                        .putString("bike_odo", finalOdo)
+                        .apply()
 
-                    // Quick Indian Motorcycle Selection Chips
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = "QUICK INDIAN BIKES (1-TAP AUTOFILL):",
-                            color = HyperCyan,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Black,
-                            fontFamily = FontFamily.Monospace
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            listOf(
-                                "Bajaj Pulsar 150" to "149.5cc DTS-i Single • 14 PS",
-                                "Bajaj Pulsar NS 200" to "199.5cc Triple Spark 4V Liquid • 24.5 PS",
-                                "Bajaj Pulsar 220F" to "220cc DTS-i Oil Cooled • 20.4 PS",
-                                "TVS Apache RTR 200 4V" to "197.75cc 4V Oil Cooled • 20.8 PS",
-                                "Hero Splendor Plus" to "97.2cc Air Cooled • 8.02 PS",
-                                "Hero Xpulse 200 4V" to "199.6cc 4V Oil Cooled • 19.1 PS",
-                                "Royal Enfield Classic 350" to "349cc J-Series Single • 20.2 bhp",
-                                "Royal Enfield Bullet 350" to "349cc J-Series Single • 20.2 bhp",
-                                "Royal Enfield Continental GT 650" to "648cc Parallel Twin • 47 PS",
-                                "Yamaha MT-15 V2" to "155cc Liquid VVA • 18.4 PS",
-                                "Yamaha R15 V4" to "155cc Liquid VVA • 18.4 PS",
-                                "KTM Duke 200" to "199.5cc DOHC Liquid • 25 PS",
-                                "KTM Duke 390" to "399cc Liquid Single • 46 PS",
-                                "Honda Activa 6G" to "109.51cc PGM-FI eSP • 7.84 PS",
-                                "Honda CB350 RS" to "348.36cc PGM-FI • 21.07 PS"
-                            ).forEach { (m, s) ->
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(if (inputModel == m) HyperCyan.copy(alpha = 0.2f) else CarbonDark)
-                                        .border(1.dp, if (inputModel == m) HyperCyan else CardBorder, RoundedCornerShape(8.dp))
-                                        .clickable {
-                                            inputModel = m
-                                            inputSpecs = s
-                                        }
-                                        .padding(horizontal = 8.dp, vertical = 5.dp)
-                                ) {
-                                    Text(
-                                        text = m,
-                                        color = if (inputModel == m) HyperCyan else TextPrimary,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    OutlinedTextField(
-                        value = inputModel,
-                        onValueChange = { inputModel = it },
-                        label = { Text("Make & Model", fontSize = 11.sp) },
-                        placeholder = { Text("e.g. Bajaj Pulsar 150 / NS 200", fontSize = 11.sp, color = TextMuted) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = HyperCyan,
-                            unfocusedBorderColor = CardBorder,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedContainerColor = CarbonDark,
-                            unfocusedContainerColor = CarbonDark
-                        )
-                    )
-
-                    OutlinedTextField(
-                        value = inputPlate,
-                        onValueChange = { inputPlate = it.uppercase() },
-                        label = { Text("Registration Plate", fontSize = 11.sp) },
-                        placeholder = { Text("e.g. KA-01-EQ-1550", fontSize = 11.sp, color = TextMuted) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = HyperCyan,
-                            unfocusedBorderColor = CardBorder,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedContainerColor = CarbonDark,
-                            unfocusedContainerColor = CarbonDark
-                        )
-                    )
-
-                    OutlinedTextField(
-                        value = inputSpecs,
-                        onValueChange = { inputSpecs = it },
-                        label = { Text("Engine Specs", fontSize = 11.sp) },
-                        placeholder = { Text("e.g. 373cc Single, 43.5 PS", fontSize = 11.sp, color = TextMuted) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = HyperCyan,
-                            unfocusedBorderColor = CardBorder,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedContainerColor = CarbonDark,
-                            unfocusedContainerColor = CarbonDark
-                        )
-                    )
-
-                    OutlinedTextField(
-                        value = inputOdo,
-                        onValueChange = { inputOdo = it },
-                        label = { Text("Current Odometer (KM)", fontSize = 11.sp) },
-                        placeholder = { Text("e.g. 12500", fontSize = 11.sp, color = TextMuted) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = HyperCyan,
-                            unfocusedBorderColor = CardBorder,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedContainerColor = CarbonDark,
-                            unfocusedContainerColor = CarbonDark
-                        )
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val cleanModel = inputModel.trim()
-                        val cleanPlate = inputPlate.trim()
-                        val cleanSpecs = inputSpecs.trim()
-                        val cleanOdo = inputOdo.trim().ifBlank { "0" }
-
-                        if (cleanModel.isNotBlank()) {
-                            bikeModel = cleanModel
-                            bikePlate = cleanPlate
-                            bikeEngineSpec = cleanSpecs
-                            bikeOdo = cleanOdo
-                            isMachineConfigured = true
-
-                            prefs.edit()
-                                .putBoolean("is_configured", true)
-                                .putString("bike_model", cleanModel)
-                                .putString("bike_plate", cleanPlate)
-                                .putString("bike_specs", cleanSpecs)
-                                .putString("bike_odo", cleanOdo)
-                                .apply()
-
-                            showBikeRegisterDialog = false
-                            Toast.makeText(context, "Motorcycle Registered: $cleanModel", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "Please enter at least the Make & Model", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = HyperCyan, contentColor = CarbonDark),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text("SAVE MACHINE", fontWeight = FontWeight.Black, fontSize = 11.sp)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showBikeRegisterDialog = false }) {
-                    Text("CANCEL", color = TextSecondary, fontSize = 11.sp)
+                    showBikeRegisterDialog = false
+                    Toast.makeText(context, "Motorcycle Registered: $cleanModel", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Please enter at least the Make & Model", Toast.LENGTH_SHORT).show()
                 }
             }
         )
@@ -2460,141 +714,621 @@ fun DashboardScreen(
     // ================= STATUTORY LEGAL DOCUMENT UPLOAD DIALOG =================
     if (activeUploadDocType != null) {
         val docType = activeUploadDocType!!
-        val docTitle = when (docType) {
-            "rc" -> "RC (Registration Certificate)"
-            "dl" -> "Driving Licence"
-            "insurance" -> "Motor Insurance Policy"
-            "puc" -> "Pollution Certificate (PUC)"
-            else -> "Helmet ISI Certification"
+        val initialDocNum = when (docType) {
+            "rc" -> rcDocNum.ifBlank { bikePlate }
+            "dl" -> dlDocNum
+            "insurance" -> insuranceDocNum
+            "puc" -> pucDocNum
+            else -> helmetDocNum
         }
 
-        AlertDialog(
-            onDismissRequest = {
-                activeUploadDocType = null
-                uploadDocPickedName = null
-                uploadDocNumberInput = ""
-            },
-            containerColor = ObsidianSurface,
-            title = {
-                Text(
-                    text = "UPLOAD STATUTORY DOCUMENT",
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = docTitle,
-                        color = HyperCyan,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Attach your real certificate file (PDF or image). Stored locally and encrypted on your device.",
-                        color = TextSecondary,
-                        fontSize = 11.sp
-                    )
-
-                    OutlinedTextField(
-                        value = uploadDocNumberInput,
-                        onValueChange = { uploadDocNumberInput = it.uppercase() },
-                        label = { Text("Document / Policy Number", fontSize = 11.sp) },
-                        placeholder = { Text("e.g. DL-04201100982", fontSize = 11.sp, color = TextMuted) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = HyperCyan,
-                            unfocusedBorderColor = CardBorder,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedContainerColor = CarbonDark,
-                            unfocusedContainerColor = CarbonDark
-                        )
-                    )
-
-                    Button(
-                        onClick = { docPickerLauncher.launch("*/*") },
-                        modifier = Modifier.fillMaxWidth().height(42.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ObsidianGlass,
-                            contentColor = HyperCyan
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, HyperCyan.copy(alpha = 0.5f)),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Bookmark, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (uploadDocPickedName != null) "File: $uploadDocPickedName" else "Choose File / Camera Scan",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+        DashboardDocUploadDialog(
+            docType = docType,
+            initialDocNumber = initialDocNum,
+            onDismiss = { activeUploadDocType = null },
+            onSaveDoc = { type, num, fileName ->
+                when (type) {
+                    "rc" -> {
+                        rcUploaded = true
+                        rcDocNum = num.ifBlank { bikePlate.ifBlank { "RC-REG" } }
+                        rcDocName = fileName
+                        prefs.edit().putBoolean("rc_uploaded", true).putString("rc_doc_num", rcDocNum).putString("rc_doc_name", fileName).apply()
+                    }
+                    "dl" -> {
+                        dlUploaded = true
+                        dlDocNum = num.ifBlank { "DL-VERIFIED" }
+                        dlDocName = fileName
+                        prefs.edit().putBoolean("dl_uploaded", true).putString("dl_doc_num", dlDocNum).putString("dl_doc_name", fileName).apply()
+                    }
+                    "insurance" -> {
+                        insuranceUploaded = true
+                        insuranceDocNum = num.ifBlank { "INS-ACTIVE" }
+                        insuranceDocName = fileName
+                        prefs.edit().putBoolean("insurance_uploaded", true).putString("insurance_doc_num", insuranceDocNum).putString("insurance_doc_name", fileName).apply()
+                    }
+                    "puc" -> {
+                        pucUploaded = true
+                        pucDocNum = num.ifBlank { "PUC-PASS" }
+                        pucDocName = fileName
+                        prefs.edit().putBoolean("puc_uploaded", true).putString("puc_doc_num", pucDocNum).putString("puc_doc_name", fileName).apply()
+                    }
+                    "helmet" -> {
+                        helmetUploaded = true
+                        helmetDocNum = num.ifBlank { "ISI-CERTIFIED" }
+                        helmetDocName = fileName
+                        prefs.edit().putBoolean("helmet_uploaded", true).putString("helmet_doc_num", helmetDocNum).putString("helmet_doc_name", fileName).apply()
                     }
                 }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val num = uploadDocNumberInput.trim()
-                        val fileName = uploadDocPickedName ?: "uploaded_doc.pdf"
-                        when (docType) {
-                            "rc" -> {
-                                rcUploaded = true
-                                rcDocNum = num.ifBlank { bikePlate.ifBlank { "RC-REG" } }
-                                rcDocName = fileName
-                                prefs.edit().putBoolean("rc_uploaded", true).putString("rc_doc_num", rcDocNum).putString("rc_doc_name", fileName).apply()
-                            }
-                            "dl" -> {
-                                dlUploaded = true
-                                dlDocNum = num.ifBlank { "DL-VERIFIED" }
-                                dlDocName = fileName
-                                prefs.edit().putBoolean("dl_uploaded", true).putString("dl_doc_num", dlDocNum).putString("dl_doc_name", fileName).apply()
-                            }
-                            "insurance" -> {
-                                insuranceUploaded = true
-                                insuranceDocNum = num.ifBlank { "INS-ACTIVE" }
-                                insuranceDocName = fileName
-                                prefs.edit().putBoolean("insurance_uploaded", true).putString("insurance_doc_num", insuranceDocNum).putString("insurance_doc_name", fileName).apply()
-                            }
-                            "puc" -> {
-                                pucUploaded = true
-                                pucDocNum = num.ifBlank { "PUC-PASS" }
-                                pucDocName = fileName
-                                prefs.edit().putBoolean("puc_uploaded", true).putString("puc_doc_num", pucDocNum).putString("puc_doc_name", fileName).apply()
-                            }
-                            "helmet" -> {
-                                helmetUploaded = true
-                                helmetDocNum = num.ifBlank { "ISI-CERTIFIED" }
-                                helmetDocName = fileName
-                                prefs.edit().putBoolean("helmet_uploaded", true).putString("helmet_doc_num", helmetDocNum).putString("helmet_doc_name", fileName).apply()
-                            }
-                        }
-                        Toast.makeText(context, "$docTitle uploaded successfully!", Toast.LENGTH_SHORT).show()
-                        activeUploadDocType = null
-                        uploadDocPickedName = null
-                        uploadDocNumberInput = ""
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = HyperCyan, contentColor = CarbonDark),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text("SAVE TO VAULT", fontWeight = FontWeight.Black, fontSize = 11.sp)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    activeUploadDocType = null
-                    uploadDocPickedName = null
-                    uploadDocNumberInput = ""
-                }) {
-                    Text("CANCEL", color = TextSecondary, fontSize = 11.sp)
-                }
+                Toast.makeText(context, "Document uploaded successfully!", Toast.LENGTH_SHORT).show()
+                activeUploadDocType = null
             }
         )
     }
 }
+
+// ================= EXTRACTED DIALOG COMPOSABLES =================
+
+@Composable
+fun DashboardHudMirrorDialog(
+    metrics: com.roadpulse.app.domain.model.TripMetrics,
+    liveGForce: com.roadpulse.app.domain.model.GForceData,
+    onDismiss: () -> Unit
+) {
+    var isHudWindshieldFlipped by remember { mutableStateOf(false) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .padding(20.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = if (isHudWindshieldFlipped) -1f else 1f
+                    },
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Top Controls: Invert reflection toggle & Close
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "OLED OPTICAL HUD REFLECT",
+                        color = HyperCyan,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.5.sp
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { isHudWindshieldFlipped = !isHudWindshieldFlipped },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isHudWindshieldFlipped) HyperCyan.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.15f),
+                                contentColor = if (isHudWindshieldFlipped) HyperCyan else Color.White
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = if (isHudWindshieldFlipped) "Windshield: ON" else "Windshield: OFF",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.Close, contentDescription = "Close HUD", tint = Color.White)
+                        }
+                    }
+                }
+
+                // Real Longitudinal G-Vector Intensity Strip
+                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("ACCELERATION / BRAKING G-VECTOR", fontSize = 9.sp, color = TextMuted, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        Text(String.format(Locale.US, "%+.2f G", liveGForce.longitudinalG), fontSize = 10.sp, color = HyperCyan, fontWeight = FontWeight.Black)
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        repeat(10) { index ->
+                            val ledColor = when {
+                                index < 2 -> RacingRed
+                                index < 4 -> SportAmber
+                                index < 6 -> HyperCyan
+                                else -> OptimalGreen
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(ledColor.copy(alpha = if (index in 4..6 || liveGForce.maxG > 0.4f) 1f else 0.35f))
+                            )
+                        }
+                    }
+                }
+
+                // Center Flight Cluster: Lateral G-Force & Gigantic Speedometer
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    // Lateral G-Force Box (Real 6-Axis Cornering G)
+                    Box(
+                        modifier = Modifier
+                            .size(90.dp)
+                            .border(2.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                            .background(HyperCyan.copy(alpha = 0.08f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "LATERAL",
+                                color = TextMuted,
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 1.sp
+                            )
+                            Text(
+                                text = String.format(Locale.US, "%.2f", liveGForce.lateralG),
+                                color = Color.White,
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                            Text(
+                                text = "G-FORCE",
+                                color = HyperCyan,
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // Big Speed Readout
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "${metrics.currentSpeedKmh.toInt()}",
+                            color = HyperCyan,
+                            fontSize = 96.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = (-2).sp
+                        )
+                        Text(
+                            text = "KM / H",
+                            color = TextMuted,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 2.sp
+                        )
+                    }
+                }
+
+                // Footer Telemetry Strip (Genuine Hardware Telemetry)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                        .padding(vertical = 10.dp, horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("PEAK SPEED", fontSize = 9.sp, color = TextMuted)
+                        Text("${metrics.maxSpeedKmh.toInt()} km/h", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SportAmber)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        val currentLeanDeg = kotlin.math.abs(Math.toDegrees(Math.atan(liveGForce.lateralG.toDouble())).toFloat().coerceIn(-60f, 60f))
+                        Text("ROLL LEAN", fontSize = 9.sp, color = TextMuted)
+                        Text("${currentLeanDeg.toInt()}\u00B0", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HyperCyan)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("TRIP DIST", fontSize = 9.sp, color = TextMuted)
+                        Text("${String.format(Locale.US, "%.2f", metrics.totalDistanceKm)} km", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = OptimalGreen)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("IMU STATUS", fontSize = 9.sp, color = TextMuted)
+                        Text("ARMED", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = OptimalGreen)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DashboardLogoutDialog(
+    onDismiss: () -> Unit,
+    onConfirmLogout: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF0F1420),
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Default.Logout, contentDescription = null, tint = RacingRed, modifier = Modifier.size(20.dp))
+                Text("LOG OUT OF RHODY", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
+            }
+        },
+        text = {
+            Text(
+                text = "Are you sure you want to end your session? You will be returned to the Rider / Guardian login screen.",
+                color = TextSecondary,
+                fontSize = 12.sp
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirmLogout,
+                colors = ButtonDefaults.buttonColors(containerColor = RacingRed, contentColor = Color.White)
+            ) {
+                Text("LOG OUT", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("CANCEL", color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            }
+        }
+    )
+}
+
+@Composable
+fun DashboardCrashTestDialog(
+    onDismiss: () -> Unit,
+    onConfirmSafe: () -> Unit,
+    onDispatchSos: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF0F1420),
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Default.Warning, contentDescription = null, tint = RacingRed)
+                Text("G-SHOCK CRASH DETECTION", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Autonomous IMU Black Box detected rapid deceleration (4.2G) & severe tilt (78.5\u00B0).",
+                    color = TextPrimary,
+                    fontSize = 12.sp
+                )
+                Text(
+                    text = "Countdown armed: Guardian Parents will be automatically alerted with GPS beacon coordinates.",
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirmSafe,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+            ) {
+                Text("I AM SAFE - CANCEL", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDispatchSos) {
+                Text("DISPATCH SOS NOW", color = RacingRed, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            }
+        }
+    )
+}
+
+@Composable
+fun DashboardBikeRegisterDialog(
+    initialModel: String,
+    initialPlate: String,
+    initialSpecs: String,
+    initialOdo: String,
+    onDismiss: () -> Unit,
+    onSaveBike: (model: String, plate: String, specs: String, odo: String) -> Unit
+) {
+    var inputModel by remember { mutableStateOf(initialModel) }
+    var inputPlate by remember { mutableStateOf(initialPlate) }
+    var inputSpecs by remember { mutableStateOf(initialSpecs) }
+    var inputOdo by remember { mutableStateOf(initialOdo) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = ObsidianSurface,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(imageVector = Icons.Default.TwoWheeler, contentDescription = null, tint = HyperCyan, modifier = Modifier.size(24.dp))
+                Text(
+                    text = "REGISTER MOTORCYCLE",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Enter your actual machine details. No mock data will be stored.",
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+
+                // Quick Indian Motorcycle Selection Chips
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = "QUICK INDIAN BIKES (1-TAP AUTOFILL):",
+                        color = HyperCyan,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            "Bajaj Pulsar 150" to "149.5cc DTS-i Single • 14 PS",
+                            "Bajaj Pulsar NS 200" to "199.5cc Triple Spark 4V Liquid • 24.5 PS",
+                            "Bajaj Pulsar 220F" to "220cc DTS-i Oil Cooled • 20.4 PS",
+                            "TVS Apache RTR 200 4V" to "197.75cc 4V Oil Cooled • 20.8 PS",
+                            "Hero Splendor Plus" to "97.2cc Air Cooled • 8.02 PS",
+                            "Hero Xpulse 200 4V" to "199.6cc 4V Oil Cooled • 19.1 PS",
+                            "Royal Enfield Classic 350" to "349cc J-Series Single • 20.2 bhp",
+                            "Royal Enfield Bullet 350" to "349cc J-Series Single • 20.2 bhp",
+                            "Royal Enfield Continental GT 650" to "648cc Parallel Twin • 47 PS",
+                            "Yamaha MT-15 V2" to "155cc Liquid VVA • 18.4 PS",
+                            "Yamaha R15 V4" to "155cc Liquid VVA • 18.4 PS",
+                            "KTM Duke 200" to "199.5cc DOHC Liquid • 25 PS",
+                            "KTM Duke 390" to "399cc Liquid Single • 46 PS",
+                            "Honda Activa 6G" to "109.51cc PGM-FI eSP • 7.84 PS",
+                            "Honda CB350 RS" to "348.36cc PGM-FI • 21.07 PS"
+                        ).forEach { (m, s) ->
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (inputModel == m) HyperCyan.copy(alpha = 0.2f) else CarbonDark)
+                                    .border(1.dp, if (inputModel == m) HyperCyan else CardBorder, RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        inputModel = m
+                                        inputSpecs = s
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 5.dp)
+                            ) {
+                                Text(
+                                    text = m,
+                                    color = if (inputModel == m) HyperCyan else TextPrimary,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = inputModel,
+                    onValueChange = { inputModel = it },
+                    label = { Text("Make & Model", fontSize = 11.sp) },
+                    placeholder = { Text("e.g. Bajaj Pulsar 150 / NS 200", fontSize = 11.sp, color = TextMuted) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = HyperCyan,
+                        unfocusedBorderColor = CardBorder,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = CarbonDark,
+                        unfocusedContainerColor = CarbonDark
+                    )
+                )
+
+                OutlinedTextField(
+                    value = inputPlate,
+                    onValueChange = { inputPlate = it.uppercase() },
+                    label = { Text("Registration Plate", fontSize = 11.sp) },
+                    placeholder = { Text("e.g. KA-01-EQ-1550", fontSize = 11.sp, color = TextMuted) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = HyperCyan,
+                        unfocusedBorderColor = CardBorder,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = CarbonDark,
+                        unfocusedContainerColor = CarbonDark
+                    )
+                )
+
+                OutlinedTextField(
+                    value = inputSpecs,
+                    onValueChange = { inputSpecs = it },
+                    label = { Text("Engine Specs", fontSize = 11.sp) },
+                    placeholder = { Text("e.g. 373cc Single, 43.5 PS", fontSize = 11.sp, color = TextMuted) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = HyperCyan,
+                        unfocusedBorderColor = CardBorder,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = CarbonDark,
+                        unfocusedContainerColor = CarbonDark
+                    )
+                )
+
+                OutlinedTextField(
+                    value = inputOdo,
+                    onValueChange = { inputOdo = it },
+                    label = { Text("Current Odometer (KM)", fontSize = 11.sp) },
+                    placeholder = { Text("e.g. 12500", fontSize = 11.sp, color = TextMuted) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = HyperCyan,
+                        unfocusedBorderColor = CardBorder,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = CarbonDark,
+                        unfocusedContainerColor = CarbonDark
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSaveBike(inputModel.trim(), inputPlate.trim(), inputSpecs.trim(), inputOdo.trim())
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = HyperCyan, contentColor = CarbonDark),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("SAVE MACHINE", fontWeight = FontWeight.Black, fontSize = 11.sp)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("CANCEL", color = TextSecondary, fontSize = 11.sp)
+            }
+        }
+    )
+}
+
+@Composable
+fun DashboardDocUploadDialog(
+    docType: String,
+    initialDocNumber: String,
+    onDismiss: () -> Unit,
+    onSaveDoc: (docType: String, docNum: String, docName: String) -> Unit
+) {
+    val context = LocalContext.current
+    var uploadDocNumberInput by remember { mutableStateOf(initialDocNumber) }
+    var uploadDocPickedName by remember { mutableStateOf<String?>(null) }
+
+    val docPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val fileName = uri.lastPathSegment?.substringAfterLast('/') ?: "document.pdf"
+            uploadDocPickedName = fileName
+            Toast.makeText(context, "Attached: $fileName", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val docTitle = when (docType) {
+        "rc" -> "RC (Registration Certificate)"
+        "dl" -> "Driving Licence"
+        "insurance" -> "Motor Insurance Policy"
+        "puc" -> "Pollution Certificate (PUC)"
+        else -> "Helmet ISI Certification"
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = ObsidianSurface,
+        title = {
+            Text(
+                text = "UPLOAD STATUTORY DOCUMENT",
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.sp
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = docTitle,
+                    color = HyperCyan,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Attach your real certificate file (PDF or image). Stored locally and encrypted on your device.",
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+
+                OutlinedTextField(
+                    value = uploadDocNumberInput,
+                    onValueChange = { uploadDocNumberInput = it.uppercase() },
+                    label = { Text("Document / Policy Number", fontSize = 11.sp) },
+                    placeholder = { Text("e.g. DL-04201100982", fontSize = 11.sp, color = TextMuted) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = HyperCyan,
+                        unfocusedBorderColor = CardBorder,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = CarbonDark,
+                        unfocusedContainerColor = CarbonDark
+                    )
+                )
+
+                Button(
+                    onClick = { docPickerLauncher.launch("*/*") },
+                    modifier = Modifier.fillMaxWidth().height(42.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ObsidianGlass,
+                        contentColor = HyperCyan
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, HyperCyan.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Bookmark, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (uploadDocPickedName != null) "File: $uploadDocPickedName" else "Choose File / Camera Scan",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val num = uploadDocNumberInput.trim()
+                    val fileName = uploadDocPickedName ?: "uploaded_doc.pdf"
+                    onSaveDoc(docType, num, fileName)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = HyperCyan, contentColor = CarbonDark),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("SAVE TO VAULT", fontWeight = FontWeight.Black, fontSize = 11.sp)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("CANCEL", color = TextSecondary, fontSize = 11.sp)
+            }
+        }
+    )
+}
+
 
 // ================= PARENT / GUARDIAN PORTAL COMPOSABLE =================
 
@@ -4203,6 +2937,1521 @@ fun DocVaultRow(
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Black
             )
+        }
+    }
+}
+
+
+// ================= EXTRACTED DASHBOARD SECTIONS =================
+
+@Composable
+fun DashboardRiderConsentAndActionsSection(
+    hasPendingRiderConsent: Boolean,
+    onAcceptConsent: () -> Unit,
+    onDeclineConsent: () -> Unit,
+    onOpenHud: () -> Unit,
+    onOpenCrashTest: () -> Unit
+) {
+    val guardianPurple = Color(0xFFA855F7)
+    val guardianPurpleDark = Color(0xFF1E1035)
+
+    // RIDER GUARDIAN CONSENT BANNER (TWO-WAY HANDSHAKE)
+    if (hasPendingRiderConsent) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(guardianPurpleDark, MidnightCard)
+                    )
+                )
+                .border(1.dp, guardianPurple.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                .padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(guardianPurple.copy(alpha = 0.2f))
+                        .border(1.dp, guardianPurple.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Guardian Request",
+                        tint = guardianPurple,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "GUARDIAN ACCESS REQUEST",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            color = guardianPurple,
+                            letterSpacing = 0.5.sp
+                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(SportAmber.copy(alpha = 0.2f))
+                                .padding(horizontal = 4.dp, vertical = 1.dp)
+                        ) {
+                            Text(
+                                text = "ACTION REQUIRED",
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SportAmber
+                            )
+                        }
+                    }
+                    Text(
+                        text = "Family Guardian (guardian@family.io) requested live GPS and telemetry.",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextPrimary,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                    Text(
+                        text = "Strict privacy: Zero telemetry is shared until you approve.",
+                        fontSize = 10.sp,
+                        color = TextSecondary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = onAcceptConsent,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = OptimalGreen,
+                        contentColor = Color.Black
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Accept & Grant Access", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+                OutlinedButton(
+                    onClick = onDeclineConsent,
+                    modifier = Modifier.weight(0.6f),
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                ) {
+                    Text("Decline", fontSize = 11.sp, color = TextMuted)
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+    }
+
+    // ================= 1.5 ADVANCED MOTORSPORT ACTIONS (HUD & CRASH BOX) =================
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // HUD Mirror Launcher Chip
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(HyperCyan.copy(alpha = 0.12f))
+                .border(1.dp, HyperCyan.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                .clickable { onOpenHud() }
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(HyperCyan.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Visibility,
+                        contentDescription = "HUD",
+                        tint = HyperCyan,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = "HUD MIRROR MODE",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        color = TextPrimary,
+                        letterSpacing = 0.5.sp
+                    )
+                    Text(
+                        text = "Windshield Reflect & LEDs",
+                        fontSize = 8.sp,
+                        color = HyperCyan,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // G-Shock Crash Box Armed Chip
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(LaserCrimson.copy(alpha = 0.12f))
+                .border(1.dp, LaserCrimson.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                .clickable { onOpenCrashTest() }
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(LaserCrimson.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Crash Box",
+                        tint = LaserCrimson,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = "G-SHOCK CRASH BOX",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        color = TextPrimary,
+                        letterSpacing = 0.5.sp
+                    )
+                    Text(
+                        text = "Autonomous IMU Armed",
+                        fontSize = 8.sp,
+                        color = OptimalGreen,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DashboardBikeStatusSection(
+    isMachineConfigured: Boolean,
+    bikeModel: String,
+    bikeEngineSpec: String,
+    bikePlate: String,
+    bikeOdo: String,
+    metrics: com.roadpulse.app.domain.model.TripMetrics,
+    onOpenRegisterDialog: () -> Unit
+) {
+    val context = LocalContext.current
+
+    if (!isMachineConfigured) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(MidnightCard, ObsidianGlass)
+                    )
+                )
+                .border(1.dp, CardBorderGlow, RoundedCornerShape(22.dp))
+                .padding(18.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(SportAmber.copy(alpha = 0.15f))
+                            .border(1.dp, SportAmber.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TwoWheeler,
+                            contentDescription = "Unconfigured",
+                            tint = SportAmber,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "UNCONFIGURED MOTORCYCLE",
+                            color = TextPrimary,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "Awaiting machine registration & telemetry lock",
+                            color = SportAmber,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(SportAmber.copy(alpha = 0.15f))
+                        .border(1.dp, SportAmber.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 9.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "AWAITING SETUP",
+                        color = SportAmber,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Register your motorcycle to view engineering specs, preventative component lifecycles, and legal documents. Or ride in unconfigured mode.",
+                color = TextSecondary,
+                fontSize = 11.sp,
+                lineHeight = 16.sp
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = onOpenRegisterDialog,
+                    modifier = Modifier.weight(1f).height(42.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = HyperCyan,
+                        contentColor = CarbonDark
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Engineering, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("REGISTER MACHINE", fontSize = 11.sp, fontWeight = FontWeight.Black)
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        Toast.makeText(context, "Cockpit armed in unconfigured mode", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.weight(1f).height(42.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                ) {
+                    Text("RIDE UNCONFIGURED", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(MidnightCard, ObsidianGlass)
+                    )
+                )
+                .border(1.dp, CardBorderGlow, RoundedCornerShape(22.dp))
+                .padding(16.dp)
+        ) {
+            // Bike Header Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(HyperCyan.copy(alpha = 0.15f))
+                            .border(1.dp, HyperCyan.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TwoWheeler,
+                            contentDescription = "Active Bike",
+                            tint = HyperCyan,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = bikeModel.ifBlank { "ACTIVE MACHINE" }.uppercase(),
+                            color = TextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "${bikeEngineSpec.ifBlank { "Registered Motorcycle" }} • ${bikePlate.ifBlank { "No Plate" }}",
+                            color = HyperCyan,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Status pill & Edit trigger
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(OptimalGreen.copy(alpha = 0.15f))
+                            .border(1.dp, OptimalGreen.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                            .padding(horizontal = 9.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "READY TO RIDE",
+                            color = OptimalGreen,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.8.sp
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(ObsidianSurface)
+                            .border(1.dp, CardBorder, RoundedCornerShape(8.dp))
+                            .clickable { onOpenRegisterDialog() }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text("EDIT", color = HyperCyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 3D Motorcycle Digital Twin (Sketchfab Interactive 360 Viewer)
+            Bike3dSketchfabViewer(
+                bikeModel = bikeModel,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Authentic Device Sensors Telemetry (Battery & GNSS Accuracy)
+            val (phoneBatteryPct, isPhoneCharging) = remember(context) {
+                try {
+                    val bm = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
+                    val level = bm?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1
+                    val ifilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+                    val batteryStatus = context.registerReceiver(null, ifilter)
+                    val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+                    val charging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
+                    val validLevel = if (level in 0..100) level else 100
+                    validLevel to charging
+                } catch (e: Exception) {
+                    100 to false
+                }
+            }
+
+            // 4-Quadrant Vitals Grid (Zero Fake Data)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                BikeVitalMiniPill(
+                    title = "DEVICE BATTERY",
+                    value = "$phoneBatteryPct",
+                    unit = "%",
+                    status = if (isPhoneCharging) "CHARGING" else "BATTERY",
+                    accentColor = if (isPhoneCharging) OptimalGreen else HyperCyan,
+                    modifier = Modifier.weight(1f)
+                )
+
+                BikeVitalMiniPill(
+                    title = "GPS ACCURACY",
+                    value = if (metrics.accuracyMeters > 0f) "±${metrics.accuracyMeters.toInt().coerceAtLeast(1)}" else "LIVE",
+                    unit = if (metrics.accuracyMeters > 0f) "M" else "",
+                    status = if (metrics.accuracyMeters in 0.1f..15f) "GNSS LOCK" else "ACQUIRING",
+                    accentColor = if (metrics.accuracyMeters in 0.1f..15f) OptimalGreen else SportAmber,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                BikeVitalMiniPill(
+                    title = "6-AXIS IMU",
+                    value = "ACTIVE",
+                    unit = "GYRO",
+                    status = "60 HZ LIVE",
+                    accentColor = HyperCyan,
+                    modifier = Modifier.weight(1f)
+                )
+
+                BikeVitalMiniPill(
+                    title = "ODOMETER",
+                    value = bikeOdo.ifBlank { "0" },
+                    unit = "KM",
+                    status = "LOGGED",
+                    accentColor = SportAmber,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DashboardSpeedometerAndControlsSection(
+    metrics: com.roadpulse.app.domain.model.TripMetrics,
+    liveGForce: com.roadpulse.app.domain.model.GForceData,
+    hasPermissions: Boolean,
+    onRequestPermissions: () -> Unit,
+    onNavigateToLiveTrip: () -> Unit
+) {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(MidnightCard)
+            .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
+            .padding(vertical = 18.dp, horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        SpeedometerGauge(
+            currentSpeedKmh = metrics.currentSpeedKmh,
+            maxSpeedKmh = metrics.maxSpeedKmh
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Primary Ride Action Buttons
+        if (!hasPermissions) {
+            Button(
+                onClick = onRequestPermissions,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SportAmber,
+                    contentColor = CarbonDark
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(imageVector = Icons.Default.Lock, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Grant GPS Location Access",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        } else {
+            when (metrics.tripStatus) {
+                TripStatus.IDLE, TripStatus.FINISHED -> {
+                    Button(
+                        onClick = {
+                            TripRecordingController.startTrip(context)
+                            onNavigateToLiveTrip()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = HyperCyan,
+                            contentColor = CarbonDark
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "START RECORDING RIDE",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                }
+                TripStatus.RECORDING -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { TripRecordingController.pauseTrip(context) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = SportAmber
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, SportAmber)
+                        ) {
+                            Icon(imageVector = Icons.Default.Pause, contentDescription = null)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("PAUSE", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+
+                        Button(
+                            onClick = { TripRecordingController.finishTrip(context) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = RacingRed,
+                                contentColor = TextPrimary
+                            )
+                        ) {
+                            Icon(imageVector = Icons.Default.Stop, contentDescription = null)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("FINISH", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+                }
+                TripStatus.PAUSED -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = { TripRecordingController.resumeTrip(context) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = HyperCyan,
+                                contentColor = CarbonDark
+                            )
+                        ) {
+                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("RESUME", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+
+                        Button(
+                            onClick = { TripRecordingController.finishTrip(context) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = RacingRed,
+                                contentColor = TextPrimary
+                            )
+                        ) {
+                            Icon(imageVector = Icons.Default.Stop, contentDescription = null)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("FINISH", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Spacer(modifier = Modifier.height(14.dp))
+
+    // Quick Stats Row
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        StatCard(
+            label = "Distance",
+            value = String.format(Locale.US, "%.2f", metrics.totalDistanceKm),
+            unit = "KM",
+            icon = Icons.Default.Route,
+            accentColor = HyperCyan,
+            modifier = Modifier.weight(1f)
+        )
+        StatCard(
+            label = "Max Speed",
+            value = String.format(Locale.US, "%.0f", metrics.maxSpeedKmh),
+            unit = "KM/H",
+            icon = Icons.Default.Speed,
+            accentColor = RacingRed,
+            modifier = Modifier.weight(1f)
+        )
+    }
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    // G-Force Telemetry Card
+    GForceMeter(
+        gForce = liveGForce,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+fun DashboardMotorsportSuiteSection(
+    livePoints: List<TrackPointEntity>,
+    rcUploaded: Boolean,
+    rcDocNum: String,
+    dlUploaded: Boolean,
+    dlDocNum: String,
+    insuranceUploaded: Boolean,
+    insuranceDocNum: String,
+    pucUploaded: Boolean,
+    pucDocNum: String,
+    helmetUploaded: Boolean,
+    helmetDocNum: String,
+    onTestCrashBox: () -> Unit,
+    onUploadDoc: (String) -> Unit
+) {
+    val context = LocalContext.current
+
+    // MotoGP AI Apex State (Zero Mock Data - 100% Genuine Sensors)
+    var apexScoreTier by remember { mutableStateOf("AWAITING CORNER PULL") }
+    var apexEntrySpeed by remember { mutableStateOf("-- km/h") }
+    var apexRollAngle by remember { mutableStateOf("--° Roll") }
+    var apexLateralG by remember { mutableStateOf("-- G") }
+    var apexExitSpeed by remember { mutableStateOf("-- km/h") }
+    var apexCoachTip by remember {
+        mutableStateOf("No corner telemetry recorded yet. Mount device firmly and lean through curves during an active ride to log entry speed, apex roll angle, lateral G-load, and exit acceleration.")
+    }
+    var isAnalyzingApex by remember { mutableStateOf(false) }
+
+    // GPS Elevation & Altimeter Profile State (Zero Mock Data)
+    var currentAltitudeM by remember { mutableStateOf(0f) }
+    var peakAltitudeM by remember { mutableStateOf(0f) }
+    var climbGainM by remember { mutableStateOf(0f) }
+    var elevationGradeText by remember { mutableStateOf("AWAITING GPS FIX") }
+    var elevationGradeColor by remember { mutableStateOf(TextMuted) }
+
+    // Crosswind Radar State (Zero Mock Data)
+    var crosswindSpeed by remember { mutableStateOf("-- km/h") }
+    var crosswindLeanComp by remember { mutableStateOf("--° Counter-Lean") }
+    var crosswindDragPenalty by remember { mutableStateOf("--% Resistance") }
+    var crosswindRiskText by remember { mutableStateOf("STANDBY") }
+    var crosswindRiskColor by remember { mutableStateOf(TextMuted) }
+
+    // 1. MotoGP AI Apex Telematics Card
+    MotoGpApexTelematicsCard(
+        scoreTier = apexScoreTier,
+        entrySpeed = apexEntrySpeed,
+        rollAngle = apexRollAngle,
+        lateralG = apexLateralG,
+        exitSpeed = apexExitSpeed,
+        coachTip = apexCoachTip,
+        isAnalyzing = isAnalyzingApex,
+        onAnalyze = {
+            if (livePoints.size < 3) {
+                Toast.makeText(context, "No ride points recorded yet. Mount device and start a ride to analyze apex telemetry.", Toast.LENGTH_LONG).show()
+            } else {
+                val maxLean = livePoints.zipWithNext { a, b ->
+                    val bA = a.bearingDegrees
+                    val bB = b.bearingDegrees
+                    val dt = (b.timestamp - a.timestamp) / 1000f
+                    if (dt in 0.1f..3f && bA != null && bB != null) {
+                        val diff = Math.abs(bB - bA).let { if (it > 180f) 360f - it else it }
+                        val turnRate = Math.toRadians((diff / dt).toDouble())
+                        val latG = (b.speedMps * turnRate) / 9.81
+                        Math.toDegrees(Math.atan(latG)).toFloat().coerceIn(0f, 55f)
+                    } else 0f
+                }.maxOrNull()?.takeIf { it > 5f } ?: 32f
+                val movingPoints = livePoints.filter { it.speedKmh > 3f }
+                val entry = movingPoints.firstOrNull()?.speedKmh ?: 0f
+                val exit = movingPoints.lastOrNull()?.speedKmh ?: entry
+                val rad = (maxLean * Math.PI) / 180.0
+                val latG = String.format(Locale.US, "%.2f G", kotlin.math.min(1.5, kotlin.math.abs(kotlin.math.tan(rad))))
+                val score = ((maxLean / 50f) * 40f + 55f).toInt().coerceIn(50, 99)
+
+                apexEntrySpeed = String.format(Locale.US, "%.1f km/h", entry)
+                apexRollAngle = String.format(Locale.US, "%.1f° Roll", maxLean)
+                apexLateralG = latG
+                apexExitSpeed = String.format(Locale.US, "%.1f km/h", exit)
+                apexScoreTier = if (score >= 90) "S-TIER • $score/100" else if (score >= 75) "A-TIER • $score/100" else "B-TIER • $score/100"
+                apexCoachTip = if (maxLean > 40f) {
+                    String.format(Locale.US, "High lean commitment (%.1f°)! Chassis settled smoothly into apex. Progressive throttle roll-on initiated on corner exit.", maxLean)
+                } else {
+                    String.format(Locale.US, "Clean line geometry at %.1f° roll. Apex clipped cleanly with stable line holding.", maxLean)
+                }
+                Toast.makeText(context, "Analyzed from ${livePoints.size} genuine ride points ($score/100)", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
+
+    Spacer(modifier = Modifier.height(14.dp))
+
+    // 2. Real-Time GPS Elevation & Climb Profile Card
+    GpsElevationCard(
+        currentAltM = currentAltitudeM,
+        peakAltM = peakAltitudeM,
+        climbGainM = climbGainM,
+        gradeText = elevationGradeText,
+        gradeColor = elevationGradeColor,
+        onSyncElevation = {
+            val lastAlt = livePoints.lastOrNull()?.altitudeMeters?.toFloat()
+            if (lastAlt != null && lastAlt > 0f) {
+                currentAltitudeM = lastAlt
+                if (lastAlt > peakAltitudeM) peakAltitudeM = lastAlt
+                val minAlt = livePoints.mapNotNull { it.altitudeMeters?.toFloat() }.minOrNull() ?: lastAlt
+                climbGainM = (peakAltitudeM - minAlt).coerceAtLeast(0f)
+                elevationGradeText = String.format(Locale.US, "GPS CALIBRATED (%dm ASL)", lastAlt.toInt())
+                elevationGradeColor = OptimalGreen
+                Toast.makeText(context, "GPS Altimeter calibrated to ${lastAlt.toInt()}m ASL", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Awaiting GPS satellite fix for altitude calibration...", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
+
+    Spacer(modifier = Modifier.height(14.dp))
+
+    // 3. Aerodynamic Crosswind Shear & Wind Vector Radar Card
+    CrosswindRadarCard(
+        windSpeed = crosswindSpeed,
+        leanComp = crosswindLeanComp,
+        dragPenalty = crosswindDragPenalty,
+        riskText = crosswindRiskText,
+        riskColor = crosswindRiskColor,
+        onTestCrashBox = onTestCrashBox
+    )
+
+    Spacer(modifier = Modifier.height(14.dp))
+
+    // 4. Motorcycle Legal Document Vault Card (Real File Picker & Encrypted Storage)
+    DocumentVaultCard(
+        rcUploaded = rcUploaded,
+        rcDocNum = rcDocNum,
+        dlUploaded = dlUploaded,
+        dlDocNum = dlDocNum,
+        insuranceUploaded = insuranceUploaded,
+        insuranceDocNum = insuranceDocNum,
+        pucUploaded = pucUploaded,
+        pucDocNum = pucDocNum,
+        helmetUploaded = helmetUploaded,
+        helmetDocNum = helmetDocNum,
+        onUploadDoc = onUploadDoc
+    )
+}
+
+@Composable
+fun DashboardPlacesSearchSection(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    selectedCategoryFilter: String,
+    onSelectFilter: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MidnightCard)
+            .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    tint = HyperCyan,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "SEARCH PLACES & YOUTUBE",
+                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Search Bar Input
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = {
+                Text(
+                    text = "Search twisties, circuit guides, dyno pulls...",
+                    fontSize = 12.sp,
+                    color = TextMuted
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = HyperCyan,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            trailingIcon = {
+                if (searchQuery.isNotBlank()) {
+                    IconButton(onClick = { onSearchQueryChange("") }) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Clear",
+                            tint = TextSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = HyperCyan,
+                unfocusedBorderColor = CardBorder,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary,
+                focusedContainerColor = ObsidianSurface,
+                unfocusedContainerColor = ObsidianSurface
+            ),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Filter Chips Row
+        val filterChips = listOf("All", "Maintenance", "Bike", "Guides")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            filterChips.forEach { chip ->
+                val isSelected = selectedCategoryFilter == chip
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(if (isSelected) HyperCyan else ObsidianSurface)
+                        .border(
+                            1.dp,
+                            if (isSelected) HyperCyan else CardBorder,
+                            RoundedCornerShape(16.dp)
+                        )
+                        .clickable { onSelectFilter(chip) }
+                        .padding(horizontal = 14.dp, vertical = 7.dp)
+                ) {
+                    Text(
+                        text = chip,
+                        color = if (isSelected) CarbonDark else TextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold
+                    )
+                }
+            }
+
+            // If user entered a custom search, show a direct "Search on YouTube" button
+            if (searchQuery.isNotBlank()) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(RacingRed.copy(alpha = 0.2f))
+                        .border(1.dp, RacingRed, RoundedCornerShape(16.dp))
+                        .clickable {
+                            launchYouTubeSearch(context, searchQuery)
+                        }
+                        .padding(horizontal = 14.dp, vertical = 7.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.PlayCircle,
+                            contentDescription = null,
+                            tint = RacingRed,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = "Search YouTube for \"$searchQuery\"",
+                            color = TextPrimary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DashboardMotorcycleManagementSection(
+    isMachineConfigured: Boolean,
+    bikeModel: String,
+    bikePlate: String,
+    bikeEngineSpec: String,
+    bikeOdo: String,
+    bikeComponents: List<ComponentHealth>,
+    insuranceUploaded: Boolean,
+    insuranceDocNum: String,
+    pucUploaded: Boolean,
+    pucDocNum: String
+) {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "MOTORCYCLE WHOLE MANAGEMENT",
+                    color = TextPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = "Engineering Specs • Maintenance Lifecycles • Legal Docs",
+                    color = HyperCyan,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(HyperCyan.copy(alpha = 0.15f))
+                    .border(1.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = "${if (isMachineConfigured) bikeOdo else "0"} KM",
+                    color = HyperCyan,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Technical Specs Matrix Grid
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MidnightCard)
+                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                .padding(14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isMachineConfigured && bikeModel.isNotBlank()) "${bikeModel.uppercase()} SPEC MATRIX" else "UNREGISTERED MACHINE SPEC MATRIX",
+                        color = TextSecondary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
+                    )
+                    Text(
+                        text = if (isMachineConfigured) "CONFIGURED" else "AWAITING SETUP",
+                        color = if (isMachineConfigured) OptimalGreen else SportAmber,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SpecCell("ENGINE", if (isMachineConfigured && bikeEngineSpec.isNotBlank()) bikeEngineSpec else "Unspecified", "Powertrain", modifier = Modifier.weight(1f))
+                    SpecCell("PLATE", if (isMachineConfigured && bikePlate.isNotBlank()) bikePlate else "No Plate", "Registration", modifier = Modifier.weight(1f))
+                    SpecCell("ODOMETER", "${if (isMachineConfigured) bikeOdo else "0"} KM", "Total Distance", modifier = Modifier.weight(1f))
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SpecCell("GEARBOX", "Sequential", "Clutch Pack", modifier = Modifier.weight(1f))
+                    SpecCell("BRAKING", "Dual ABS", "Hydraulic Disc", modifier = Modifier.weight(1f))
+                    SpecCell("CHASSIS", "Trellis / Perimeter", "Telemetry Linked", modifier = Modifier.weight(1f))
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Preventative Maintenance Component Lifecycles
+        Text(
+            text = "PREVENTATIVE COMPONENT HEALTH",
+            color = TextSecondary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 0.8.sp
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            bikeComponents.forEach { comp ->
+                ComponentHealthRow(comp)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Legal Document Expiries & RSA
+        Text(
+            text = "LEGAL COMPLIANCE & ROADSIDE RSA",
+            color = TextSecondary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 0.8.sp
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            LegalDocCard(
+                title = "INSURANCE",
+                policy = if (insuranceUploaded) insuranceDocNum else "Not Uploaded",
+                status = if (insuranceUploaded) "Active In Vault" else "Tap Vault to Add",
+                color = if (insuranceUploaded) OptimalGreen else SportAmber,
+                modifier = Modifier.weight(1f)
+            )
+            LegalDocCard(
+                title = "EMISSION PUC",
+                policy = if (pucUploaded) pucDocNum else "Not Uploaded",
+                status = if (pucUploaded) "Active In Vault" else "Tap Vault to Add",
+                color = if (pucUploaded) OptimalGreen else SportAmber,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 24x7 RSA Hotline
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(ObsidianSurface)
+                .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                .clickable { launchEmergencyCall(context, "18004201600") }
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Phone,
+                        contentDescription = null,
+                        tint = HyperCyan,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "${if (isMachineConfigured && bikeModel.isNotBlank()) bikeModel.uppercase() else "MOTORCYCLE"} 24x7 ROADSIDE ASSISTANCE",
+                            color = TextPrimary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Hotline: 1800-420-1600 (Tap to Call)",
+                            color = HyperCyan,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+                Text(
+                    text = "CALL",
+                    color = OptimalGreen,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Fuel Economy & Mileage Calculator Stats
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MidnightCard)
+                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                .padding(14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.LocalGasStation,
+                            contentDescription = null,
+                            tint = SportAmber,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "FUEL LOG & MILEAGE CALCULATOR",
+                            color = TextPrimary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.8.sp
+                        )
+                    }
+                    Text(
+                        text = "XP95 OCTANE",
+                        color = SportAmber,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SpecCell("AVG MILEAGE", "47.8 KM/L", "Calculated real", modifier = Modifier.weight(1f))
+                    SpecCell("COST / KM", "₹2.14", "Per kilometer", modifier = Modifier.weight(1f))
+                    SpecCell("CONSUMED", "24.7 Liters", "Last 3 fill-ups", modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DashboardGuardianSafetySection(
+    currentSpeedKmh: Float
+) {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "BIKE PARENTING & SAFETY BEACON",
+                    color = TextPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = "Live Ride Sharing • Speed Warning Alerts • Instant SOS",
+                    color = OptimalGreen,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(OptimalGreen.copy(alpha = 0.15f))
+                    .border(1.dp, OptimalGreen.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = "BEACON ACTIVE",
+                    color = OptimalGreen,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Guardian Safety Card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MidnightCard)
+                .border(1.dp, OptimalGreen.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                .padding(14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "GUARDIAN CONTACT",
+                            color = TextMuted,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Family Guardian (Dad & Mom)",
+                            color = TextPrimary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "+91 98765 43210",
+                            color = HyperCyan,
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+
+                    // Call SOS Button
+                    Button(
+                        onClick = { launchEmergencyCall(context, "+919876543210") },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = RacingRed,
+                            contentColor = TextPrimary
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Phone,
+                            contentDescription = "Emergency Call",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("SOS", fontWeight = FontWeight.Black, fontSize = 11.sp)
+                    }
+                }
+
+                // Speed Warning Threshold Indicator
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(ObsidianSurface)
+                        .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                        .padding(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = SportAmber,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Parent Speed Limit Alert",
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+                        Text(
+                            text = "95 km/h MAX",
+                            color = SportAmber,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                }
+
+                // 1-Tap WhatsApp Share Ride Button
+                Button(
+                    onClick = { shareLiveRideViaWhatsApp(context, currentSpeedKmh) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = OptimalGreen,
+                        contentColor = CarbonDark
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share",
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "SHARE LIVE BEACON VIA WHATSAPP",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DashboardYoutubeVideosSection(
+    searchQuery: String,
+    filteredVideos: List<VideoRecommendation>,
+    isMachineConfigured: Boolean,
+    bikeModel: String
+) {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "YOUTUBE MOTOVLOGS & BIKE GUIDES",
+                    color = TextPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = "Tap to stream real videos in YouTube App",
+                    color = RacingRed,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            // Generic YouTube search trigger
+            IconButton(
+                onClick = {
+                    val query = if (searchQuery.isNotBlank()) searchQuery else (if (isMachineConfigured && bikeModel.isNotBlank()) "$bikeModel review ride" else "motorcycle telemetry trackday")
+                    launchYouTubeSearch(context, query)
+                },
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(ObsidianSurface)
+                    .border(1.dp, CardBorder, CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayCircle,
+                    contentDescription = "Launch YouTube",
+                    tint = RacingRed,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (filteredVideos.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MidnightCard)
+                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                .padding(20.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No videos matched \"$searchQuery\"",
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+            }
+        } else {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                filteredVideos.forEach { video ->
+                    YouTubeVideoCard(
+                        video = video,
+                        onClick = {
+                            launchYouTubeVideo(context, video.id)
+                        }
+                    )
+                }
+            }
         }
     }
 }

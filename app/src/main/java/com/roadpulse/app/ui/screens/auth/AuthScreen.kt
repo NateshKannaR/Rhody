@@ -668,6 +668,4 @@ fun AuthScreen(
         }
     }
 }
-        }
-    }
-}
+
