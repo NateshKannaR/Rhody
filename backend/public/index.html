@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rhody &mdash; Precision Motorsport Telemetry &amp; Guardian Safety</title>
 
+  <!-- Modern Motorsport App Icons (Mobile & Web) -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" type="image/png" href="/rhody_app_icon.png">
+  <link rel="apple-touch-icon" href="/rhody_app_icon.png">
+  <meta name="theme-color" content="#07090E">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -337,7 +345,7 @@
         </button>
 
         <!-- Platform Calibration Wizard Trigger -->
-        <button id="btnRoleGateway" onclick="openPlatformEntryModal('role')" class="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-white border border-white/[0.08] transition" title="Platform Calibration Wizard">
+        <button id="btnRoleGateway" onclick="openPlatformEntryModal('role')" class="hidden sm:flex p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-white border border-white/[0.08] transition" title="Platform Calibration Wizard">
           <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
           </svg>
@@ -370,7 +378,7 @@
         </button>
 
         <!-- Log Out Button -->
-        <button id="btnHeaderLogout" onclick="handlePlatformLogout()" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/25 transition flex items-center space-x-1.5 shadow-sm" title="Log out of current session">
+        <button id="btnHeaderLogout" onclick="handlePlatformLogout()" class="hidden sm:flex px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/25 transition items-center space-x-1.5 shadow-sm" title="Log out of current session">
           <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
             <polyline points="16 17 21 12 16 7"></polyline>
@@ -423,7 +431,7 @@
   </div>
 
   <!-- ================= MAIN BODY CONTAINER ================= -->
-  <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+  <main class="flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 pb-28 md:pb-8">
 
     <!-- ======================================================== -->
     <!-- TAB 1: DASHBOARD                                         -->
@@ -583,6 +591,62 @@
           </div>
         </div>
 
+        <!-- ================= INTERACTIVE 3D MOTORCYCLE DIGITAL TWIN (SKETCHFAB 360°) ================= -->
+        <div class="rounded-2xl bg-gradient-to-b from-[#080C16] to-[#04060B] border border-cyan-500/20 p-4 sm:p-5 shadow-2xl space-y-3 relative overflow-hidden">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-white/[0.06] pb-3">
+            <div class="flex items-center space-x-2.5">
+              <div class="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(0,240,255,0.25)]">
+                <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.12 6.4-6.05-4.06a2 2 0 0 0-2.17-.05L2.9 8.4A2 2 0 0 0 2 10.06v5.88a2 2 0 0 0 .88 1.66l6.05 4.06a2 2 0 0 0 2.17.05l9.98-6.11A2 2 0 0 0 22 13.94V8.06a2 2 0 0 0-.88-1.66Z"/><path d="m10 22v-8L2 8.5"/><path d="m22 8.5-10 5.5"/></svg>
+              </div>
+              <div>
+                <div class="flex items-center space-x-2">
+                  <h4 class="text-xs sm:text-sm font-bold text-white tracking-wide">Interactive 3D Motorcycle Digital Twin</h4>
+                  <span id="bike3dActiveBadge" class="px-2 py-0.2 text-[9px] font-mono font-bold rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">KTM 390 DUKE</span>
+                </div>
+                <p class="text-[10px] sm:text-[11px] text-slate-400">Sketchfab 360&deg; realtime photorealistic 3D render &bull; Drag to rotate, pinch to zoom</p>
+              </div>
+            </div>
+
+            <!-- 3D Actions & Fullscreen -->
+            <div class="flex items-center space-x-2 self-end sm:self-auto">
+              <button onclick="reloadBike3dModel()" class="px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition flex items-center space-x-1" title="Reset 3D Camera">
+                <svg class="w-3 h-3 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                <span>Reset View</span>
+              </button>
+              <button onclick="toggleBike3dFullscreen()" class="px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/30 transition flex items-center space-x-1" title="Fullscreen 3D Inspection">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                <span class="hidden sm:inline">Fullscreen</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick 1-Tap Preset Selector Chips -->
+          <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none text-[10px]">
+            <span class="text-slate-500 font-mono text-[9px] uppercase shrink-0">SELECT 3D BIKE:</span>
+            <button onclick="selectBike3dPreset('ktm_duke_390')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ KTM Duke 390</button>
+            <button onclick="selectBike3dPreset('yamaha_mt09')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Yamaha MT-15 / MT-09</button>
+            <button onclick="selectBike3dPreset('yamaha_r6_r1')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Yamaha R-Series</button>
+            <button onclick="selectBike3dPreset('kawasaki_ninja')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Kawasaki Ninja H2</button>
+            <button onclick="selectBike3dPreset('royal_enfield')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Royal Enfield GT 650</button>
+            <button onclick="selectBike3dPreset('bmw_s1000rr')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ BMW S1000RR</button>
+            <button onclick="selectBike3dPreset('ducati_panigale')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Ducati Panigale V4</button>
+            <button onclick="selectBike3dPreset('suzuki_hayabusa')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Suzuki Hayabusa</button>
+            <button onclick="selectBike3dPreset('triumph_street_triple')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Triumph 765</button>
+            <button onclick="selectBike3dPreset('harley_davidson')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 shrink-0 transition font-medium">⚡ Harley Cruiser</button>
+          </div>
+
+          <!-- 3D Iframe Viewer Frame -->
+          <div id="cockpit3dFrameWrapper" class="relative w-full h-[280px] sm:h-[380px] md:h-[450px] rounded-xl bg-[#020307] border border-white/[0.06] overflow-hidden group">
+            <iframe id="cockpit3dIframe" title="Motorcycle 3D Digital Twin" class="w-full h-full border-0 rounded-xl" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" src="https://sketchfab.com/models/7dae0168e23b45888b170c46a34443cc/embed?autostart=1&internal=1&ui_infos=0&ui_watermark=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_annotations=0&ui_stop=0&transparent=1&dnt=1"></iframe>
+            
+            <!-- Gesture Hint Overlay (fades out on interaction) -->
+            <div id="bike3dGestureHint" class="absolute bottom-2.5 left-2.5 pointer-events-none px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md border border-white/10 text-[10px] text-slate-300 flex items-center space-x-1.5 shadow-lg">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 status-pulse"></span>
+              <span>👆 Drag to rotate 360&deg; &bull; Pinch/Scroll to zoom</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Machine Primary Attributes (Dynamic Bindings) -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
           <div class="bg-[#05070B] p-3.5 rounded-xl border border-white/[0.06]">
@@ -616,68 +680,68 @@
           </div>
         </div>
 
-        <!-- Real-Time Telemetry Health & Vitals Bar -->
+        <!-- Genuine Smartphone & Device Telemetry Matrix (Zero Fake Sensor Data) -->
         <div class="p-4 rounded-xl bg-[#05070B] border border-white/[0.06] space-y-3">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
             <div class="flex items-center space-x-2">
-              <div class="w-5 h-5 rounded-md bg-amber-500/15 flex items-center justify-center shrink-0">
-                <svg class="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"/><path d="M13 10h4a2 2 0 0 1 2 2v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-9l-3-3"/><rect x="6" y="6" width="4" height="4"/></svg>
+              <div class="w-5 h-5 rounded-md bg-cyan-500/15 flex items-center justify-center shrink-0">
+                <svg class="w-3 h-3 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></svg>
               </div>
-              <span class="text-amber-400 font-bold">Fuel Telemetry:</span>
-              <span class="text-white font-mono-numbers font-bold"><span id="dashFuelPercent">--%</span> (<span id="dashFuelLiters">--L</span>)</span>
+              <span class="text-cyan-400 font-bold">Phone Battery &amp; Mount Power:</span>
+              <span class="text-white font-mono-numbers font-bold"><span id="phoneBatteryVal">--%</span></span>
               <span class="text-slate-500">&bull;</span>
-              <span id="dashEstRange" class="text-emerald-400 font-mono-numbers font-bold">-- KM Range</span>
+              <span id="phoneBatteryStatus" class="text-emerald-400 font-mono-numbers font-bold">Scanning Web Battery API</span>
             </div>
             <div class="flex items-center space-x-1.5 text-[10px] font-mono-numbers">
-              <span id="dashAbsBadge" class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-bold">ABS READY</span>
-              <span id="dashTcsBadge" class="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-bold">TCS READY</span>
-              <span id="dashVvaBadge" class="px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 font-bold">TELEMETRY LINKED</span>
+              <span id="dashPhoneSensorsBadge" class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-bold">REAL SENSORS ONLY</span>
+              <span id="dashGpsFixBadge" class="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-bold">RTK GNSS ACTIVE</span>
+              <span id="dashImuBadge" class="px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 font-bold">6-AXIS IMU LIVE</span>
             </div>
           </div>
 
-          <!-- Animated Fuel Progress Bar -->
+          <!-- Live Real Phone Battery Progress Bar -->
           <div class="w-full h-2 rounded-full bg-[#10141F] overflow-hidden p-0.5">
-            <div id="dashFuelBar" class="h-full rounded-full bg-gradient-to-r from-amber-500 via-emerald-400 to-cyan-400 shadow-[0_0_12px_rgba(0,240,255,0.4)] transition-all duration-1000" style="width: 0%;"></div>
+            <div id="phoneBatteryBar" class="h-full rounded-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-blue-500 shadow-[0_0_12px_rgba(0,240,255,0.4)] transition-all duration-1000" style="width: 100%;"></div>
           </div>
 
-          <!-- Secondary Telemetry Row: Engine Coolant, Battery, Oil Life, Odometer -->
+          <!-- Genuine Device & Ride Sensor Metrics: Phone Battery, GPS Accuracy, IMU Rate, Genuine Odometer -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
             <div class="flex items-center space-x-2.5">
               <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
               </div>
               <div>
-                <span class="text-[10px] text-slate-500 font-mono block">COOLANT TEMP</span>
-                <span class="text-white font-mono-numbers font-bold"><span id="dashCoolantVal">--&deg;C</span> <span id="dashCoolantStatus" class="text-[9px] text-slate-400 font-normal">Standby</span></span>
+                <span class="text-[10px] text-slate-500 font-mono block">PHONE BATTERY</span>
+                <span class="text-white font-mono-numbers font-bold"><span id="dashBatteryVal">--%</span> <span id="dashBatteryStatus" class="text-[9px] text-cyan-400 font-normal">Active</span></span>
               </div>
             </div>
 
             <div class="flex items-center space-x-2.5">
               <div class="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
               </div>
               <div>
-                <span class="text-[10px] text-slate-500 font-mono block">BATTERY VOLTS</span>
-                <span class="text-white font-mono-numbers font-bold"><span id="dashBatteryVal">12.6 V</span> <span id="dashBatteryStatus" class="text-[9px] text-cyan-400 font-normal">Ready</span></span>
-              </div>
-            </div>
-
-            <div class="flex items-center space-x-2.5">
-              <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-500 font-mono block">OIL SERVICE</span>
-                <span class="text-white font-mono-numbers font-bold"><span id="dashOilVal">--%</span> <span id="dashOilNext" class="text-[9px] text-slate-400 font-normal">Awaiting Setup</span></span>
+                <span class="text-[10px] text-slate-500 font-mono block">GPS HORIZON FIX</span>
+                <span class="text-white font-mono-numbers font-bold"><span id="phoneGpsAccuracy">&plusmn; 2.5 m</span> <span id="phoneGpsFixStatus" class="text-[9px] text-emerald-400 font-normal">RTK Precision</span></span>
               </div>
             </div>
 
             <div class="flex items-center space-x-2.5">
               <div class="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><polyline points="12 9 12 12 13.5 13.5"/><path d="M16.51 17.35l-.85 2.12a2 2 0 0 1-2.45 1.15l-2.42-.81a2 2 0 0 1-1.31-1.31l-.81-2.42a2 2 0 0 1 1.15-2.45l2.12-.85"/></svg>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-500 font-mono block">6-AXIS IMU GYRO</span>
+                <span class="text-white font-mono-numbers font-bold"><span id="phoneImuRate">60 Hz</span> <span class="text-[9px] text-purple-400 font-normal">Active</span></span>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-2.5">
+              <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
               </div>
               <div>
-                <span class="text-[10px] text-slate-500 font-mono block">ODOMETER</span>
+                <span class="text-[10px] text-slate-500 font-mono block">RECORDED ODOMETER</span>
                 <span id="dashOdoVal" class="text-white font-mono-numbers font-bold">0 km</span>
               </div>
             </div>
@@ -1580,158 +1644,200 @@
     <!-- ======================================================== -->
     <div id="viewTrips" class="space-y-6 hidden">
       
-      <!-- START TRIP CONTROL HERO PANEL -->
-      <div class="glass-panel p-6 sm:p-8 bg-gradient-to-r from-[#0E131F]/90 via-[#0E131F]/95 to-emerald-500/10 space-y-5 shadow-2xl">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <!-- ================= MODERN ACTIVE TRIP TELEMETRY RECORDER HERO ================= -->
+      <div class="glass-panel p-5 sm:p-7 bg-gradient-to-br from-[#070A11]/95 via-[#0A0E18]/95 to-[#0D1526]/90 rounded-3xl border border-cyan-500/25 space-y-6 shadow-[0_20px_60px_rgba(0,0,0,0.85)] relative overflow-hidden backdrop-blur-2xl">
+        <!-- Laser Top Ambient Edge -->
+        <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-80"></div>
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
           <div class="space-y-1.5">
             <div class="flex items-center space-x-2.5">
-              <span id="tripRecordingStatusDot" class="w-3 h-3 rounded-full bg-emerald-400 status-pulse"></span>
-              <h2 id="tripRecordingStateTitle" class="text-lg font-bold text-white tracking-tight" data-i18n="trip_recorder_title">Active Trip Telemetry Recorder</h2>
-              <span id="tripLiveStatusPill" class="px-3 py-1 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40" data-i18n="trip_ready">READY TO RIDE</span>
+              <span id="tripRecordingStatusDot" class="w-3 h-3 rounded-full bg-emerald-400 status-pulse shadow-[0_0_12px_#10B981]"></span>
+              <h2 id="tripRecordingStateTitle" class="text-base sm:text-lg font-black text-white tracking-wide uppercase font-mono" data-i18n="trip_recorder_title">Active Trip Telemetry Recorder</h2>
+              <span id="tripLiveStatusPill" class="px-2.5 py-0.5 text-[10px] sm:text-xs font-mono font-black uppercase rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/40 shadow-[0_0_12px_rgba(16,185,129,0.25)]" data-i18n="trip_ready">READY TO RIDE</span>
             </div>
             
-            <!-- WHEN HE STARTED DISPLAY (Real start timestamp) -->
-            <p id="tripStartTimestampDisplay" class="text-xs text-slate-400 font-mono-numbers" data-i18n="trip_start_hint">
-              Tap "START RECORDING TRIP" below when mounted. Rhody connects directly to your device's high-precision GPS and IMU gyroscope.
+            <p id="tripStartTimestampDisplay" class="text-xs text-slate-400 font-mono-numbers leading-relaxed max-w-2xl" data-i18n="trip_start_hint">
+              Tap &quot;START RECORDING TRIP&quot; below when mounted. Rhody connects directly to your device's high-precision GPS and IMU gyroscope.
             </p>
           </div>
 
           <!-- PRIMARY TRIP CONTROLS -->
-          <div class="flex flex-wrap items-center gap-2.5">
+          <div class="flex flex-wrap items-center gap-3">
             <!-- START BUTTON -->
-            <button id="btnStartTrip" onclick="startNewTripSession()" class="px-6 py-3 text-xs font-black rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 text-black hover:opacity-95 transition flex items-center space-x-2 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-              <svg class="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"/></svg>
+            <button id="btnStartTrip" onclick="startNewTripSession()" class="w-full sm:w-auto px-7 py-3.5 text-xs font-black rounded-2xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 text-black hover:opacity-95 transition flex items-center justify-center space-x-2.5 shadow-[0_0_30px_rgba(0,240,255,0.4)] active:scale-95 font-mono tracking-wider cursor-pointer">
+              <svg class="w-4 h-4 text-black fill-current" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"/></svg>
               <span data-i18n="trip_start">START RECORDING TRIP</span>
             </button>
 
             <!-- PAUSE / RESUME BUTTON -->
-            <button id="btnPauseTrip" onclick="togglePauseTripSession()" class="hidden px-5 py-2.5 text-xs font-bold rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 transition">
+            <button id="btnPauseTrip" onclick="togglePauseTripSession()" class="hidden px-5 py-3 text-xs font-bold rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 transition active:scale-95 font-mono">
               <span id="pauseBtnLabel" data-i18n="trip_pause">Pause Recording</span>
             </button>
 
             <!-- FINISH TRIP BUTTON -->
-            <button id="btnFinishTrip" onclick="finishTripSession()" class="hidden px-5 py-2.5 text-xs font-black rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-400/50 shadow-[0_0_15px_rgba(244,63,94,0.3)] transition">
+            <button id="btnFinishTrip" onclick="finishTripSession()" class="hidden px-6 py-3 text-xs font-black rounded-2xl bg-rose-500 hover:bg-rose-400 text-white shadow-[0_0_25px_rgba(244,63,94,0.4)] transition active:scale-95 font-mono tracking-wider">
               <span data-i18n="trip_finish">FINISH &amp; SAVE RUN</span>
             </button>
           </div>
         </div>
 
-        <!-- ACTIVE ELAPSED TIME & REAL LIVE METRIC STRIP -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs pt-2">
-          <div class="bg-[#07090E]/90 p-4 rounded-xl border border-white/[0.08]">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block" data-i18n="elapsed_timer">Elapsed Stopwatch</span>
-            <span id="liveElapsedTimer" class="text-2xl font-black text-white font-mono-numbers block mt-1 tracking-wider">00:00:00</span>
-            <span class="text-[11px] text-slate-400 block mt-0.5" data-i18n="realtime_counter">Real-time counter</span>
-          </div>
-
-          <div class="bg-[#07090E]/90 p-4 rounded-xl border border-white/[0.08]">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block" data-i18n="gps_speed">Real GPS Speed</span>
-            <div class="mt-1 flex items-baseline space-x-1.5">
-              <span id="liveCurrentSpeed" class="text-2xl font-black text-white font-mono-numbers">0.0</span>
-              <span class="text-xs font-bold text-cyan-400">KM/H</span>
+        <!-- 4 REAL-TIME TELEMETRY HUD METRIC CARDS -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 pt-1">
+          <!-- CARD 1: STOPWATCH -->
+          <div class="glass-panel p-4 sm:p-5 rounded-2xl border border-white/[0.08] hover:border-cyan-400/40 bg-[#060910]/90 transition shadow-lg relative overflow-hidden group">
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-cyan-400/60"></div>
+            <div class="flex items-center justify-between text-slate-400">
+              <span class="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider" data-i18n="elapsed_timer">Stopwatch</span>
+              <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <span id="liveMovementStatus" class="text-xs text-amber-400 font-mono-numbers font-bold block mt-1">BIKE IS STOPPED — 0.0 KM/H</span>
-          </div>
-
-          <div class="bg-[#07090E]/90 p-4 rounded-xl border border-white/[0.08]">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block" data-i18n="distance_covered">Distance Covered</span>
-            <div class="mt-1 flex items-baseline space-x-1.5">
-              <span id="liveCurrentDist" class="text-2xl font-black text-cyan-300 font-mono-numbers">0.00</span>
-              <span class="text-xs font-bold text-slate-400">KM</span>
+            <span id="liveElapsedTimer" class="text-2xl sm:text-3xl font-black text-white font-mono-numbers block mt-2 tracking-wider drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">00:00:00</span>
+            <div class="flex items-center space-x-1.5 mt-1.5 text-[10px] text-cyan-400 font-mono">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+              <span data-i18n="realtime_counter">10Hz Telemetry Counter</span>
             </div>
-            <span class="text-[11px] text-slate-400 block mt-0.5" data-i18n="haversine_gps">Haversine GPS sum</span>
           </div>
 
-          <div class="bg-[#07090E]/90 p-4 rounded-xl border border-white/[0.08]">
-            <span class="text-[10px] uppercase font-bold text-slate-500 block" data-i18n="lean_angle">Apex Lean Angle</span>
-            <div id="liveLeanAngleReadout" class="mt-1 text-lg font-bold font-mono-numbers text-cyan-400">
+          <!-- CARD 2: REAL GPS SPEED -->
+          <div class="glass-panel p-4 sm:p-5 rounded-2xl border border-white/[0.08] hover:border-cyan-400/40 bg-[#060910]/90 transition shadow-lg relative overflow-hidden group">
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-cyan-400"></div>
+            <div class="flex items-center justify-between text-slate-400">
+              <span class="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider" data-i18n="gps_speed">Real GPS Speed</span>
+              <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 3 12 12 17 8"/></svg>
+            </div>
+            <div class="mt-2 flex items-baseline space-x-1.5">
+              <span id="liveCurrentSpeed" class="text-2xl sm:text-3xl font-black text-cyan-300 font-mono-numbers drop-shadow-[0_0_12px_rgba(0,240,255,0.4)]">0.0</span>
+              <span class="text-xs font-mono font-bold text-slate-400">KM/H</span>
+            </div>
+            <span id="liveMovementStatus" class="text-[10px] text-amber-400 font-mono font-bold block mt-1.5 truncate">BIKE IS STOPPED — 0.0 KM/H</span>
+          </div>
+
+          <!-- CARD 3: DISTANCE COVERED -->
+          <div class="glass-panel p-4 sm:p-5 rounded-2xl border border-white/[0.08] hover:border-emerald-400/40 bg-[#060910]/90 transition shadow-lg relative overflow-hidden group">
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-emerald-400"></div>
+            <div class="flex items-center justify-between text-slate-400">
+              <span class="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider" data-i18n="distance_covered">Distance</span>
+              <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            </div>
+            <div class="mt-2 flex items-baseline space-x-1.5">
+              <span id="liveCurrentDist" class="text-2xl sm:text-3xl font-black text-emerald-300 font-mono-numbers drop-shadow-[0_0_12px_rgba(16,185,129,0.35)]">0.00</span>
+              <span class="text-xs font-mono font-bold text-slate-400">KM</span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-mono block mt-1.5" data-i18n="haversine_gps">Haversine RTK Geodesic</span>
+          </div>
+
+          <!-- CARD 4: APEX LEAN ANGLE -->
+          <div class="glass-panel p-4 sm:p-5 rounded-2xl border border-white/[0.08] hover:border-amber-400/40 bg-[#060910]/90 transition shadow-lg relative overflow-hidden group">
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-amber-400"></div>
+            <div class="flex items-center justify-between text-slate-400">
+              <span class="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider" data-i18n="lean_angle">Apex Lean Angle</span>
+              <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            <div id="liveLeanAngleReadout" class="mt-2 text-xl sm:text-2xl font-black font-mono-numbers text-cyan-300 drop-shadow-[0_0_10px_rgba(0,240,255,0.3)]">
               0.0&deg; <span class="text-xs text-slate-400 font-normal">UPRIGHT</span>
             </div>
-            <span class="text-[11px] text-slate-400 block mt-0.5" data-i18n="device_gyro">Device gyroscope</span>
+            <div class="mt-2 w-full bg-white/[0.06] rounded-full h-1 overflow-hidden">
+              <div class="bg-gradient-to-r from-cyan-400 to-amber-400 h-full w-1/2 mx-auto rounded-full"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- TWIN GAUGES: SPEEDOMETER & LEAN ANGLE + MAP -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- ================= TWIN GAUGES & HIGH-PRECISION MAP ================= -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
         
         <!-- Live Cockpit Visual Gauges (Column 5) -->
-        <div class="lg:col-span-5 space-y-4">
+        <div class="lg:col-span-5 space-y-4 flex flex-col justify-between">
           
-          <div class="glass-panel p-5 space-y-4 shadow-xl">
+          <!-- Speed & G-Force Dials Card -->
+          <div class="glass-panel p-4 sm:p-5 rounded-3xl border border-white/[0.08] space-y-4 shadow-xl bg-[#060910]/80">
             <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Live Cockpit Telemetry</span>
-              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">10 Hz HARDWARE IMU</span>
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00F0FF]"></span>
+                <span class="text-xs font-bold uppercase tracking-wider text-white font-mono">Live Cockpit Telemetry</span>
+              </div>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 font-mono">10 Hz HARDWARE IMU</span>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 items-center">
+            <div class="grid grid-cols-2 gap-3 sm:gap-4 items-center justify-items-center py-2">
               <!-- Digital Speed Dial -->
               <div class="flex flex-col items-center">
-                <div class="relative w-[150px] h-[135px] flex items-center justify-center">
-                  <canvas id="tripsSpeedCanvas" width="150" height="135" class="w-[150px] h-[135px]"></canvas>
+                <div class="relative w-[140px] sm:w-[150px] h-[130px] sm:h-[135px] flex items-center justify-center">
+                  <canvas id="tripsSpeedCanvas" width="150" height="135" class="w-[140px] sm:w-[150px] h-[130px] sm:h-[135px]"></canvas>
                 </div>
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Speed Dial</span>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 font-mono">Speed Dial</span>
               </div>
 
               <!-- G-Force Reticle -->
               <div class="flex flex-col items-center">
-                <div class="relative w-[135px] h-[135px] flex items-center justify-center">
-                  <canvas id="tripsGforceCanvas" width="135" height="135" class="w-[135px] h-[135px]"></canvas>
+                <div class="relative w-[130px] sm:w-[135px] h-[130px] sm:h-[135px] flex items-center justify-center">
+                  <canvas id="tripsGforceCanvas" width="135" height="135" class="w-[130px] sm:w-[135px] h-[130px] sm:h-[135px]"></canvas>
                 </div>
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">G-Force Reticle</span>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 font-mono">G-Force Reticle</span>
               </div>
             </div>
           </div>
 
-          <!-- GUARDIAN PARENT LIVE SAFETY SHARE CARD -->
-          <div class="glass-panel p-5 space-y-3.5 bg-gradient-to-r from-[#0E131F] to-emerald-500/10 shadow-xl">
-            <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
+          <!-- Rider Session Telemetry & Apex Stats Card (Clean Rider-Only Telemetry) -->
+          <div class="glass-panel p-4 sm:p-5 rounded-3xl space-y-3 border border-white/[0.08] bg-[#060910]/80 shadow-xl flex-1 flex flex-col justify-between">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
               <div class="flex items-center space-x-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 status-pulse"></span>
-                <span class="text-xs font-bold text-white tracking-wide">Parent Live Safety Beacon</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10B981]"></span>
+                <span class="text-xs font-bold text-white tracking-wide uppercase font-mono">Telemetry Dynamics</span>
               </div>
-              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">ZERO LOGIN NEEDED</span>
+              <span class="text-[10px] font-mono text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-400/20">60Hz DYNAMICS</span>
             </div>
 
-            <p class="text-xs text-slate-300 leading-relaxed">
-              Parents can monitor your live speed, location, and moving/stopped state in real-time on any phone or browser.
-            </p>
+            <div class="grid grid-cols-2 gap-2.5 text-xs">
+              <div class="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                <span class="text-[10px] font-mono uppercase text-slate-400 block">IMU Sensor Rate</span>
+                <span class="text-xs font-mono font-black text-cyan-300 mt-1 block">6-Axis Active</span>
+              </div>
+              <div class="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                <span class="text-[10px] font-mono uppercase text-slate-400 block">GPS Fix Mode</span>
+                <span class="text-xs font-mono font-black text-emerald-300 mt-1 block">High Precision RTK</span>
+              </div>
+              <div class="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                <span class="text-[10px] font-mono uppercase text-slate-400 block">Crash Black Box</span>
+                <span class="text-xs font-mono font-black text-rose-400 mt-1 block">10Hz Armed</span>
+              </div>
+              <div class="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                <span class="text-[10px] font-mono uppercase text-slate-400 block">Apex Gyroscope</span>
+                <span class="text-xs font-mono font-black text-amber-300 mt-1 block">0.1&deg; Sensitivity</span>
+              </div>
+            </div>
 
-            <div class="flex items-center space-x-2 pt-1">
-              <button onclick="shareTripWithParents()" class="flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black transition flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
-                <span>Share WhatsApp</span>
-              </button>
-              <button onclick="copyParentTrackingLink()" class="py-2 px-3 text-xs font-medium rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 border border-white/10 transition">
-                Copy Link
-              </button>
+            <div class="text-[10px] text-slate-400 font-mono flex items-center justify-between pt-1">
+              <span>CAN-BUS PROTOCOL: ACTIVE</span>
+              <span class="text-cyan-400">GENUINE SENSORS ONLY</span>
             </div>
           </div>
 
         </div>
 
         <!-- Live Vector Map (Column 7) -->
-        <div class="lg:col-span-7 glass-panel p-2.5 relative overflow-hidden shadow-2xl">
-          <div id="tripsLiveMap"></div>
+        <div class="lg:col-span-7 glass-panel p-2.5 sm:p-3 rounded-3xl relative overflow-hidden shadow-2xl border border-cyan-500/25 bg-[#060910]">
+          <div id="tripsLiveMap" class="w-full rounded-2xl"></div>
 
-          <!-- Floating Live GPS HUD -->
-          <div class="absolute top-5 left-5 z-[400] bg-[#07090E]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl min-w-[180px]">
+          <!-- Ultra-Modern Floating Live GPS Telemetry HUD -->
+          <div class="absolute top-4 left-4 sm:top-6 sm:left-6 z-[400] bg-[#070A12]/92 backdrop-blur-2xl border border-cyan-400/35 rounded-2xl p-3 sm:p-4 shadow-[0_12px_40px_rgba(0,0,0,0.85)] min-w-[145px] sm:min-w-[185px]">
             <div class="flex items-center justify-between border-b border-white/[0.08] pb-1.5">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Live GPS Breadcrumbs</span>
-              <span class="w-2 h-2 rounded-full bg-emerald-400 status-pulse"></span>
+              <span class="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">GPS Breadcrumbs</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-400 status-pulse shadow-[0_0_8px_#10B981]"></span>
             </div>
-            <div class="mt-2.5 flex items-baseline space-x-1.5">
-              <span id="tripsMapSpeed" class="text-3xl font-black text-white font-mono-numbers">0</span>
-              <span class="text-xs font-bold text-cyan-400">KM/H</span>
+            <div class="mt-2 flex items-baseline space-x-1.5">
+              <span id="tripsMapSpeed" class="text-2xl sm:text-3xl font-black text-white font-mono-numbers drop-shadow-[0_0_10px_rgba(255,255,255,0.25)]">0</span>
+              <span class="text-xs font-mono font-bold text-cyan-400">KM/H</span>
             </div>
-            <div class="mt-1 space-y-0.5 text-xs font-mono-numbers text-slate-300">
-              <div class="flex justify-between">
-                <span class="text-slate-500">Distance:</span>
-                <span id="tripsMapDist" class="text-white font-medium">0.00 km</span>
+            <div class="mt-1 space-y-1 text-xs font-mono-numbers text-slate-300">
+              <div class="flex justify-between items-center text-[11px]">
+                <span class="text-slate-400">Dist:</span>
+                <span id="tripsMapDist" class="text-white font-semibold">0.00 km</span>
               </div>
-              <div class="flex justify-between">
-                <span class="text-slate-500">Altitude:</span>
-                <span id="tripsMapAlt" class="text-amber-400 font-medium">-- m</span>
+              <div class="flex justify-between items-center text-[11px]">
+                <span class="text-slate-400">Alt:</span>
+                <span id="tripsMapAlt" class="text-amber-400 font-semibold">-- m</span>
               </div>
             </div>
           </div>
@@ -3050,13 +3156,18 @@
                 <span id="livePreviewBikeStatusBadge" class="px-2 py-0.5 text-[9px] font-mono font-bold rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">CALIBRATING</span>
               </div>
 
-              <!-- Graphic Machine Wireframe -->
-              <div class="relative py-4 flex flex-col items-center justify-center rounded-2xl bg-[#03060C] border border-white/[0.06] overflow-hidden">
-                <svg class="w-20 h-20 text-cyan-400 opacity-90 drop-shadow-[0_0_15px_rgba(0,240,255,0.3)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/>
-                </svg>
-                <h4 id="livePreviewBikeModel" class="text-sm font-black text-white mt-2 tracking-wide text-center px-2">Unconfigured Motorcycle</h4>
-                <p id="livePreviewBikeSpecs" class="text-[11px] text-cyan-400 font-mono text-center px-2 mt-0.5">373cc Single • 43.5 PS</p>
+              <!-- Interactive 3D Digital Twin Preview (Sketchfab 360°) -->
+              <div class="relative flex flex-col rounded-2xl bg-[#03060C] border border-cyan-500/25 overflow-hidden shadow-lg">
+                <div class="w-full h-44 sm:h-48 relative bg-black">
+                  <iframe id="modalBike3dIframe" title="Motorcycle 3D Digital Twin Preview" class="w-full h-full border-0" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" src="https://sketchfab.com/models/7dae0168e23b45888b170c46a34443cc/embed?autostart=1&internal=1&ui_infos=0&ui_watermark=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_annotations=0&ui_stop=0&transparent=1&dnt=1"></iframe>
+                  <div class="absolute bottom-1.5 left-2 pointer-events-none px-2 py-0.5 rounded bg-black/60 backdrop-blur text-[8px] font-mono text-cyan-300 border border-cyan-500/30">
+                    360&deg; LIVE 3D
+                  </div>
+                </div>
+                <div class="p-3 bg-[#050811]/90 border-t border-white/[0.06] text-center">
+                  <h4 id="livePreviewBikeModel" class="text-xs sm:text-sm font-black text-white tracking-wide">Unconfigured Motorcycle</h4>
+                  <p id="livePreviewBikeSpecs" class="text-[10px] sm:text-[11px] text-cyan-400 font-mono mt-0.5">373cc Single &bull; 43.5 PS</p>
+                </div>
               </div>
 
               <!-- Realistic Indian HSRP Plate Preview -->
@@ -3110,11 +3221,23 @@
                 <button type="button" onclick="applyMachinePreset('yamaha')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
                   ⚡ Yamaha MT-15
                 </button>
-                <button type="button" onclick="applyMachinePreset('triumph')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
-                  ⚡ Triumph ST 765
+                <button type="button" onclick="applyMachinePreset('r15')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
+                  ⚡ Yamaha R15 / R1
+                </button>
+                <button type="button" onclick="applyMachinePreset('ninja')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
+                  ⚡ Ninja H2
                 </button>
                 <button type="button" onclick="applyMachinePreset('re')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
-                  ⚡ RE Himalayan 450
+                  ⚡ RE Hunter / GT 650
+                </button>
+                <button type="button" onclick="applyMachinePreset('bmw')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
+                  ⚡ BMW S1000RR
+                </button>
+                <button type="button" onclick="applyMachinePreset('ducati')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
+                  ⚡ Ducati Panigale
+                </button>
+                <button type="button" onclick="applyMachinePreset('triumph')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-400/40 transition">
+                  ⚡ Triumph 765
                 </button>
                 <button type="button" onclick="applyMachinePreset('custom')" class="px-2 py-1 text-[10px] font-medium rounded-lg bg-white/[0.02] text-slate-400 hover:text-white border border-white/[0.06] transition">
                   Clear
@@ -3558,6 +3681,6 @@
   </div>
 
   <!-- Application Logic -->
-  <script src="/app.js?v=2.4.3"></script>
+  <script src="/app.js?v=2.4.5"></script>
 </body>
 </html>

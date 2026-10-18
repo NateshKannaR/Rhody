@@ -4,27 +4,31 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Dynamic Outer Telemetry Speed Arc -->
+
+    <!-- Glowing Apex Speed Trajectory Curves -->
     <path
-        android:pathData="M32,74 A30,30 0 1,1 76,74"
-        android:strokeColor="#2563EB"
-        android:strokeWidth="4.5"
-        android:strokeLineCap="round" />
-    <!-- High Performance Emerald Safety Apex Accent -->
-    <path
-        android:pathData="M68,36 A30,30 0 0,1 76,74"
+        android:pathData="M24,72 C44,70 56,58 70,40 C76,32 84,34 90,36"
         android:strokeColor="#10B981"
-        android:strokeWidth="4.5"
+        android:strokeWidth="3.2"
         android:strokeLineCap="round" />
-    <!-- Precision Telemetry Rhody Apex Wave -->
+
     <path
-        android:pathData="M30,68 L44,48 L52,58 L63,40 L71,50 L78,68"
-        android:strokeColor="#F8FAFC"
-        android:strokeWidth="3.5"
-        android:strokeLineCap="round"
+        android:pathData="M30,76 C48,74 60,62 74,44 C79,37 86,39 91,40"
+        android:strokeColor="#00F0FF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round" />
+
+    <!-- Telemetry Beacon Point -->
+    <path
+        android:pathData="M76,38 A3,3 0 1,1 75.99,38 Z"
+        android:fillColor="#34D399" />
+
+    <!-- Primary Electric Apex Lightning Bolt (Cyan & White) -->
+    <path
+        android:pathData="M58,18 L36,54 L54,54 L46,88 L74,48 L56,48 Z"
+        android:fillColor="#00F0FF"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.2"
         android:strokeLineJoin="round" />
-    <!-- Live Guardian Safety Radar Dot -->
-    <path
-        android:pathData="M54,34 A4,4 0 1,1 53.99,34 Z"
-        android:fillColor="#10B981" />
+
 </vector>

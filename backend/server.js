@@ -919,6 +919,34 @@ app.get('/api/youtube/search', async (req, res) => {
   }
 });
 
+// GET /api/sketchfab/search - Dynamic 3D Motorcycle Model Lookup
+app.get('/api/sketchfab/search', async (req, res) => {
+  const query = req.query.q || 'motorcycle';
+  try {
+    const url = `https://api.sketchfab.com/v3/search?type=models&q=${encodeURIComponent(query)}&sort_by=-likeCount`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Sketchfab search failed', models: [] });
+    }
+    const data = await response.json();
+    const models = (data.results || []).slice(0, 5).map(m => ({
+      uid: m.uid,
+      name: m.name,
+      viewerUrl: m.viewerUrl,
+      thumbnail: m.thumbnails?.images?.[0]?.url || '',
+      embedUrl: `https://sketchfab.com/models/${m.uid}/embed?autostart=1&internal=1&ui_infos=0&ui_watermark=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_annotations=0&ui_stop=0&transparent=1&dnt=1`
+    }));
+    res.json({ query, models });
+  } catch (err) {
+    console.error('Sketchfab search error:', err.message);
+    res.status(500).json({ error: err.message, models: [] });
+  }
+});
+
 // ----------------------------------------------------
 // PARENT / GUARDIAN PORTAL ENDPOINTS & NOTIFICATIONS
 // ----------------------------------------------------
