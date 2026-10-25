@@ -22,6 +22,9 @@ interface TrackPointDao {
     @Query("SELECT * FROM track_points WHERE tripId = :tripId ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLastPointForTrip(tripId: Long): TrackPointEntity?
 
+    @Query("SELECT * FROM track_points WHERE tripId = :tripId ORDER BY timestamp DESC LIMIT :limit")
+    suspend fun getRecentPointsForTrip(tripId: Long, limit: Int): List<TrackPointEntity>
+
     @Query("SELECT COUNT(*) FROM track_points WHERE tripId = :tripId")
     suspend fun getPointCountForTrip(tripId: Long): Int
 

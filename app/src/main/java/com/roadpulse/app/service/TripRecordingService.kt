@@ -40,11 +40,16 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Handler
+import android.os.HandlerThread
 import com.roadpulse.app.domain.model.GForceData
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 
 class TripRecordingService : LifecycleService() {
 
@@ -58,7 +63,19 @@ class TripRecordingService : LifecycleService() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var sensorManager: SensorManager? = null
     private var accelerometer: Sensor? = null
+    private var sensorThread: HandlerThread? = null
+    private var sensorHandler: Handler? = null
     private var peakG: Float = 0f
+
+    // High-performance track point buffer (averts individual 1Hz disk transactions)
+    private val pointBuffer = ConcurrentLinkedQueue<TrackPointEntity>()
+    private var lastBatchFlushMs: Long = 0L
+    private val isFlushingPoints = AtomicBoolean(false)
+
+    // Robust live beacon concurrency guard & adaptive failure backoff
+    private val isBeaconBroadcasting = AtomicBoolean(false)
+    private var lastBeaconAttemptMs: Long = 0L
+    private var consecutiveBeaconFailures: Int = 0
 
     private val qualityFilter = GpsQualityFilter(FilterConfig())
     private var previousAcceptedFix: GpsLocationFix? = null
@@ -80,7 +97,8 @@ class TripRecordingService : LifecycleService() {
         override fun onSensorChanged(event: SensorEvent?) {
             if (event == null) return
             val now = System.currentTimeMillis()
-            if (now - lastSensorUpdateMs < 100L) return // Cap at 10 Hz to prevent UI thread bombardment
+            // Cap at 4 Hz (250ms) to conserve CPU/battery and eliminate main looper starvation
+            if (now - lastSensorUpdateMs < 250L) return
             lastSensorUpdateMs = now
 
             val xG = event.values[0] / 9.80665f
@@ -166,7 +184,7 @@ class TripRecordingService : LifecycleService() {
                     movingDurationMs = existing.movingDurationMs
                     totalPausedMs = existing.pauseDurationMs
 
-                    val points = repository.getPoints(existing.id)
+                    val points = repository.getRecentPoints(existing.id, 200)
                     TripRecordingController.setLivePoints(points)
                     previousAcceptedFix = points.lastOrNull()?.let {
                         GpsLocationFix(
@@ -205,6 +223,7 @@ class TripRecordingService : LifecycleService() {
         pauseStartTime = System.currentTimeMillis()
         stopLocationUpdates()
         stopTicker()
+        flushPointBuffer(forceAll = true)
 
         currentMetrics = currentMetrics.copy(
             tripStatus = TripStatus.PAUSED,
@@ -213,7 +232,7 @@ class TripRecordingService : LifecycleService() {
         TripRecordingController.updateMetrics(currentMetrics)
         promoteToForeground()
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             repository.updateTripProgress(activeTripId, currentMetrics, TripStatus.PAUSED)
         }
     }
@@ -232,7 +251,7 @@ class TripRecordingService : LifecycleService() {
         startTicker()
         updateStateAndNotification()
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             repository.updateTripProgress(activeTripId, currentMetrics, TripStatus.RECORDING)
         }
     }
@@ -240,9 +259,10 @@ class TripRecordingService : LifecycleService() {
     private fun handleFinish() {
         stopLocationUpdates()
         stopTicker()
+        flushPointBuffer(forceAll = true)
         tripStatus = TripStatus.FINISHED
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             if (activeTripId == 0L) {
                 val orphan = repository.getActiveOrPausedTrip()
                 if (orphan != null) {
@@ -312,8 +332,17 @@ class TripRecordingService : LifecycleService() {
                 Looper.getMainLooper()
             )
 
-            accelerometer?.let {
-                sensorManager?.registerListener(sensorListener, it, SensorManager.SENSOR_DELAY_UI)
+            if (accelerometer != null && sensorThread == null) {
+                val thread = HandlerThread("RhodySensorThread").apply { start() }
+                sensorThread = thread
+                val handler = Handler(thread.looper)
+                sensorHandler = handler
+                sensorManager?.registerListener(
+                    sensorListener,
+                    accelerometer,
+                    SensorManager.SENSOR_DELAY_NORMAL,
+                    handler
+                )
             }
         } catch (e: SecurityException) {
             TripRecordingController.updateGpsStatus(GpsStatus.NO_PERMISSION)
@@ -323,6 +352,11 @@ class TripRecordingService : LifecycleService() {
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
         sensorManager?.unregisterListener(sensorListener)
+        try {
+            sensorThread?.quitSafely()
+        } catch (_: Exception) {}
+        sensorThread = null
+        sensorHandler = null
     }
 
     private fun handleNewLocation(location: Location) {
@@ -397,7 +431,7 @@ class TripRecordingService : LifecycleService() {
             )
         }
 
-        // Point persistence
+        // Buffered Point persistence (flushed in batches to minimize flash disk transactions)
         if (tripStatus == TripStatus.RECORDING && activeTripId > 0L) {
             val pointEntity = TrackPointEntity(
                 tripId = activeTripId,
@@ -411,10 +445,13 @@ class TripRecordingService : LifecycleService() {
                 bearingDegrees = fix.bearingDegrees
             )
 
-            lifecycleScope.launch {
-                repository.recordTrackPoint(pointEntity)
-            }
+            pointBuffer.offer(pointEntity)
             TripRecordingController.addLivePoint(pointEntity)
+
+            val nowMs = System.currentTimeMillis()
+            if (pointBuffer.size >= 5 || (nowMs - lastBatchFlushMs >= 5000L && pointBuffer.isNotEmpty())) {
+                flushPointBuffer()
+            }
         }
 
         // Update in-memory metrics
@@ -443,6 +480,31 @@ class TripRecordingService : LifecycleService() {
         TripRecordingController.updateMetrics(currentMetrics)
         TripRecordingController.updateFix(fix)
         previousAcceptedFix = fix
+    }
+
+    private fun flushPointBuffer(forceAll: Boolean = false) {
+        if (!isFlushingPoints.compareAndSet(false, true)) return
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val batch = ArrayList<TrackPointEntity>()
+                val maxDrain = if (forceAll) Int.MAX_VALUE else 50
+                while (batch.size < maxDrain) {
+                    val pt = pointBuffer.poll() ?: break
+                    batch.add(pt)
+                }
+                if (batch.isNotEmpty()) {
+                    repository.recordTrackPointsBatch(batch)
+                    lastBatchFlushMs = System.currentTimeMillis()
+                }
+            } catch (e: Exception) {
+                // If disk was momentarily busy, points remain safely in memory for next cycle
+            } finally {
+                isFlushingPoints.set(false)
+                if (pointBuffer.size >= 5 || (forceAll && pointBuffer.isNotEmpty())) {
+                    flushPointBuffer(forceAll)
+                }
+            }
+        }
     }
 
     private fun getBatteryPercentage(): Int? {
@@ -481,24 +543,61 @@ class TripRecordingService : LifecycleService() {
                     )
                     TripRecordingController.updateMetrics(currentMetrics)
 
-                    // Periodically update notification and persist to database every 3 seconds
                     counter++
-                    if (counter % 3 == 0) {
-                        updateNotificationOnly()
-                        repository.updateTripProgress(activeTripId, currentMetrics, tripStatus)
 
-                        // Broadcast live telemetry beacon to cloud for parents/guardians
-                        if (activeTripId > 0L) {
+                    // Flush any pending buffered track points periodically every 5 seconds
+                    if (counter % 5 == 0 && pointBuffer.isNotEmpty()) {
+                        flushPointBuffer()
+                    }
+
+                    // Update notification smoothly every 5 seconds (not 3 seconds)
+                    if (counter % 5 == 0) {
+                        updateNotificationOnly()
+                    }
+
+                    // Persist trip metadata summary to DB every 30 seconds to avoid Room invalidation storms
+                    if (counter % 30 == 0 && activeTripId > 0L) {
+                        val snapshot = currentMetrics.copy()
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            try {
+                                repository.updateTripProgress(activeTripId, snapshot, tripStatus)
+                            } catch (_: Exception) {}
+                        }
+                    }
+
+                    // Broadcast live telemetry beacon with atomic in-flight guard & adaptive failure backoff
+                    val nowMs = System.currentTimeMillis()
+                    val beaconInterval = when {
+                        consecutiveBeaconFailures >= 5 -> 60_000L
+                        consecutiveBeaconFailures >= 2 -> 30_000L
+                        else -> 10_000L
+                    }
+
+                    if (activeTripId > 0L && (nowMs - lastBeaconAttemptMs >= beaconInterval)) {
+                        if (isBeaconBroadcasting.compareAndSet(false, true)) {
+                            lastBeaconAttemptMs = nowMs
                             val isMoving = currentMetrics.currentSpeedKmh >= TripCalculator.MOVING_SPEED_THRESHOLD_KMH
-                            lifecycleScope.launch {
+                            val snapshotMetrics = currentMetrics.copy()
+                            val battery = getBatteryPercentage()
+
+                            lifecycleScope.launch(Dispatchers.IO) {
                                 try {
-                                    CloudSyncManager.broadcastLiveBeacon(
+                                    val res = CloudSyncManager.broadcastLiveBeacon(
                                         tripId = activeTripId,
-                                        metrics = currentMetrics,
+                                        metrics = snapshotMetrics,
                                         isMoving = isMoving,
-                                        batteryPercent = getBatteryPercentage()
+                                        batteryPercent = battery
                                     )
-                                } catch (_: Exception) {}
+                                    if (res.isSuccess) {
+                                        consecutiveBeaconFailures = 0
+                                    } else {
+                                        consecutiveBeaconFailures++
+                                    }
+                                } catch (_: Exception) {
+                                    consecutiveBeaconFailures++
+                                } finally {
+                                    isBeaconBroadcasting.set(false)
+                                }
                             }
                         }
                     }
@@ -603,6 +702,7 @@ class TripRecordingService : LifecycleService() {
 
     override fun onDestroy() {
         isServiceRunning = false
+        flushPointBuffer(forceAll = true)
         stopLocationUpdates()
         stopTicker()
         releaseWakeLock()

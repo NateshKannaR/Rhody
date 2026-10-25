@@ -13,8 +13,9 @@
     <!-- Notification Permission (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Wake lock for reliable screen-off tracking -->
+    <!-- Wake lock & battery optimization exemption for uninterrupted long 6h+ rides -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <!-- Network for vector map tiles -->
     <uses-permission android:name="android.permission.INTERNET" />

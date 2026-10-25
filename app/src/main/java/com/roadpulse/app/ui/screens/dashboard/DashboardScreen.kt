@@ -8,6 +8,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
@@ -178,7 +180,6 @@ fun DashboardScreen(
     val authState by AuthManager.authState.collectAsState()
     val metrics by TripRecordingController.metrics.collectAsState()
     val liveGForce by TripRecordingController.liveGForce.collectAsState()
-    val livePoints by TripRecordingController.livePoints.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     var isGuardianAuthorized by remember { mutableStateOf(false) }
@@ -1853,6 +1854,37 @@ private fun checkPermissions(context: Context): Boolean {
     return fine && coarse
 }
 
+fun isBatteryOptimizationIgnored(context: Context): Boolean {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        powerManager?.isIgnoringBatteryOptimizations(context.packageName) ?: true
+    } else {
+        true
+    }
+}
+
+fun requestBatteryOptimizationExemption(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        try {
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+            if (powerManager != null && !powerManager.isIgnoringBatteryOptimizations(context.packageName)) {
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(intent)
+            }
+        } catch (_: Exception) {
+            try {
+                val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(fallbackIntent)
+            } catch (_: Exception) {}
+        }
+    }
+}
+
 // Note: Motorsport Telematics Cards (MotoGpApexTelematicsCard, GpsElevationCard, CrosswindRadarCard)
 // are hosted in com.roadpulse.app.ui.components.MotorsportTelematicsCards and presented inside LiveTripScreen (Telemetry & Trips)
 
@@ -2459,8 +2491,46 @@ fun DashboardSpeedometerAndControlsSection(
         } else {
             when (metrics.tripStatus) {
                 TripStatus.IDLE, TripStatus.FINISHED -> {
+                    if (!isBatteryOptimizationIgnored(context)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(SportAmber.copy(alpha = 0.12f))
+                                .border(1.dp, SportAmber.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                                .clickable { requestBatteryOptimizationExemption(context) }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.BatteryChargingFull,
+                                contentDescription = null,
+                                tint = SportAmber,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Allow Unrestricted Battery to prevent Android from terminating 5+ hr rides",
+                                color = TextPrimary,
+                                fontSize = 11.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "ALLOW",
+                                color = SportAmber,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+
                     Button(
                         onClick = {
+                            if (!isBatteryOptimizationIgnored(context)) {
+                                requestBatteryOptimizationExemption(context)
+                            }
                             TripRecordingController.startTrip(context)
                             onNavigateToLiveTrip()
                         },

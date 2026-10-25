@@ -62,8 +62,18 @@ class TripRepository(
         tripDao.insertTrip(entity)
     }
 
+    suspend fun getRecentPoints(tripId: Long, limit: Int = 200): List<TrackPointEntity> = withContext(Dispatchers.IO) {
+        trackPointDao.getRecentPointsForTrip(tripId, limit).reversed()
+    }
+
     suspend fun recordTrackPoint(point: TrackPointEntity): Long = withContext(Dispatchers.IO) {
         trackPointDao.insertPoint(point)
+    }
+
+    suspend fun recordTrackPointsBatch(points: List<TrackPointEntity>) = withContext(Dispatchers.IO) {
+        if (points.isNotEmpty()) {
+            trackPointDao.insertPoints(points)
+        }
     }
 
     suspend fun updateTripProgress(

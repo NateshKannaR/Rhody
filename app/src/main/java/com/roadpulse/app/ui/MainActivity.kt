@@ -72,7 +72,7 @@ class MainActivity : ComponentActivity() {
                         TripStatus.PAUSED
                     }
 
-                    val points = repository.getPoints(activeTrip.id)
+                    val points = repository.getRecentPoints(activeTrip.id, 200)
                     TripRecordingController.setLivePoints(points)
 
                     val recoveredMetrics = TripMetrics(

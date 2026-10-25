@@ -101,6 +101,11 @@ fun RouteMapView(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            try {
+                mapView.onPause()
+                mapView.onStop()
+                mapView.onDestroy()
+            } catch (_: Exception) {}
         }
     }
 

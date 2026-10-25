@@ -47,16 +47,32 @@ object TripRecordingController {
     }
 
     fun addLivePoint(point: TrackPointEntity) {
-        val currentList = _livePoints.value
-        if (currentList.size >= 350) {
-            _livePoints.value = currentList.takeLast(250) + point
+        val current = _livePoints.value
+        val newList = if (current.size >= 250) {
+            val downsampled = ArrayList<TrackPointEntity>(180)
+            if (current.isNotEmpty()) downsampled.add(current.first()) // Always retain trip start pin
+            val recentSplit = (current.size - 80).coerceAtLeast(1)
+            // Downsample older segments
+            for (i in 1 until recentSplit step 2) {
+                downsampled.add(current[i])
+            }
+            // Keep recent 80 points at 100% full fidelity
+            for (i in recentSplit until current.size) {
+                downsampled.add(current[i])
+            }
+            downsampled.add(point)
+            downsampled
         } else {
-            _livePoints.value = currentList + point
+            val list = ArrayList<TrackPointEntity>(current.size + 1)
+            list.addAll(current)
+            list.add(point)
+            list
         }
+        _livePoints.value = newList
     }
 
     fun setLivePoints(points: List<TrackPointEntity>) {
-        _livePoints.value = if (points.size > 300) points.takeLast(300) else points
+        _livePoints.value = if (points.size > 200) points.takeLast(200) else points
     }
 
     fun clearLivePoints() {
