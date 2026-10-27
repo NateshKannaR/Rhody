@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Warning
+import com.roadpulse.app.ui.theme.RhodyIcons
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -73,21 +74,13 @@ fun MotoGpApexTelematicsCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(guardianPurple.copy(alpha = 0.2f))
-                        .border(1.dp, guardianPurple.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Shield,
-                        contentDescription = "Apex",
-                        tint = guardianPurple,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                ModernIconBadge(
+                    icon = RhodyIcons.LeanApex,
+                    accentColor = guardianPurple,
+                    size = 36.dp,
+                    iconSize = 20.dp,
+                    shape = BadgeShape.Squircle
+                )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
@@ -237,21 +230,13 @@ fun GpsElevationCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(HyperCyan.copy(alpha = 0.2f))
-                        .border(1.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Explore,
-                        contentDescription = "Altimeter",
-                        tint = HyperCyan,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                ModernIconBadge(
+                    icon = RhodyIcons.ElevationMountain,
+                    accentColor = HyperCyan,
+                    size = 36.dp,
+                    iconSize = 20.dp,
+                    shape = BadgeShape.Squircle
+                )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
@@ -374,21 +359,13 @@ fun CrosswindRadarCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(SportAmber.copy(alpha = 0.2f))
-                        .border(1.dp, SportAmber.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Navigation,
-                        contentDescription = "Wind Vector",
-                        tint = SportAmber,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                ModernIconBadge(
+                    icon = RhodyIcons.GForceReticle,
+                    accentColor = SportAmber,
+                    size = 36.dp,
+                    iconSize = 20.dp,
+                    shape = BadgeShape.Squircle
+                )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(

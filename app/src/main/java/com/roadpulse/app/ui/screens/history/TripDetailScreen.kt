@@ -72,6 +72,7 @@ import com.roadpulse.app.ui.theme.RacingRed
 import com.roadpulse.app.ui.theme.SportAmber
 import com.roadpulse.app.ui.theme.TextMuted
 import com.roadpulse.app.ui.theme.TextPrimary
+import com.roadpulse.app.ui.theme.RhodyIcons
 import com.roadpulse.app.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -252,7 +253,7 @@ fun TripDetailScreen(
                 label = "Total Distance",
                 value = String.format(Locale.US, "%.2f", currentTrip.totalDistanceKm),
                 unit = "KM",
-                icon = Icons.Default.Route,
+                icon = RhodyIcons.RaceCircuit,
                 accentColor = NeonCyan,
                 modifier = Modifier.weight(1f)
             )
@@ -260,7 +261,7 @@ fun TripDetailScreen(
                 label = "Max Speed",
                 value = String.format(Locale.US, "%.0f", currentTrip.maxSpeedKmh),
                 unit = "KM/H",
-                icon = Icons.Default.Speed,
+                icon = RhodyIcons.Cockpit,
                 accentColor = RacingRed,
                 modifier = Modifier.weight(1f)
             )
@@ -276,7 +277,7 @@ fun TripDetailScreen(
                 label = "Moving Average",
                 value = String.format(Locale.US, "%.1f", currentTrip.avgMovingSpeedKmh),
                 unit = "KM/H",
-                icon = Icons.Default.Speed,
+                icon = RhodyIcons.Cockpit,
                 accentColor = ElectricBlue,
                 modifier = Modifier.weight(1f)
             )
@@ -284,7 +285,7 @@ fun TripDetailScreen(
                 label = "Overall Average",
                 value = String.format(Locale.US, "%.1f", currentTrip.avgOverallSpeedKmh),
                 unit = "KM/H",
-                icon = Icons.Default.Speed,
+                icon = RhodyIcons.Cockpit,
                 accentColor = SportAmber,
                 modifier = Modifier.weight(1f)
             )
@@ -332,7 +333,7 @@ fun TripDetailScreen(
                 label = "GPS Points",
                 value = "${points.size}",
                 unit = "PTS",
-                icon = Icons.Default.Route,
+                icon = RhodyIcons.RaceCircuit,
                 accentColor = TextMuted,
                 modifier = Modifier.weight(1f)
             )

@@ -66,6 +66,7 @@ import com.roadpulse.app.export.ExportManager
 import com.roadpulse.app.service.TripRecordingController
 import com.roadpulse.app.ui.components.InteractiveSpeedChart
 import com.roadpulse.app.ui.components.StatCard
+import com.roadpulse.app.ui.theme.RhodyIcons
 import com.roadpulse.app.ui.theme.CarbonDark
 import com.roadpulse.app.ui.theme.CardBorder
 import com.roadpulse.app.ui.theme.CardBorderGlow
@@ -426,7 +427,7 @@ fun AnalyticsScreen(
                     label = "Total Distance",
                     value = String.format(Locale.US, "%.2f", distanceKm),
                     unit = "KM",
-                    icon = Icons.Default.Route,
+                    icon = RhodyIcons.RaceCircuit,
                     accentColor = HyperCyan,
                     modifier = Modifier.weight(1f)
                 )
@@ -434,7 +435,7 @@ fun AnalyticsScreen(
                     label = "Peak Speed",
                     value = String.format(Locale.US, "%.0f", maxSpeed),
                     unit = "KM/H",
-                    icon = Icons.Default.Speed,
+                    icon = RhodyIcons.Cockpit,
                     accentColor = RacingRed,
                     modifier = Modifier.weight(1f)
                 )
@@ -450,7 +451,7 @@ fun AnalyticsScreen(
                     label = "Moving Average",
                     value = String.format(Locale.US, "%.1f", avgMoving),
                     unit = "KM/H",
-                    icon = Icons.Default.Speed,
+                    icon = RhodyIcons.Cockpit,
                     accentColor = ElectricBlue,
                     modifier = Modifier.weight(1f)
                 )
@@ -516,7 +517,7 @@ fun AnalyticsScreen(
                     label = "0 - 60 KM/H Sprint",
                     value = sprints.time0to60Seconds?.let { String.format(Locale.US, "%.1f", it) } ?: "--",
                     unit = "SEC",
-                    icon = Icons.Default.Flag,
+                    icon = RhodyIcons.TelemetryWave,
                     accentColor = HyperCyan,
                     modifier = Modifier.weight(1f)
                 )
@@ -524,7 +525,7 @@ fun AnalyticsScreen(
                     label = "0 - 100 KM/H Sprint",
                     value = sprints.time0to100Seconds?.let { String.format(Locale.US, "%.1f", it) } ?: "--",
                     unit = "SEC",
-                    icon = Icons.Default.Flag,
+                    icon = RhodyIcons.TelemetryWave,
                     accentColor = RacingRed,
                     modifier = Modifier.weight(1f)
                 )

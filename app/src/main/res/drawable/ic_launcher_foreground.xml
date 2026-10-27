@@ -5,30 +5,76 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Glowing Apex Speed Trajectory Curves -->
+    <!-- Aerodynamic Speed Telemetry Streams (Cyan & Lime) -->
     <path
-        android:pathData="M24,72 C44,70 56,58 70,40 C76,32 84,34 90,36"
+        android:pathData="M18,66 C32,64 42,52 56,40 C64,32 76,32 88,34"
         android:strokeColor="#10B981"
-        android:strokeWidth="3.2"
+        android:strokeWidth="2.5"
         android:strokeLineCap="round" />
 
     <path
-        android:pathData="M30,76 C48,74 60,62 74,44 C79,37 86,39 91,40"
+        android:pathData="M22,70 C38,68 48,56 62,44 C70,36 80,36 90,38"
+        android:strokeColor="#00F0FF"
+        android:strokeWidth="2.0"
+        android:strokeLineCap="round" />
+
+    <path
+        android:pathData="M20,74 C36,73 48,64 64,52 C72,44 82,44 92,46"
+        android:strokeColor="#00F2FE"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round" />
+
+    <!-- Ground Speed Velocity Datum Line -->
+    <path
+        android:pathData="M26,78 L82,78"
         android:strokeColor="#00F0FF"
         android:strokeWidth="1.8"
         android:strokeLineCap="round" />
 
-    <!-- Telemetry Beacon Point -->
+    <!-- Rear Racing Wheel -->
     <path
-        android:pathData="M76,38 A3,3 0 1,1 75.99,38 Z"
-        android:fillColor="#34D399" />
+        android:pathData="M35,66 A10,10 0 1,1 34.99,66 Z"
+        android:strokeColor="#00F0FF"
+        android:strokeWidth="2.8" />
+    <path
+        android:pathData="M35,66 A5,5 0 1,1 34.99,66 Z"
+        android:fillColor="#10B981" />
 
-    <!-- Primary Electric Apex Lightning Bolt (Cyan & White) -->
+    <!-- Front Racing Wheel -->
     <path
-        android:pathData="M58,18 L36,54 L54,54 L46,88 L74,48 L56,48 Z"
-        android:fillColor="#00F0FF"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="1.2"
+        android:pathData="M75,66 A10,10 0 1,1 74.99,66 Z"
+        android:strokeColor="#00F0FF"
+        android:strokeWidth="2.8" />
+    <path
+        android:pathData="M75,66 A5,5 0 1,1 74.99,66 Z"
+        android:fillColor="#10B981" />
+
+    <!-- Superbike Frame & Aerodynamic Fairing Body -->
+    <path
+        android:pathData="M34,64 L44,52 L54,50 L64,42 L72,44 L76,56 L74,66 L66,54 L52,56 L46,64 Z"
+        android:fillColor="#0E1626"
+        android:strokeColor="#00F2FE"
+        android:strokeWidth="1.8"
         android:strokeLineJoin="round" />
+
+    <!-- Fuel Tank & Racer Cockpit Line -->
+    <path
+        android:pathData="M48,50 C52,44 58,44 64,42 L68,36 L72,40 L70,44"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Apex Telemetry Beacon Indicator -->
+    <path
+        android:pathData="M68,36 A2,2 0 1,1 67.99,36 Z"
+        android:fillColor="#00F0FF" />
+
+    <!-- Supersonic Lean Angle Flare -->
+    <path
+        android:pathData="M30,52 C38,48 46,48 54,49"
+        android:strokeColor="#10B981"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round" />
 
 </vector>

@@ -15,6 +15,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import com.roadpulse.app.R
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsBike
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -94,11 +98,13 @@ fun PilotTelemetryDossierCard(
                         .border(1.5.dp, HyperCyan.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.DirectionsBike,
-                        contentDescription = "Rider Profile",
-                        tint = HyperCyan,
-                        modifier = Modifier.size(28.dp)
+                    Image(
+                        painter = painterResource(id = R.drawable.rhody_brand_logo),
+                        contentDescription = "Rhody Brand",
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
                     )
                 }
 

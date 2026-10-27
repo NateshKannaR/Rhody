@@ -30,6 +30,8 @@ import com.roadpulse.app.ui.theme.TextMuted
 import com.roadpulse.app.ui.theme.TextPrimary
 import com.roadpulse.app.ui.theme.TextSecondary
 
+import androidx.compose.ui.graphics.Brush
+
 @Composable
 fun StatCard(
     label: String,
@@ -41,9 +43,19 @@ fun StatCard(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(18.dp))
             .background(MidnightCard)
-            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            .border(
+                width = 1.dp,
+                brush = Brush.linearGradient(
+                    listOf(
+                        accentColor.copy(alpha = 0.40f),
+                        CardBorder.copy(alpha = 0.15f),
+                        Color.Transparent
+                    )
+                ),
+                shape = RoundedCornerShape(18.dp)
+            )
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         Column {
@@ -51,21 +63,14 @@ fun StatCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (icon != null) {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(accentColor.copy(alpha = 0.12f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = accentColor,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
+                    ModernIconBadge(
+                        icon = icon,
+                        size = 30.dp,
+                        iconSize = 16.dp,
+                        accentColor = accentColor,
+                        shape = BadgeShape.Squircle
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
                 }
                 Text(
                     text = label.uppercase(),

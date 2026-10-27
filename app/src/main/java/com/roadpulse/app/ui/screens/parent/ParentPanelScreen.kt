@@ -59,6 +59,9 @@ import com.roadpulse.app.RoadPulseApp
 import com.roadpulse.app.domain.calculator.TripCalculator
 import com.roadpulse.app.service.TripRecordingController
 import com.roadpulse.app.ui.components.RouteMapView
+import com.roadpulse.app.ui.components.ModernIconBadge
+import com.roadpulse.app.ui.components.BadgeShape
+import com.roadpulse.app.ui.theme.RhodyIcons
 import com.roadpulse.app.ui.theme.CarbonDark
 import com.roadpulse.app.ui.theme.CardBorder
 import com.roadpulse.app.ui.theme.CardBorderGlow
@@ -208,21 +211,13 @@ fun ParentPanelScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(guardianPurple.copy(alpha = 0.2f))
-                            .border(1.dp, guardianPurple.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Shield,
-                            contentDescription = "Guardian",
-                            tint = guardianPurple,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+                    ModernIconBadge(
+                        icon = RhodyIcons.BiometricVault,
+                        accentColor = guardianPurple,
+                        size = 42.dp,
+                        iconSize = 22.dp,
+                        shape = BadgeShape.Squircle
+                    )
 
                     Column {
                         Row(
@@ -502,10 +497,10 @@ fun ParentPanelScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(
-                        imageVector = Icons.Default.Route,
+                        imageVector = RhodyIcons.RaceCircuit,
                         contentDescription = "Rides",
                         tint = HyperCyan,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                     Text(
                         text = "WARD'S COMPLETED RIDES",

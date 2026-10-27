@@ -64,6 +64,9 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Search
 import com.roadpulse.app.RoadPulseApp
+import com.roadpulse.app.ui.components.ModernIconBadge
+import com.roadpulse.app.ui.components.BadgeShape
+import com.roadpulse.app.ui.theme.RhodyIcons
 import com.roadpulse.app.ui.components.AddServiceRecordDialog
 import com.roadpulse.app.ui.components.PilotTelemetryDossierCard
 import com.roadpulse.app.ui.components.ServiceHistoryCard
@@ -1919,21 +1922,13 @@ fun DocumentVaultCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(HyperCyan.copy(alpha = 0.2f))
-                        .border(1.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Bookmark,
-                        contentDescription = "Vault",
-                        tint = HyperCyan,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                ModernIconBadge(
+                    icon = RhodyIcons.BiometricVault,
+                    accentColor = HyperCyan,
+                    size = 36.dp,
+                    iconSize = 20.dp,
+                    shape = BadgeShape.Squircle
+                )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
@@ -2275,22 +2270,14 @@ fun DashboardBikeStatusSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(HyperCyan.copy(alpha = 0.15f))
-                        .border(1.dp, HyperCyan.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.TwoWheeler,
-                        contentDescription = "Active Bike",
-                        tint = HyperCyan,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
+                ModernIconBadge(
+                    icon = RhodyIcons.Superbike,
+                    accentColor = HyperCyan,
+                    size = 42.dp,
+                    iconSize = 24.dp,
+                    shape = BadgeShape.Squircle
+                )
+                Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
                         text = if (isMachineConfigured && bikeModel.isNotBlank()) bikeModel.uppercase() else "BAJAJ PULSAR 150",
@@ -2480,7 +2467,7 @@ fun DashboardSpeedometerAndControlsSection(
                 ),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(imageVector = Icons.Default.Lock, contentDescription = null)
+                Icon(imageVector = RhodyIcons.BiometricVault, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Grant GPS Location Access",
@@ -2503,7 +2490,7 @@ fun DashboardSpeedometerAndControlsSection(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.BatteryChargingFull,
+                                imageVector = RhodyIcons.IonBattery,
                                 contentDescription = null,
                                 tint = SportAmber,
                                 modifier = Modifier.size(18.dp)

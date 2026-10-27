@@ -79,6 +79,9 @@ import com.roadpulse.app.ui.components.RouteMapView
 import com.roadpulse.app.ui.components.SprintDynoCard
 import com.roadpulse.app.ui.screens.dashboard.DashboardCrashTestDialog
 import com.roadpulse.app.ui.screens.dashboard.DashboardHudMirrorDialog
+import com.roadpulse.app.ui.components.ModernIconBadge
+import com.roadpulse.app.ui.components.BadgeShape
+import com.roadpulse.app.ui.theme.RhodyIcons
 import com.roadpulse.app.ui.theme.CarbonDark
 import com.roadpulse.app.ui.theme.CardBorder
 import com.roadpulse.app.ui.theme.CardBorderGlow
@@ -903,21 +906,13 @@ private fun RecentTripRowItem(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(HyperCyan.copy(alpha = 0.15f))
-                    .border(1.dp, HyperCyan.copy(alpha = 0.35f), RoundedCornerShape(10.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Route,
-                    contentDescription = null,
-                    tint = HyperCyan,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+            ModernIconBadge(
+                icon = RhodyIcons.RaceCircuit,
+                accentColor = HyperCyan,
+                size = 36.dp,
+                iconSize = 18.dp,
+                shape = BadgeShape.Squircle
+            )
             Spacer(modifier = Modifier.width(10.dp))
             Column {
                 Text(
