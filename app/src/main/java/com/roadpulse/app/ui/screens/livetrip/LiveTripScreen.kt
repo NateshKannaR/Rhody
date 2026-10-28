@@ -1165,7 +1165,6 @@ private fun HudStatPill(
 fun LiveTripScreenPreview() {
     com.roadpulse.app.ui.theme.RoadPulseTheme {
         LiveTripScreen(
-            onNavigateBack = {},
             onFinishTrip = {}
         )
     }
