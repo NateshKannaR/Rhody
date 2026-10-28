@@ -45,6 +45,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -1156,5 +1157,16 @@ private fun HudStatPill(
                 }
             }
         }
+    }
+}
+
+@Preview(name = "Rhody Live Telemetry Cockpit", showBackground = true, backgroundColor = 0xFF080B10)
+@Composable
+fun LiveTripScreenPreview() {
+    com.roadpulse.app.ui.theme.RoadPulseTheme {
+        LiveTripScreen(
+            onNavigateBack = {},
+            onFinishTrip = {}
+        )
     }
 }

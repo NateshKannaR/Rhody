@@ -104,6 +104,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import com.roadpulse.app.data.sync.CloudSyncManager
 import com.roadpulse.app.domain.model.MotorcycleCatalog
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -2786,6 +2787,17 @@ fun DashboardGuardianSafetySection(
                 }
             }
         }
+    }
+}
+
+@Preview(name = "Rhody Pilot Dashboard", showBackground = true, backgroundColor = 0xFF080B10)
+@Composable
+fun DashboardScreenPreview() {
+    com.roadpulse.app.ui.theme.RoadPulseTheme {
+        DashboardScreen(
+            onNavigateToLiveTrip = {},
+            onNavigateToProfile = {}
+        )
     }
 }
 
