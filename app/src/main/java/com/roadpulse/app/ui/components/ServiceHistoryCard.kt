@@ -257,7 +257,7 @@ fun AddServiceRecordDialog(
                     value = center,
                     onValueChange = { center = it },
                     label = { Text("Service Center Name") },
-                    placeholder = { Text("e.g. Apex Official Service") },
+                    placeholder = { Text("e.g. Authorized Service Center") },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = HyperCyan,
                         unfocusedBorderColor = CardBorder,

@@ -28,11 +28,11 @@ adb install -r Rhody-v1.0.0.apk
 > Watch the full **2-minute video presentation** explaining why generic GPS apps fall short for motorcyclists, how Rhody transforms any Android smartphone into an IMU telemetry cockpit, and how Guardian Parent Tracking delivers real-time peace of mind.
 
 <p align="center">
-  <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-Demo-2Min.mp4" target="_blank">
+  <a href="https://github.com/NateshKannaR/Rhody/blob/main/docs/rhody_overview_2min.mp4" target="_blank">
     <img src="docs/rhody_demo_preview.gif" width="760" alt="Rhody 2-Minute Video Walkthrough Preview" style="border-radius: 12px; border: 1px solid #1F2636; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);" />
   </a>
   <br>
-  <em>▶️ <strong><a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-Demo-2Min.mp4">Click to Watch Full HD 2-Minute Video (MP4)</a></strong> &bull; Local Mirror: <code>docs/rhody_overview_2min.mp4</code></em>
+  <em>▶️ <strong><a href="https://github.com/NateshKannaR/Rhody/blob/main/docs/rhody_overview_2min.mp4">Click to Watch / Stream Full Video in GitHub Web Player</a></strong> &bull; <a href="https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/Rhody-Demo-2Min.mp4">⬇️ Direct File Download (.mp4)</a></em>
 </p>
 
 ### ⏱️ Video Storyboard & Chapter Breakdown

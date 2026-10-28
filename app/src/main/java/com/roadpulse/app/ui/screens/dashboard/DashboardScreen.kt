@@ -46,6 +46,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.automirrored.filled.DirectionsBike
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -151,26 +152,6 @@ import com.roadpulse.app.ui.theme.TextPrimary
 import com.roadpulse.app.ui.theme.TextSecondary
 import java.util.Locale
 
-// Data model for motorcycle component health lifecycle
-data class ComponentHealth(
-    val name: String,
-    val intervalKm: Int,
-    val remainingKm: Int,
-    val percentage: Int,
-    val statusText: String,
-    val color: Color
-)
-
-// Data model for real YouTube motovlog & telemetry video guides
-data class VideoRecommendation(
-    val id: String,
-    val title: String,
-    val channel: String,
-    val duration: String,
-    val category: String,
-    val viewCount: String
-)
-
 @Composable
 fun DashboardScreen(
     initialRole: String = "rider",
@@ -238,84 +219,6 @@ fun DashboardScreen(
 
     // MotoGP AI Apex State (Zero Mock Data - 100% Genuine Sensors)
 
-    var hasPermissions by remember {
-        mutableStateOf(checkPermissions(context))
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { results ->
-        hasPermissions = results.values.all { it }
-    }
-
-    // Search and filter state
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedCategoryFilter by remember { mutableStateOf("All") }
-
-    // Motorcycle Component Preventative Health Lifecycles
-    val bikeComponents = remember {
-        listOf(
-            ComponentHealth("Engine Oil & Filter", 4000, 1150, 71, "OPTIMAL (71%)", OptimalGreen),
-            ComponentHealth("Drive Chain & Slack", 500, 150, 30, "LUBE SOON (30%)", SportAmber),
-            ComponentHealth("High-Flow Air Filter", 10000, 5150, 51, "OPTIMAL (51%)", OptimalGreen),
-            ComponentHealth("NGK Spark Plug", 12000, 7150, 60, "OPTIMAL (60%)", OptimalGreen),
-            ComponentHealth("Radiator Coolant", 15000, 8150, 54, "OPTIMAL (54%)", OptimalGreen),
-            ComponentHealth("Sintered Brake Pads", 8000, 4150, 52, "OPTIMAL (52%)", OptimalGreen)
-        )
-    }
-
-    // Curated real YouTube motorcycle telemetry & maintenance guides
-    val youtubeVideos = remember {
-        listOf(
-            VideoRecommendation(
-                id = "k4aT9rGqB9M",
-                title = "Motorcycle Dyno & Acceleration Run: Telemetry Analysis",
-                channel = "Motorsport Engineering Lab",
-                duration = "12:45",
-                category = "Bike",
-                viewCount = "480K views"
-            ),
-            VideoRecommendation(
-                id = "3JZ_D3ELwOQ",
-                title = "Motorcycle Preventative Maintenance: Tire Pressure, Chain Slack & ECU",
-                channel = "Trackday Mechanics",
-                duration = "10:30",
-                category = "Maintenance",
-                viewCount = "195K views"
-            ),
-            VideoRecommendation(
-                id = "e-ORhEE9VVg",
-                title = "Engine Oil & Filter Change: Full Synthetic Service Guide",
-                channel = "Apex Performance Garage",
-                duration = "14:10",
-                category = "Maintenance",
-                viewCount = "280K views"
-            ),
-            VideoRecommendation(
-                id = "bW3l5eSgB2E",
-                title = "Motorcycle Lean Angle & Counter-Steering Masterclass (G-Force)",
-                channel = "MotoGP Rider School",
-                duration = "14:15",
-                category = "Guides",
-                viewCount = "750K views"
-            )
-        )
-    }
-
-    val filteredVideos = remember(searchQuery, selectedCategoryFilter) {
-        youtubeVideos.filter { video ->
-            val matchesCategory = selectedCategoryFilter == "All" ||
-                    (selectedCategoryFilter == "Bike" && video.category == "Bike") ||
-                    (selectedCategoryFilter == "Maintenance" && video.category == "Maintenance") ||
-                    (selectedCategoryFilter == "Guides" && video.category == "Guides")
-            val matchesQuery = searchQuery.isBlank() ||
-                    video.title.contains(searchQuery, ignoreCase = true) ||
-                    video.channel.contains(searchQuery, ignoreCase = true) ||
-                    video.category.contains(searchQuery, ignoreCase = true)
-            matchesCategory && matchesQuery
-        }
-    }
-
     val app = context.applicationContext as? RoadPulseApp
     val tripRepository = remember { app?.container?.tripRepository }
     val allTrips by (tripRepository?.allTrips ?: flowOf(emptyList())).collectAsState(initial = emptyList())
@@ -331,7 +234,7 @@ fun DashboardScreen(
     }
 
     val careerMaxLeanDeg = remember(allTrips) {
-        if (allTrips.isNotEmpty()) 48.2f else 0.0f
+        prefs.getFloat("career_max_lean_deg", 0.0f)
     }
 
     val careerRunsCount = allTrips.size
@@ -405,27 +308,25 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ================= 3. HERO SPEEDOMETER COCKPIT & CONTROLS =================
-            DashboardSpeedometerAndControlsSection(
+            // ================= 3. HERO PILOT TELEMETRY COCKPIT LAUNCHER =================
+            DashboardCockpitLauncherHeroCard(
                 metrics = metrics,
-                liveGForce = liveGForce,
-                hasPermissions = hasPermissions,
-                onRequestPermissions = {
-                    val permissionsToRequest = mutableListOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    )
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                    permissionLauncher.launch(permissionsToRequest.toTypedArray())
-                },
+                isMachineConfigured = isMachineConfigured,
+                bikeModel = bikeModel,
                 onNavigateToLiveTrip = onNavigateToLiveTrip
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ================= 3.5 STATUTORY DOCUMENT VAULT & SERVICE INVOICES LEDGER =================
+            // ================= 4. RECENT RIDE SESSIONS PREVIEW =================
+            DashboardRecentRidesCard(
+                trips = allTrips,
+                onNavigateToTrips = onNavigateToLiveTrip
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ================= 5. STATUTORY DOCUMENT VAULT & SERVICE INVOICES LEDGER =================
             DocumentVaultCard(
                 rcUploaded = rcUploaded,
                 rcDocNum = rcDocNum,
@@ -447,47 +348,26 @@ fun DashboardScreen(
                 onAddRecordClick = { showAddServiceDialog = true }
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // ================= 4. UNIVERSAL SEARCH FOR PLACES & YOUTUBE =================
-            DashboardPlacesSearchSection(
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                selectedCategoryFilter = selectedCategoryFilter,
-                onSelectFilter = { selectedCategoryFilter = it }
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // ================= 5. MOTORCYCLE WHOLE MANAGEMENT HUB =================
+            // ================= 6. MOTORCYCLE WHOLE MANAGEMENT HUB =================
             DashboardMotorcycleManagementSection(
                 isMachineConfigured = isMachineConfigured,
                 bikeModel = bikeModel,
                 bikePlate = bikePlate,
                 bikeEngineSpec = bikeEngineSpec,
                 bikeOdo = bikeOdo,
-                bikeComponents = bikeComponents,
                 insuranceUploaded = insuranceUploaded,
                 insuranceDocNum = insuranceDocNum,
                 pucUploaded = pucUploaded,
                 pucDocNum = pucDocNum
             )
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // ================= 5.5 BIKE PARENTING & GUARDIAN SAFETY BEACON =================
+            // ================= 7. BIKE PARENTING & GUARDIAN SAFETY BEACON =================
             DashboardGuardianSafetySection(
                 currentSpeedKmh = metrics.currentSpeedKmh
-            )
-
-            Spacer(modifier = Modifier.height(22.dp))
-
-            // ================= 6. REAL YOUTUBE MOTOVLOG & BIKE VIDEOS =================
-            DashboardYoutubeVideosSection(
-                searchQuery = searchQuery,
-                filteredVideos = filteredVideos,
-                isMachineConfigured = isMachineConfigured,
-                bikeModel = bikeModel
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -1583,78 +1463,6 @@ fun SpecCell(
 }
 
 @Composable
-fun ComponentHealthRow(
-    comp: ComponentHealth,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(ObsidianSurface)
-            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-            .padding(10.dp)
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = comp.name,
-                    color = TextPrimary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = comp.statusText,
-                    color = comp.color,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Black,
-                    fontFamily = FontFamily.Monospace
-                )
-            }
-
-            // Progress bar
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(5.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(Color.White.copy(alpha = 0.08f))
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(fraction = comp.percentage / 100f)
-                        .height(5.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(comp.color)
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Interval: ${comp.intervalKm} KM",
-                    color = TextMuted,
-                    fontSize = 8.sp
-                )
-                Text(
-                    text = "${comp.remainingKm} KM remaining",
-                    color = TextSecondary,
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                )
-            }
-        }
-    }
-}
-
-@Composable
 fun LegalDocCard(
     title: String,
     policy: String,
@@ -1718,129 +1526,6 @@ fun launchEmergencyCall(context: Context, phoneNumber: String) {
     } catch (e: Exception) {
         Toast.makeText(context, "Unable to launch dialer", Toast.LENGTH_SHORT).show()
     }
-}
-
-@Composable
-fun YouTubeVideoCard(
-    video: VideoRecommendation,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MidnightCard)
-            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-            .clickable { onClick() }
-            .padding(12.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // YouTube thumbnail mockup box with duration pill
-            Box(
-                modifier = Modifier
-                    .size(width = 86.dp, height = 56.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(ObsidianSurface)
-                    .border(1.dp, CardBorder, RoundedCornerShape(10.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayCircle,
-                    contentDescription = null,
-                    tint = RacingRed,
-                    modifier = Modifier.size(28.dp)
-                )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(3.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(CarbonDark.copy(alpha = 0.85f))
-                        .padding(horizontal = 4.dp, vertical = 1.dp)
-                ) {
-                    Text(
-                        text = video.duration,
-                        color = TextPrimary,
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = video.title,
-                    color = TextPrimary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = video.channel,
-                        color = TextSecondary,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = " • ${video.viewCount}",
-                        color = TextMuted,
-                        fontSize = 10.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(6.dp))
-
-            Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = "Play",
-                tint = HyperCyan,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
-}
-
-// Intent launching helpers
-private fun launchGoogleMaps(context: Context, lat: Double, lng: Double, label: String) {
-    val uri = Uri.parse("google.navigation:q=$lat,$lng&mode=d")
-    val mapIntent = Intent(Intent.ACTION_VIEW, uri).apply {
-        setPackage("com.google.android.apps.maps")
-    }
-    try {
-        context.startActivity(mapIntent)
-    } catch (e: Exception) {
-        val webFallback = Intent(
-            Intent.ACTION_VIEW,
-            Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lng")
-        )
-        context.startActivity(webFallback)
-    }
-}
-
-private fun launchYouTubeVideo(context: Context, videoId: String) {
-    val appIntent = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$videoId"))
-    try {
-        context.startActivity(appIntent)
-    } catch (e: Exception) {
-        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$videoId"))
-        context.startActivity(webIntent)
-    }
-}
-
-private fun launchYouTubeSearch(context: Context, query: String) {
-    val uri = Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(query))
-    val searchIntent = Intent(Intent.ACTION_VIEW, uri)
-    context.startActivity(searchIntent)
 }
 
 private fun checkPermissions(context: Context): Boolean {
@@ -2429,242 +2114,284 @@ fun DashboardBikeStatusSection(
 }
 
 @Composable
-fun DashboardSpeedometerAndControlsSection(
+fun DashboardCockpitLauncherHeroCard(
     metrics: com.roadpulse.app.domain.model.TripMetrics,
-    liveGForce: com.roadpulse.app.domain.model.GForceData,
-    hasPermissions: Boolean,
-    onRequestPermissions: () -> Unit,
-    onNavigateToLiveTrip: () -> Unit
+    isMachineConfigured: Boolean,
+    bikeModel: String,
+    onNavigateToLiveTrip: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    val isRecording = metrics.tripStatus == TripStatus.RECORDING || metrics.tripStatus == TripStatus.PAUSED
 
-    Column(
-        modifier = Modifier
+    Box(
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(MidnightCard)
-            .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
-            .padding(vertical = 18.dp, horizontal = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(
+                Brush.verticalGradient(
+                    colors = if (isRecording) {
+                        listOf(RacingRed.copy(alpha = 0.2f), MidnightCard)
+                    } else {
+                        listOf(HyperCyan.copy(alpha = 0.12f), MidnightCard)
+                    }
+                )
+            )
+            .border(
+                1.dp,
+                if (isRecording) RacingRed.copy(alpha = 0.5f) else CardBorder,
+                RoundedCornerShape(22.dp)
+            )
+            .padding(18.dp)
     ) {
-        SpeedometerGauge(
-            currentSpeedKmh = metrics.currentSpeedKmh,
-            maxSpeedKmh = metrics.maxSpeedKmh
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            // Header Row: Status Chip + Machine Badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier
+                        .background(
+                            if (isRecording) RacingRed.copy(alpha = 0.15f) else HyperCyan.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .border(
+                            1.dp,
+                            if (isRecording) RacingRed.copy(alpha = 0.4f) else HyperCyan.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(if (isRecording) RacingRed else OptimalGreen)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isRecording) "TRIP IN PROGRESS" else "STANDBY • READY TO RIDE",
+                        color = if (isRecording) RacingRed else OptimalGreen,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
+                    )
+                }
 
-        Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = if (isMachineConfigured && bikeModel.isNotBlank()) bikeModel.uppercase() else "ALL MACHINES",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
+                )
+            }
 
-        // Primary Ride Action Buttons
-        if (!hasPermissions) {
+            // Title & Description
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = if (isRecording) "LIVE TELEMETRY ACTIVE" else "PILOT TELEMETRY COCKPIT",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-0.3).sp
+                )
+                Text(
+                    text = if (isRecording) {
+                        "Speed: ${String.format(Locale.US, "%.0f", metrics.currentSpeedKmh)} km/h • Distance: ${String.format(Locale.US, "%.2f", metrics.totalDistanceKm)} km"
+                    } else {
+                        "High-frequency IMU lean angle fusion, velocity radar & live Guardian parent beacon in the dedicated Trips tab."
+                    },
+                    color = TextSecondary,
+                    fontSize = 12.5.sp,
+                    lineHeight = 17.sp
+                )
+            }
+
+            // Action Button
             Button(
-                onClick = onRequestPermissions,
+                onClick = onNavigateToLiveTrip,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(50.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SportAmber,
-                    contentColor = CarbonDark
+                    containerColor = if (isRecording) RacingRed else HyperCyan,
+                    contentColor = if (isRecording) Color.White else CarbonDark
                 ),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Icon(imageVector = RhodyIcons.BiometricVault, contentDescription = null, modifier = Modifier.size(20.dp))
+                Icon(
+                    imageVector = if (isRecording) Icons.Default.Visibility else Icons.Default.Explore,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Grant GPS Location Access",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold
+                    text = if (isRecording) "OPEN LIVE COCKPIT" else "LAUNCH TRIPS COCKPIT",
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.8.sp
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DashboardRecentRidesCard(
+    trips: List<com.roadpulse.app.data.database.TripEntity>,
+    onNavigateToTrips: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MidnightCard)
+            .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(HyperCyan.copy(alpha = 0.15f))
+                        .border(1.dp, HyperCyan.copy(alpha = 0.35f), RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Route,
+                        contentDescription = "Recent Rides",
+                        tint = HyperCyan,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = "RECENT RIDE SESSIONS",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
+                    )
+                    Text(
+                        text = if (trips.isNotEmpty()) "${trips.size} total sessions recorded" else "Genuine local trip ledger",
+                        color = TextSecondary,
+                        fontSize = 9.sp
+                    )
+                }
+            }
+
+            if (trips.isNotEmpty()) {
+                Text(
+                    text = "View in Trips ->",
+                    color = HyperCyan,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { onNavigateToTrips() }
+                )
+            }
+        }
+
+        if (trips.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No ride sessions recorded yet. Launch the cockpit in the Trips tab to log your first ride.",
+                    color = TextMuted,
+                    fontSize = 11.5.sp,
+                    lineHeight = 16.sp
                 )
             }
         } else {
-            when (metrics.tripStatus) {
-                TripStatus.IDLE, TripStatus.FINISHED -> {
-                    if (!isBatteryOptimizationIgnored(context)) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(SportAmber.copy(alpha = 0.12f))
-                                .border(1.dp, SportAmber.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
-                                .clickable { requestBatteryOptimizationExemption(context) }
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = RhodyIcons.IonBattery,
-                                contentDescription = null,
-                                tint = SportAmber,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+            trips.take(2).forEach { trip ->
+                val dateStr = remember(trip.startTime) {
+                    val sdf = java.text.SimpleDateFormat("dd MMM yyyy • hh:mm a", java.util.Locale.getDefault())
+                    sdf.format(java.util.Date(trip.startTime))
+                }
+                val distKm = trip.totalDistanceKm
+                val maxKmh = trip.maxSpeedMps * 3.6f
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(ObsidianSurface)
+                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                        .clickable { onNavigateToTrips() }
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(
-                                text = "Allow Unrestricted Battery to prevent Android from terminating 5+ hr rides",
+                                text = dateStr,
                                 color = TextPrimary,
-                                fontSize = 11.sp,
-                                modifier = Modifier.weight(1f)
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "ALLOW",
-                                color = SportAmber,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(10.dp))
-                    }
-
-                    Button(
-                        onClick = {
-                            if (!isBatteryOptimizationIgnored(context)) {
-                                requestBatteryOptimizationExemption(context)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = String.format(java.util.Locale.US, "%.2f km", distKm),
+                                    color = HyperCyan,
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "•",
+                                    color = TextMuted,
+                                    fontSize = 10.5.sp
+                                )
+                                Text(
+                                    text = String.format(java.util.Locale.US, "Peak %.0f km/h", maxKmh),
+                                    color = RacingRed,
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
-                            TripRecordingController.startTrip(context)
-                            onNavigateToLiveTrip()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(54.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = HyperCyan,
-                            contentColor = CarbonDark
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
+                        }
+
                         Icon(
-                            imageVector = Icons.Default.PlayArrow,
+                            imageVector = Icons.Default.ChevronRight,
                             contentDescription = null,
-                            modifier = Modifier.size(24.dp)
+                            tint = TextMuted,
+                            modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "START RECORDING RIDE",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp
-                        )
-                    }
-                }
-                TripStatus.RECORDING -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { TripRecordingController.pauseTrip(context) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = SportAmber
-                            ),
-                            border = BorderStroke(1.dp, SportAmber)
-                        ) {
-                            Icon(imageVector = Icons.Default.Pause, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("PAUSE", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-
-                        Button(
-                            onClick = { TripRecordingController.finishTrip(context) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = RacingRed,
-                                contentColor = TextPrimary
-                            )
-                        ) {
-                            Icon(imageVector = Icons.Default.Stop, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("FINISH", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                    }
-                }
-                TripStatus.PAUSED -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Button(
-                            onClick = { TripRecordingController.resumeTrip(context) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = HyperCyan,
-                                contentColor = CarbonDark
-                            )
-                        ) {
-                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("RESUME", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-
-                        Button(
-                            onClick = { TripRecordingController.finishTrip(context) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = RacingRed,
-                                contentColor = TextPrimary
-                            )
-                        ) {
-                            Icon(imageVector = Icons.Default.Stop, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("FINISH", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
                     }
                 }
             }
         }
     }
-
-    Spacer(modifier = Modifier.height(14.dp))
-
-    // Quick Stats Row
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        StatCard(
-            label = "Distance",
-            value = String.format(Locale.US, "%.2f", metrics.totalDistanceKm),
-            unit = "KM",
-            icon = Icons.Default.Route,
-            accentColor = HyperCyan,
-            modifier = Modifier.weight(1f)
-        )
-        StatCard(
-            label = "Max Speed",
-            value = String.format(Locale.US, "%.0f", metrics.maxSpeedKmh),
-            unit = "KM/H",
-            icon = Icons.Default.Speed,
-            accentColor = RacingRed,
-            modifier = Modifier.weight(1f)
-        )
-    }
-
-    Spacer(modifier = Modifier.height(16.dp))
-
-    // G-Force Telemetry Card
-    GForceMeter(
-        gForce = liveGForce,
-        modifier = Modifier.fillMaxWidth()
-    )
 }
 
 private fun loadServiceRecordsFromPrefs(prefs: android.content.SharedPreferences): List<ServiceRecord> {
     val json = prefs.getString("service_history", null)
     if (json.isNullOrBlank()) {
-        return listOf(
-            ServiceRecord(1, "12 Oct 2026", "Apex Official Center", "4,150 km", "Oil filter, engine flush & chain lube", "2,450"),
-            ServiceRecord(2, "15 Aug 2026", "MotoGP Track Tech", "2,800 km", "Sintered brake pads & brake fluid bleed", "3,800")
-        )
+        return emptyList()
     }
     return try {
         val array = org.json.JSONArray(json)
@@ -2708,168 +2435,12 @@ private fun saveServiceRecordsToPrefs(prefs: android.content.SharedPreferences, 
 }
 
 @Composable
-fun DashboardPlacesSearchSection(
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    selectedCategoryFilter: String,
-    onSelectFilter: (String) -> Unit
-) {
-    val context = LocalContext.current
-    val focusManager = LocalFocusManager.current
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(MidnightCard)
-            .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = null,
-                    tint = HyperCyan,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "SEARCH PLACES & YOUTUBE",
-                    color = TextPrimary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Search Bar Input
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = {
-                Text(
-                    text = "Search twisties, circuit guides, dyno pulls...",
-                    fontSize = 12.sp,
-                    color = TextMuted
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = HyperCyan,
-                    modifier = Modifier.size(20.dp)
-                )
-            },
-            trailingIcon = {
-                if (searchQuery.isNotBlank()) {
-                    IconButton(onClick = { onSearchQueryChange("") }) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Clear",
-                            tint = TextSecondary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = HyperCyan,
-                unfocusedBorderColor = CardBorder,
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary,
-                focusedContainerColor = ObsidianSurface,
-                unfocusedContainerColor = ObsidianSurface
-            ),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Filter Chips Row
-        val filterChips = listOf("All", "Maintenance", "Bike", "Guides")
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            filterChips.forEach { chip ->
-                val isSelected = selectedCategoryFilter == chip
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(if (isSelected) HyperCyan else ObsidianSurface)
-                        .border(
-                            1.dp,
-                            if (isSelected) HyperCyan else CardBorder,
-                            RoundedCornerShape(16.dp)
-                        )
-                        .clickable { onSelectFilter(chip) }
-                        .padding(horizontal = 14.dp, vertical = 7.dp)
-                ) {
-                    Text(
-                        text = chip,
-                        color = if (isSelected) CarbonDark else TextSecondary,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold
-                    )
-                }
-            }
-
-            // If user entered a custom search, show a direct "Search on YouTube" button
-            if (searchQuery.isNotBlank()) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(RacingRed.copy(alpha = 0.2f))
-                        .border(1.dp, RacingRed, RoundedCornerShape(16.dp))
-                        .clickable {
-                            launchYouTubeSearch(context, searchQuery)
-                        }
-                        .padding(horizontal = 14.dp, vertical = 7.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.PlayCircle,
-                            contentDescription = null,
-                            tint = RacingRed,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        Text(
-                            text = "Search YouTube for \"$searchQuery\"",
-                            color = TextPrimary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun DashboardMotorcycleManagementSection(
     isMachineConfigured: Boolean,
     bikeModel: String,
     bikePlate: String,
     bikeEngineSpec: String,
     bikeOdo: String,
-    bikeComponents: List<ComponentHealth>,
     insuranceUploaded: Boolean,
     insuranceDocNum: String,
     pucUploaded: Boolean,
@@ -2894,7 +2465,7 @@ fun DashboardMotorcycleManagementSection(
                     letterSpacing = 1.sp
                 )
                 Text(
-                    text = "Engineering Specs • Maintenance Lifecycles • Legal Docs",
+                    text = "Engineering Specs • Statutory Docs • 24x7 RSA",
                     color = HyperCyan,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold
@@ -2958,34 +2529,6 @@ fun DashboardMotorcycleManagementSection(
                     SpecCell("PLATE", if (isMachineConfigured && bikePlate.isNotBlank()) bikePlate else "No Plate", "Registration", modifier = Modifier.weight(1f))
                     SpecCell("ODOMETER", "${if (isMachineConfigured) bikeOdo else "0"} KM", "Total Distance", modifier = Modifier.weight(1f))
                 }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    SpecCell("GEARBOX", "Sequential", "Clutch Pack", modifier = Modifier.weight(1f))
-                    SpecCell("BRAKING", "Dual ABS", "Hydraulic Disc", modifier = Modifier.weight(1f))
-                    SpecCell("CHASSIS", "Trellis / Perimeter", "Telemetry Linked", modifier = Modifier.weight(1f))
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Preventative Maintenance Component Lifecycles
-        Text(
-            text = "PREVENTATIVE COMPONENT HEALTH",
-            color = TextSecondary,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Black,
-            letterSpacing = 0.8.sp
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            bikeComponents.forEach { comp ->
-                ComponentHealthRow(comp)
             }
         }
 
@@ -3079,6 +2622,10 @@ fun DashboardGuardianSafetySection(
 ) {
     val context = LocalContext.current
 
+    val icePrefs = remember { context.getSharedPreferences("rhody_ice_prefs", Context.MODE_PRIVATE) }
+    val emergencyName = icePrefs.getString("ice_contact_name", null) ?: "Emergency Services"
+    val emergencyPhone = icePrefs.getString("ice_contact_phone", null) ?: "112"
+
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -3144,13 +2691,13 @@ fun DashboardGuardianSafetySection(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Family Emergency Contact",
+                            text = emergencyName,
                             color = TextPrimary,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "+91 98765 43210",
+                            text = emergencyPhone,
                             color = HyperCyan,
                             fontSize = 11.sp,
                             fontFamily = FontFamily.Monospace
@@ -3159,7 +2706,7 @@ fun DashboardGuardianSafetySection(
 
                     // Call SOS Button
                     Button(
-                        onClick = { launchEmergencyCall(context, "+919876543210") },
+                        onClick = { launchEmergencyCall(context, emergencyPhone) },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = RacingRed,
                             contentColor = TextPrimary
@@ -3242,91 +2789,3 @@ fun DashboardGuardianSafetySection(
     }
 }
 
-@Composable
-fun DashboardYoutubeVideosSection(
-    searchQuery: String,
-    filteredVideos: List<VideoRecommendation>,
-    isMachineConfigured: Boolean,
-    bikeModel: String
-) {
-    val context = LocalContext.current
-
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "YOUTUBE MOTOVLOGS & BIKE GUIDES",
-                    color = TextPrimary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp
-                )
-                Text(
-                    text = "Tap to stream real videos in YouTube App",
-                    color = RacingRed,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            // Generic YouTube search trigger
-            IconButton(
-                onClick = {
-                    val query = if (searchQuery.isNotBlank()) searchQuery else (if (isMachineConfigured && bikeModel.isNotBlank()) "$bikeModel review ride" else "motorcycle telemetry trackday")
-                    launchYouTubeSearch(context, query)
-                },
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(ObsidianSurface)
-                    .border(1.dp, CardBorder, CircleShape)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayCircle,
-                    contentDescription = "Launch YouTube",
-                    tint = RacingRed,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        if (filteredVideos.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MidnightCard)
-                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-                .padding(20.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No videos matched \"$searchQuery\"",
-                    color = TextSecondary,
-                    fontSize = 12.sp
-                )
-            }
-        } else {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                filteredVideos.forEach { video ->
-                    YouTubeVideoCard(
-                        video = video,
-                        onClick = {
-                            launchYouTubeVideo(context, video.id)
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
