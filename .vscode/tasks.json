@@ -1,0 +1,57 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Android Studio: Open Rhody in Studio",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/launch_studio.sh",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Android Studio: Build Debug APK",
+      "type": "shell",
+      "command": "JAVA_HOME=/home/natesh/.tools/jdk-17 ./gradlew assembleDebug",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gradle"]
+    },
+    {
+      "label": "Android Studio: Build, Install & Launch APK",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/build_and_install.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android Studio: Clean Project",
+      "type": "shell",
+      "command": "JAVA_HOME=/home/natesh/.tools/jdk-17 ./gradlew clean",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": ["$gradle"]
+    },
+    {
+      "label": "Android Studio: Stream Logcat (Rhody)",
+      "type": "shell",
+      "command": "adb logcat -s RhodyApp:V AndroidRuntime:E *:S",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ]
+}
