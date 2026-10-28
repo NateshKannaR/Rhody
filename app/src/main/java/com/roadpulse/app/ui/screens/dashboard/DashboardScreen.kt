@@ -536,7 +536,7 @@ fun DashboardScreen(
                         riderEmail = auth.user?.email ?: "pilot@rhody.io"
                     )
                 }
-                Toast.makeText(context, "CRITICAL SOS Dispatched to Guardians & MongoDB Atlas!", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Emergency SOS Dispatched to Guardians & Rhody Cloud!", Toast.LENGTH_LONG).show()
             }
         )
     }
@@ -580,7 +580,7 @@ fun DashboardScreen(
                         .putString("bike_odo", finalOdo)
                         .apply()
 
-                    // Sync bike details directly to MongoDB Atlas
+                    // Sync bike details directly to Rhody Cloud
                     coroutineScope.launch {
                         val res = CloudSyncManager.saveUserProfileAndBike(
                             context = context,
@@ -590,7 +590,7 @@ fun DashboardScreen(
                             bikeOdo = finalOdo
                         )
                         if (res.isSuccess) {
-                            Toast.makeText(context, "Motorcycle Synced with MongoDB Atlas!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Motorcycle Synced with Rhody Cloud!", Toast.LENGTH_SHORT).show()
                         }
                     }
 
@@ -980,7 +980,7 @@ fun DashboardBikeRegisterDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Select from complete Honda, Kawasaki, Yamaha, KTM, RE models or enter custom specs. Automatically persists to MongoDB Atlas.",
+                    text = "Select from complete Honda, Kawasaki, Yamaha, KTM, RE models or enter custom specs. Automatically persists to Rhody Cloud.",
                     color = TextSecondary,
                     fontSize = 11.sp
                 )

@@ -428,9 +428,9 @@ fun TripDetailScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Cloud Telemetry (MongoDB Atlas)
+        // Cloud Telemetry (Rhody Cloud)
         Text(
-            text = "CLOUD TELEMETRY (MONGODB ATLAS)",
+            text = "CLOUD TELEMETRY SYNC",
             color = TextSecondary,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
@@ -443,7 +443,7 @@ fun TripDetailScreen(
             onClick = {
                 coroutineScope.launch {
                     isSyncing = true
-                    syncStatusMessage = "Syncing with MongoDB Atlas..."
+                    syncStatusMessage = "Syncing with Rhody Cloud..."
                     val result = CloudSyncManager.syncTripToMongo(currentTrip, points)
                     isSyncing = false
                     syncStatusMessage = result.getOrElse { it.localizedMessage ?: "Sync error" }
@@ -476,7 +476,7 @@ fun TripDetailScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "SYNC TO MONGODB ATLAS",
+                    text = "SYNC TO RHODY CLOUD",
                     fontWeight = FontWeight.Black,
                     letterSpacing = 1.sp
                 )

@@ -114,29 +114,47 @@ fun ParentPanelScreen(
 
     var showLogoutConfirm by remember { mutableStateOf(false) }
 
-    // Dynamic guardian alerts
-    val alerts = remember {
-        mutableStateListOf(
-            GuardianAlertItem(
-                id = "1",
-                title = "Safe Speed Corridor Maintained",
-                message = "Ward ($monitoredRiderEmail) is riding safely within the 95 km/h limit.",
-                severity = "normal",
-                timestamp = "Active now"
-            ),
-            GuardianAlertItem(
-                id = "2",
-                title = "Guardian Radar Link Active",
-                message = "Telemetry beacon locked on $bikeModel ($bikePlate).",
-                severity = "info",
-                timestamp = "Connected"
-            )
-        )
-    }
-
     val isMoving = metrics.currentSpeedKmh > 3.0f || metrics.isRecording
     val scrollState = rememberScrollState()
     val dateFormatter = remember { SimpleDateFormat("dd MMM • hh:mm a", Locale.getDefault()) }
+
+    // Dynamic guardian alerts based on real telemetry & ride data
+    val alerts = remember(allTrips.size, isMoving) {
+        val list = mutableListOf<GuardianAlertItem>()
+        val recentOverSpeedTrip = allTrips.firstOrNull { it.maxSpeedKmh > 95f }
+        if (recentOverSpeedTrip != null) {
+            list.add(
+                GuardianAlertItem(
+                    id = "overspeed_${recentOverSpeedTrip.id}",
+                    title = "Speed Advisory (Ride #${recentOverSpeedTrip.id})",
+                    message = "Ward reached ${recentOverSpeedTrip.maxSpeedKmh.roundToInt()} km/h on ride #${recentOverSpeedTrip.id}.",
+                    severity = "warning",
+                    timestamp = dateFormatter.format(Date(recentOverSpeedTrip.startTime))
+                )
+            )
+        }
+        if (isMoving) {
+            list.add(
+                GuardianAlertItem(
+                    id = "live_motion",
+                    title = "Active Ride In Progress",
+                    message = "Live telemetry stream active on $bikeModel.",
+                    severity = "info",
+                    timestamp = "Live now"
+                )
+            )
+        }
+        list.add(
+            GuardianAlertItem(
+                id = "safe_status",
+                title = "Guardian Safety Radar Armed",
+                message = "Paired with $bikeModel ($bikePlate). Safety corridor monitoring active.",
+                severity = "normal",
+                timestamp = "System Active"
+            )
+        )
+        list
+    }
 
     val guardianPurple = Color(0xFFA855F7)
     val guardianPurpleDark = Color(0xFF1E1035)
@@ -214,8 +232,8 @@ fun ParentPanelScreen(
                     ModernIconBadge(
                         icon = RhodyIcons.BiometricVault,
                         accentColor = guardianPurple,
-                        size = 42.dp,
-                        iconSize = 22.dp,
+                        size = 40.dp,
+                        iconSize = 20.dp,
                         shape = BadgeShape.Squircle
                     )
 
@@ -226,7 +244,7 @@ fun ParentPanelScreen(
                         ) {
                             Text(
                                 text = "GUARDIAN SAFETY RADAR",
-                                fontSize = 13.5.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 0.8.sp,
                                 color = TextPrimary
@@ -238,70 +256,98 @@ fun ParentPanelScreen(
                                     .padding(horizontal = 5.dp, vertical = 1.5.dp)
                             ) {
                                 Text(
-                                    text = "LIVE",
-                                    fontSize = 8.sp,
+                                    text = if (isMoving) "STREAMING" else "ARMED",
+                                    fontSize = 7.5.sp,
                                     fontWeight = FontWeight.Black,
                                     color = OptimalGreen
                                 )
                             }
                         }
                         Text(
-                            text = "Monitoring Ward: $monitoredRiderEmail",
-                            fontSize = 10.5.sp,
+                            text = "Ward: $monitoredRiderEmail",
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = HyperCyan
                         )
                     }
                 }
 
-                // Quick Action Bar: Call, SOS, Exit
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    // Call Ward
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(OptimalGreen.copy(alpha = 0.15f))
-                            .border(1.dp, OptimalGreen.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                            .clickable {
-                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:+919876543210"))
-                                context.startActivity(intent)
-                            }
-                            .padding(horizontal = 8.dp, vertical = 5.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Icon(Icons.Default.Phone, contentDescription = "Call", tint = OptimalGreen, modifier = Modifier.size(11.dp))
-                            Text("Call", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = OptimalGreen)
-                        }
-                    }
+                // High-visibility, prominent Red LOGOUT Button
+                Button(
+                    onClick = { showLogoutConfirm = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RacingRed.copy(alpha = 0.18f),
+                        contentColor = RacingRed
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RacingRed.copy(alpha = 0.6f)),
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Logout,
+                        contentDescription = "Log Out",
+                        tint = RacingRed,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "LOGOUT",
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Black,
+                        color = RacingRed,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+            }
 
-                    // 112 SOS
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(RacingRed.copy(alpha = 0.15f))
-                            .border(1.dp, RacingRed.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                            .clickable {
-                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
-                                context.startActivity(intent)
-                            }
-                            .padding(horizontal = 8.dp, vertical = 5.dp)
-                    ) {
-                        Text("112", fontSize = 9.5.sp, fontWeight = FontWeight.Black, color = RacingRed)
-                    }
+            Spacer(modifier = Modifier.height(10.dp))
 
-                    // Logout / Exit
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(CarbonDark)
-                            .border(1.dp, CardBorder, RoundedCornerShape(8.dp))
-                            .clickable { showLogoutConfirm = true }
-                            .padding(horizontal = 8.dp, vertical = 5.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Exit", tint = TextMuted, modifier = Modifier.size(11.dp))
-                            Text("Exit", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
+            // Action row: Call Ward & 112 SOS
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val riderPhone = parentPrefs.getString("monitored_rider_phone", "") ?: ""
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(OptimalGreen.copy(alpha = 0.15f))
+                        .border(1.dp, OptimalGreen.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                        .clickable {
+                            val intent = if (riderPhone.isNotBlank()) {
+                                Intent(Intent.ACTION_DIAL, Uri.parse("tel:$riderPhone"))
+                            } else {
+                                Intent(Intent.ACTION_DIAL)
+                            }
+                            context.startActivity(intent)
                         }
+                        .padding(vertical = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Default.Phone, contentDescription = "Call Ward", tint = OptimalGreen, modifier = Modifier.size(13.dp))
+                        Text("CALL WARD", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = OptimalGreen)
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(RacingRed.copy(alpha = 0.15f))
+                        .border(1.dp, RacingRed.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                        .clickable {
+                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
+                            context.startActivity(intent)
+                        }
+                        .padding(vertical = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Default.Shield, contentDescription = "Emergency 112", tint = RacingRed, modifier = Modifier.size(13.dp))
+                        Text("112 EMERGENCY", fontSize = 10.sp, fontWeight = FontWeight.Black, color = RacingRed)
                     }
                 }
             }
@@ -333,6 +379,10 @@ fun ParentPanelScreen(
         }
 
         // ================= 2. LIVE TELEMETRY STRIP (COMPACT 4-GRID) =================
+        val batteryManager = remember { context.getSystemService(Context.BATTERY_SERVICE) as? android.os.BatteryManager }
+        val deviceBattery = remember { batteryManager?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1 }
+        val hasBattery = deviceBattery in 1..100
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -354,7 +404,7 @@ fun ParentPanelScreen(
                     fontWeight = FontWeight.Black,
                     color = if (isMoving) OptimalGreen else HyperCyan
                 )
-                Text(if (isMoving) "Live GPS" else "Basecamp", fontSize = 8.sp, color = TextMuted)
+                Text(if (isMoving) "Live GPS" else "Stationary", fontSize = 8.sp, color = TextMuted)
             }
 
             // Current Speed
@@ -408,7 +458,7 @@ fun ParentPanelScreen(
                 Text("Max today", fontSize = 8.sp, color = TextMuted)
             }
 
-            // Ward Phone Battery
+            // Real Battery or Telemetry Link
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -417,20 +467,26 @@ fun ParentPanelScreen(
                     .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
                     .padding(10.dp)
             ) {
-                Text("BATTERY", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+                Text(if (hasBattery) "BATTERY" else "LINK", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = TextMuted)
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "88%",
+                    text = if (hasBattery) "$deviceBattery%" else if (isMoving) "ACTIVE" else "READY",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Black,
                     fontFamily = FontFamily.Monospace,
                     color = OptimalGreen
                 )
-                Text("Good state", fontSize = 8.sp, color = OptimalGreen)
+                Text(
+                    text = if (hasBattery) (if (deviceBattery > 20) "Normal" else "Low") else "Encrypted",
+                    fontSize = 8.sp,
+                    color = OptimalGreen
+                )
             }
         }
 
         // ================= 3. COMPACT LIVE GPS RADAR MAP =================
+        val hasLiveCoordinates = (metrics.currentLatitude != null && metrics.currentLongitude != null) || livePoints.isNotEmpty()
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -445,7 +501,12 @@ fun ParentPanelScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(OptimalGreen))
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(if (hasLiveCoordinates) OptimalGreen else guardianPurple)
+                    )
                     Text(
                         text = "LIVE WARD GPS RADAR MAP",
                         fontSize = 10.5.sp,
@@ -455,10 +516,10 @@ fun ParentPanelScreen(
                 }
 
                 Text(
-                    text = if (metrics.currentLatitude != null) "RTK Lock Active" else "Awaiting Satellite Lock",
+                    text = if (hasLiveCoordinates) "RTK Lock Active" else "Radar Armed & Waiting",
                     fontSize = 8.5.sp,
                     fontFamily = FontFamily.Monospace,
-                    color = if (metrics.currentLatitude != null) OptimalGreen else SportAmber
+                    color = if (hasLiveCoordinates) OptimalGreen else HyperCyan
                 )
             }
 
@@ -471,13 +532,53 @@ fun ParentPanelScreen(
                     .clip(RoundedCornerShape(10.dp))
                     .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
             ) {
-                RouteMapView(
-                    points = livePoints,
-                    currentLat = metrics.currentLatitude,
-                    currentLon = metrics.currentLongitude,
-                    isLiveTracking = true,
-                    modifier = Modifier.fillMaxSize()
-                )
+                if (hasLiveCoordinates) {
+                    RouteMapView(
+                        points = livePoints,
+                        currentLat = metrics.currentLatitude,
+                        currentLon = metrics.currentLongitude,
+                        isLiveTracking = true,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(CarbonDark)
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ModernIconBadge(
+                                icon = RhodyIcons.TelemetryWave,
+                                accentColor = guardianPurple,
+                                size = 44.dp,
+                                iconSize = 22.dp,
+                                shape = BadgeShape.Circle
+                            )
+                            Text(
+                                text = "AWAITING ACTIVE RIDE TELEMETRY",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                color = TextPrimary,
+                                letterSpacing = 0.8.sp
+                            )
+                            Text(
+                                text = if (allTrips.isNotEmpty())
+                                    "Ward is currently stationary. Last ride recorded ${String.format(Locale.US, "%.1f km", allTrips.first().totalDistanceMeters / 1000.0)}."
+                                else
+                                    "Radar is armed and listening for satellite beacon. Live route & speed will stream here automatically when a ride starts.",
+                                fontSize = 9.5.sp,
+                                color = TextSecondary,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                lineHeight = 14.sp
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -784,47 +885,6 @@ fun ParentPanelScreen(
                             )
                         }
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Simulate Alert Test Trigger
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Test Guardian Alarm:",
-                    fontSize = 9.5.sp,
-                    color = TextMuted
-                )
-
-                Button(
-                    onClick = {
-                        alerts.add(
-                            0,
-                            GuardianAlertItem(
-                                id = System.currentTimeMillis().toString(),
-                                title = "⚠️ Over-Speed Alert Triggered",
-                                message = "Ward ($monitoredRiderEmail) exceeded safe limit of 95 km/h.",
-                                severity = "warning",
-                                timestamp = "Just now"
-                            )
-                        )
-                        Toast.makeText(context, "⚠️ Over-Speed Guardian Alert Triggered!", Toast.LENGTH_SHORT).show()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = SportAmber.copy(alpha = 0.2f)),
-                    shape = RoundedCornerShape(6.dp),
-                    modifier = Modifier.height(28.dp)
-                ) {
-                    Text(
-                        text = "⚡ Simulate Speed Warning",
-                        fontSize = 8.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = SportAmber
-                    )
                 }
             }
         }

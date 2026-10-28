@@ -37,8 +37,8 @@ fun GpsStatusBadge(
     val (dotColor, text) = when (gpsStatus) {
         GpsStatus.ACCURATE -> SuccessGreen to "GPS ±${accuracyMeters.toInt()}m"
         GpsStatus.POOR_ACCURACY -> SportAmber to "Weak ±${accuracyMeters.toInt()}m"
-        GpsStatus.SEARCHING -> SportAmber to "Searching"
-        GpsStatus.GPS_DISABLED -> RacingRed to "GPS Off"
+        GpsStatus.SEARCHING -> SportAmber to "Acquiring GPS"
+        GpsStatus.GPS_DISABLED -> RacingRed to "GPS Disabled"
         GpsStatus.NO_PERMISSION -> RacingRed to "No GPS"
     }
 

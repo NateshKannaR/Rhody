@@ -140,9 +140,9 @@ object CloudSyncManager {
             if (responseCode in 200..299) {
                 val responseText = connection.inputStream.bufferedReader().use { it.readText() }
                 val msg = try {
-                    JSONObject(responseText).optString("message", "Synced to MongoDB Atlas!")
+                    JSONObject(responseText).optString("message", "Synced to Rhody Cloud!")
                 } catch (_: Exception) {
-                    "Synced to MongoDB Atlas! ($responseCode)"
+                    "Synced to Rhody Cloud! ($responseCode)"
                 }
                 Result.success(msg)
             } else {

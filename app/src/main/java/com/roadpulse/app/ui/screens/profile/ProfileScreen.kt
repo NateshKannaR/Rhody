@@ -45,8 +45,10 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.TwoWheeler
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -119,10 +121,12 @@ fun ProfileScreen(
     var isLeanWarningEnabled by remember { mutableStateOf(true) }
     var isAutoPauseEnabled by remember { mutableStateOf(true) }
 
-    // Rider Emergency Info State
-    var bloodGroup by remember { mutableStateOf("O+") }
-    var emergencyContactName by remember { mutableStateOf("Parents / ICE") }
-    var emergencyContactPhone by remember { mutableStateOf("+91 98765 43210") }
+    // Rider Emergency ICE Preferences
+    val icePrefs = remember { context.getSharedPreferences("rhody_ice_prefs", Context.MODE_PRIVATE) }
+    var bloodGroup by remember { mutableStateOf(icePrefs.getString("blood_group", "O+") ?: "O+") }
+    var emergencyContactName by remember { mutableStateOf(icePrefs.getString("ice_name", "Emergency Contact") ?: "Emergency Contact") }
+    var emergencyContactPhone by remember { mutableStateOf(icePrefs.getString("ice_phone", "") ?: "") }
+    var showEditIceDialog by remember { mutableStateOf(false) }
     var showBikeRegisterDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(authState.isLoggedIn) {
@@ -141,12 +145,6 @@ fun ProfileScreen(
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
-
-    // Server & Cloud config
-    var serverUrlInput by remember { mutableStateOf(CloudSyncManager.serverBaseUrl) }
-    var showServerConfig by remember { mutableStateOf(false) }
-    var isCheckingHealth by remember { mutableStateOf(false) }
-    var healthStatusMessage by remember { mutableStateOf<String?>(null) }
 
     var isSyncingTrips by remember { mutableStateOf(false) }
     var syncStatusMessage by remember { mutableStateOf<String?>(null) }
@@ -176,139 +174,16 @@ fun ProfileScreen(
                     letterSpacing = 1.5.sp
                 )
                 Text(
-                    text = if (authState.isLoggedIn) "MONGODB ATLAS SYNCHRONIZED" else "OFFLINE / LOCAL STORAGE MODE",
+                    text = if (authState.isLoggedIn) "RHODY CLOUD SYNCHRONIZED" else "OFFLINE / LOCAL STORAGE MODE",
                     color = if (authState.isLoggedIn) OptimalGreen else TextSecondary,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.8.sp
                 )
             }
-
-            IconButton(
-                onClick = { showServerConfig = !showServerConfig },
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(ObsidianSurface)
-                    .border(1.dp, CardBorder, CircleShape)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Tune,
-                    contentDescription = "Config",
-                    tint = if (showServerConfig) HyperCyan else TextSecondary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
-
-        // ================= COLLAPSIBLE SERVER CONFIG =================
-        AnimatedVisibility(visible = showServerConfig) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 14.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(MidnightCard)
-                    .border(1.dp, CardBorderGlow, RoundedCornerShape(18.dp))
-                    .padding(14.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Dns,
-                        contentDescription = null,
-                        tint = HyperCyan,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "BACKEND GATEWAY & MONGODB",
-                        color = TextPrimary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.8.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = serverUrlInput,
-                    onValueChange = { serverUrlInput = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Server Base URL", color = TextSecondary, fontSize = 11.sp) },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = HyperCyan,
-                        unfocusedBorderColor = CardBorder,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        focusedContainerColor = ObsidianSurface,
-                        unfocusedContainerColor = ObsidianSurface
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            CloudSyncManager.setServerUrl(context, serverUrlInput)
-                            Toast.makeText(context, "Server URL updated!", Toast.LENGTH_SHORT).show()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = HyperCyan, contentColor = CarbonDark),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Save URL", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            isCheckingHealth = true
-                            healthStatusMessage = null
-                            coroutineScope.launch {
-                                CloudSyncManager.setServerUrl(context, serverUrlInput)
-                                val res = CloudSyncManager.checkServerHealth()
-                                isCheckingHealth = false
-                                if (res.isSuccess) {
-                                    val obj = res.getOrNull()
-                                    val db = obj?.optString("database", "connected")
-                                    healthStatusMessage = "Server Online! MongoDB: $db"
-                                } else {
-                                    healthStatusMessage = "Connection failed: ${res.exceptionOrNull()?.message}"
-                                }
-                            }
-                        },
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = HyperCyan),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-                    ) {
-                        if (isCheckingHealth) {
-                            CircularProgressIndicator(modifier = Modifier.size(14.dp), color = HyperCyan, strokeWidth = 2.dp)
-                        } else {
-                            Text("Test Ping", fontSize = 11.sp)
-                        }
-                    }
-                }
-
-                healthStatusMessage?.let { msg ->
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = msg,
-                        color = if (msg.contains("Online", ignoreCase = true)) OptimalGreen else RacingRed,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
 
         // ================= 1. RIDER IDENTITY & HERO PROFILE CARD =================
         val displayName = if (authState.isLoggedIn && !authState.user?.name.isNullOrBlank()) {
@@ -390,7 +265,7 @@ fun ProfileScreen(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = if (authState.isLoggedIn) "MongoDB Atlas Synced" else "Offline Local Storage Mode",
+                    text = if (authState.isLoggedIn) "Rhody Cloud Synced" else "Offline Storage Mode",
                     color = if (authState.isLoggedIn) OptimalGreen else SportAmber,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
@@ -407,6 +282,7 @@ fun ProfileScreen(
                 .clip(RoundedCornerShape(20.dp))
                 .background(MidnightCard)
                 .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+                .clickable { showEditIceDialog = true }
                 .padding(16.dp)
         ) {
             Row(
@@ -431,19 +307,36 @@ fun ProfileScreen(
                     )
                 }
 
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(RacingRed.copy(alpha = 0.15f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "BLOOD: $bloodGroup",
-                        color = RacingRed,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        fontFamily = FontFamily.Monospace
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(RacingRed.copy(alpha = 0.15f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "BLOOD: $bloodGroup",
+                            color = RacingRed,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(HyperCyan.copy(alpha = 0.15f))
+                            .border(1.dp, HyperCyan.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "EDIT",
+                            color = HyperCyan,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
@@ -455,14 +348,14 @@ fun ProfileScreen(
             ) {
                 SettingInfoItem(
                     title = "EMERGENCY CONTACT",
-                    value = emergencyContactPhone,
+                    value = if (emergencyContactPhone.isNotBlank()) emergencyContactPhone else "Tap to set contact",
                     icon = Icons.Default.Phone,
                     accentColor = HyperCyan,
                     modifier = Modifier.weight(1f)
                 )
                 SettingInfoItem(
                     title = "BLOOD GROUP",
-                    value = "$bloodGroup (Universal Donor)",
+                    value = bloodGroup,
                     icon = Icons.Default.HealthAndSafety,
                     accentColor = RacingRed,
                     modifier = Modifier.weight(1f)
@@ -711,7 +604,7 @@ fun ProfileScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "MONGODB ATLAS CLOUD SYNC",
+                    text = "RHODY CLOUD TELEMETRY SYNC",
                     color = TextPrimary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Black,
@@ -722,7 +615,7 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Pushes all locally saved rides to MongoDB Atlas cluster for instant companion viewing on the Rhody Web Dashboard.",
+                text = "Pushes all locally saved rides to Rhody Cloud for instant companion viewing on the Rhody Web Dashboard.",
                 color = TextSecondary,
                 fontSize = 11.sp,
                 lineHeight = 16.sp
@@ -749,9 +642,9 @@ fun ProfileScreen(
                                 }
                             }
                             syncStatusMessage = if (errorCount == 0) {
-                                "Successfully synced $syncedCount trips to MongoDB Atlas!"
+                                "Successfully synced $syncedCount trips to Rhody Cloud!"
                             } else {
-                                "Synced $syncedCount trips ($errorCount failed). Check server."
+                                "Synced $syncedCount trips ($errorCount failed). Check connection."
                             }
                         } catch (e: Exception) {
                             syncStatusMessage = "Sync error: ${e.message}"
@@ -1020,11 +913,158 @@ fun ProfileScreen(
                                 bikeOdo = finalOdo
                             )
                             if (res.isSuccess) {
-                                Toast.makeText(context, "Motorcycle Synced with MongoDB Atlas!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Motorcycle Synced with Rhody Cloud!", Toast.LENGTH_SHORT).show()
                             }
                         }
                         showBikeRegisterDialog = false
                         Toast.makeText(context, "Motorcycle Registered: $cleanModel", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
+
+        // ================= EDIT ICE EMERGENCY INFO DIALOG =================
+        if (showEditIceDialog) {
+            var tempName by remember { mutableStateOf(emergencyContactName) }
+            var tempPhone by remember { mutableStateOf(emergencyContactPhone) }
+            var tempBlood by remember { mutableStateOf(bloodGroup) }
+            val bloodGroups = listOf("O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-")
+
+            AlertDialog(
+                onDismissRequest = { showEditIceDialog = false },
+                containerColor = MidnightCard,
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.HealthAndSafety,
+                            contentDescription = null,
+                            tint = RacingRed,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "Rider Emergency & ICE Info",
+                            color = TextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "In case of crash detection or SOS, this contact is alerted with live telemetry coordinates.",
+                            color = TextSecondary,
+                            fontSize = 11.sp
+                        )
+
+                        OutlinedTextField(
+                            value = tempName,
+                            onValueChange = { tempName = it },
+                            label = { Text("Contact Label (e.g. Dad, Mom, ICE)", fontSize = 11.sp) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = HyperCyan,
+                                unfocusedBorderColor = CardBorder,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
+                            value = tempPhone,
+                            onValueChange = { tempPhone = it },
+                            label = { Text("Phone Number (+91 ...)", fontSize = 11.sp) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = HyperCyan,
+                                unfocusedBorderColor = CardBorder,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Text("Select Blood Group:", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            bloodGroups.take(4).forEach { bg ->
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (tempBlood == bg) RacingRed else ObsidianSurface)
+                                        .border(1.dp, if (tempBlood == bg) RacingRed else CardBorder, RoundedCornerShape(8.dp))
+                                        .clickable { tempBlood = bg }
+                                        .padding(vertical = 6.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = bg,
+                                        color = if (tempBlood == bg) Color.White else TextSecondary,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            bloodGroups.drop(4).forEach { bg ->
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (tempBlood == bg) RacingRed else ObsidianSurface)
+                                        .border(1.dp, if (tempBlood == bg) RacingRed else CardBorder, RoundedCornerShape(8.dp))
+                                        .clickable { tempBlood = bg }
+                                        .padding(vertical = 6.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = bg,
+                                        color = if (tempBlood == bg) Color.White else TextSecondary,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            icePrefs.edit()
+                                .putString("ice_name", tempName.trim())
+                                .putString("ice_phone", tempPhone.trim())
+                                .putString("blood_group", tempBlood.trim())
+                                .apply()
+                            emergencyContactName = tempName.trim()
+                            emergencyContactPhone = tempPhone.trim()
+                            bloodGroup = tempBlood.trim()
+                            showEditIceDialog = false
+                            Toast.makeText(context, "Emergency ICE profile saved!", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = HyperCyan, contentColor = CarbonDark),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Save Details", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEditIceDialog = false }) {
+                        Text("Cancel", color = TextSecondary, fontSize = 12.sp)
                     }
                 }
             )

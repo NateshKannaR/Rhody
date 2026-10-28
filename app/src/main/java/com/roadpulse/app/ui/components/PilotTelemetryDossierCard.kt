@@ -63,8 +63,6 @@ fun PilotTelemetryDossierCard(
     careerRunsLogged: Int,
     modifier: Modifier = Modifier
 ) {
-    val purpleAccent = Color(0xFFA855F7)
-
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -111,32 +109,13 @@ fun PilotTelemetryDossierCard(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = "TELEMETRY PILOT DOSSIER",
-                            color = HyperCyan,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp
-                        )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(OptimalGreen.copy(alpha = 0.15f))
-                                .border(1.dp, OptimalGreen.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 4.dp, vertical = 1.dp)
-                        ) {
-                            Text(
-                                text = "ONLINE • 60Hz",
-                                color = OptimalGreen,
-                                fontSize = 7.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
+                    Text(
+                        text = "PILOT TELEMETRY DOSSIER",
+                        color = HyperCyan,
+                        fontSize = 8.5.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp
+                    )
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -188,124 +167,43 @@ fun PilotTelemetryDossierCard(
             }
         }
 
-        // Dedicated Hardware Bus Status Strip (Zero text wrap, full-width precision banner)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(CarbonDark)
-                .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
-                .padding(horizontal = 12.dp, vertical = 7.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(5.dp)
-                        .clip(CircleShape)
-                        .background(OptimalGreen)
-                )
-                Text(
-                    text = "ECU K-LINE: 60Hz",
-                    color = OptimalGreen,
-                    fontSize = 8.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                )
-            }
-
-            Text(text = "•", color = TextMuted, fontSize = 8.5.sp)
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(5.dp)
-                        .clip(CircleShape)
-                        .background(HyperCyan)
-                )
-                Text(
-                    text = "GPS RTK: 10Hz",
-                    color = HyperCyan,
-                    fontSize = 8.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                )
-            }
-
-            Text(text = "•", color = TextMuted, fontSize = 8.5.sp)
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(5.dp)
-                        .clip(CircleShape)
-                        .background(purpleAccent)
-                )
-                Text(
-                    text = "BLACK BOX: ARMED",
-                    color = purpleAccent,
-                    fontSize = 8.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                )
-            }
-        }
-
-        // Bio tagline
-        Text(
-            text = "Precision motorcycle telemetry & dynamic apex trajectory tracking.",
-            color = TextMuted,
-            fontSize = 10.sp,
-            lineHeight = 14.sp
-        )
-
         // ================= 4-CARD CAREER MATRIX =================
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             CareerStatBox(
-                title = "CAREER DIST",
+                title = "TOTAL DIST",
                 value = String.format(Locale.US, "%.1f", careerDistanceKm),
                 unit = "KM",
-                subtext = "Telemetry Ready",
+                subtext = "Accumulated",
                 valueColor = TextPrimary,
                 modifier = Modifier.weight(1f)
             )
 
             CareerStatBox(
-                title = "PEAK VELOCITY",
+                title = "TOP SPEED",
                 value = "$careerPeakSpeedKmh",
                 unit = "KM/H",
-                subtext = "GPS Clocked",
+                subtext = "Personal Best",
                 valueColor = RacingRed,
                 modifier = Modifier.weight(1f)
             )
 
             CareerStatBox(
-                title = "MAX APEX LEAN",
+                title = "MAX LEAN",
                 value = "${String.format(Locale.US, "%.1f", careerMaxLeanDeg)}°",
                 unit = "MAX",
-                subtext = "Gyro Calibrated",
+                subtext = "Apex Angle",
                 valueColor = HyperCyan,
                 modifier = Modifier.weight(1f)
             )
 
             CareerStatBox(
-                title = "RUNS LOGGED",
+                title = "RECORDED",
                 value = "$careerRunsLogged",
                 unit = "RUNS",
-                subtext = if (careerRunsLogged > 0) "Logged Runs" else "Awaiting Ride",
+                subtext = if (careerRunsLogged > 0) "Completed" else "Ready",
                 valueColor = OptimalGreen,
                 modifier = Modifier.weight(1f)
             )

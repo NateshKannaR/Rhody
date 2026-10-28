@@ -122,7 +122,7 @@ fun HistoryScreen(
                                 if (res.isSuccess) syncedCount++
                             }
                             isSyncingAll = false
-                            syncSummaryMessage = "Synced $syncedCount/${trips.size} trips to MongoDB Atlas"
+                            syncSummaryMessage = "Synced $syncedCount/${trips.size} trips to Rhody Cloud"
                         }
                     },
                     enabled = !isSyncingAll,
@@ -143,7 +143,7 @@ fun HistoryScreen(
                     } else {
                         Icon(
                             imageVector = Icons.Default.CloudSync,
-                            contentDescription = "Sync all to MongoDB",
+                            contentDescription = "Sync all to Rhody Cloud",
                             tint = NeonCyan,
                             modifier = Modifier.size(18.dp)
                         )
