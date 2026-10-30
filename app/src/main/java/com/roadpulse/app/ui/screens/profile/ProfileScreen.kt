@@ -123,8 +123,8 @@ fun ProfileScreen(
 
     // Rider Emergency ICE Preferences
     val icePrefs = remember { context.getSharedPreferences("rhody_ice_prefs", Context.MODE_PRIVATE) }
-    var bloodGroup by remember { mutableStateOf(icePrefs.getString("blood_group", "O+") ?: "O+") }
-    var emergencyContactName by remember { mutableStateOf(icePrefs.getString("ice_name", "Emergency Contact") ?: "Emergency Contact") }
+    var bloodGroup by remember { mutableStateOf(icePrefs.getString("blood_group", "") ?: "") }
+    var emergencyContactName by remember { mutableStateOf(icePrefs.getString("ice_name", "") ?: "") }
     var emergencyContactPhone by remember { mutableStateOf(icePrefs.getString("ice_phone", "") ?: "") }
     var showEditIceDialog by remember { mutableStateOf(false) }
     var showBikeRegisterDialog by remember { mutableStateOf(false) }
@@ -139,7 +139,7 @@ fun ProfileScreen(
     var isLoginMode by remember { mutableStateOf(true) }
     var emailInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
-    var nameInput by remember { mutableStateOf("Natesh Kanna") }
+    var nameInput by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     var isLoading by remember { mutableStateOf(false) }
@@ -189,12 +189,12 @@ fun ProfileScreen(
         val displayName = if (authState.isLoggedIn && !authState.user?.name.isNullOrBlank()) {
             authState.user!!.name
         } else {
-            "Natesh Kanna"
+            "Rider"
         }
         val displayEmail = if (authState.isLoggedIn && !authState.user?.email.isNullOrBlank()) {
             authState.user!!.email
         } else {
-            "natesh.kanna@rhody.io"
+            "pilot@rhody.local"
         }
 
         Column(
@@ -315,7 +315,7 @@ fun ProfileScreen(
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "BLOOD: $bloodGroup",
+                            text = "BLOOD: ${bloodGroup.ifBlank { "NOT SET" }}",
                             color = RacingRed,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
@@ -355,7 +355,7 @@ fun ProfileScreen(
                 )
                 SettingInfoItem(
                     title = "BLOOD GROUP",
-                    value = bloodGroup,
+                    value = bloodGroup.ifBlank { "Not Set" },
                     icon = Icons.Default.HealthAndSafety,
                     accentColor = RacingRed,
                     modifier = Modifier.weight(1f)
@@ -586,7 +586,7 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ================= 5. CLOUD TELEMETRY SYNC TO MONGODB =================
+        // ================= 5. RHODY CLOUD TELEMETRY BACKUP & SYNC =================
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -831,7 +831,7 @@ fun ProfileScreen(
                                     Toast.makeText(context, "Login failed: ${result.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
                                 }
                             } else {
-                                val name = nameInput.trim().ifEmpty { "Natesh Kanna" }
+                                val name = nameInput.trim().ifEmpty { "Rider" }
                                 val result = AuthManager.register(email, password, name)
                                 isLoading = false
                                 if (result.isSuccess) {

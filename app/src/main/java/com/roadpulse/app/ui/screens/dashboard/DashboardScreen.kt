@@ -262,12 +262,17 @@ fun DashboardScreen(
         val displayName = if (authState.isLoggedIn && !authState.user?.name.isNullOrBlank()) {
             authState.user!!.name
         } else {
-            "Natesh Kanna"
+            "Rider"
+        }
+        val userHandle = if (authState.isLoggedIn && !authState.user?.email.isNullOrBlank()) {
+            "@${authState.user!!.email.substringBefore('@')}"
+        } else {
+            "@pilot"
         }
 
         PilotTelemetryDossierCard(
             userName = displayName,
-            userHandle = "@pilot",
+            userHandle = userHandle,
             onNavigateToProfile = onNavigateToProfile,
             onLogoutClick = { showLogoutDialog = true },
             gpsStatus = metrics.gpsStatus,
@@ -319,15 +324,7 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ================= 4. RECENT RIDE SESSIONS PREVIEW =================
-            DashboardRecentRidesCard(
-                trips = allTrips,
-                onNavigateToTrips = onNavigateToLiveTrip
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ================= 5. STATUTORY DOCUMENT VAULT & SERVICE INVOICES LEDGER =================
+            // ================= 4. STATUTORY DOCUMENT VAULT & SERVICE INVOICES LEDGER =================
             DocumentVaultCard(
                 rcUploaded = rcUploaded,
                 rcDocNum = rcDocNum,
@@ -973,7 +970,7 @@ fun DashboardBikeRegisterDialog(
                     value = inputModel,
                     onValueChange = { inputModel = it },
                     label = { Text("Make & Model", fontSize = 11.sp) },
-                    placeholder = { Text("e.g. Bajaj Pulsar 150 / NS 200", fontSize = 11.sp, color = TextMuted) },
+                    placeholder = { Text("e.g. Yamaha R15 / KTM Duke", fontSize = 11.sp, color = TextMuted) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1230,7 +1227,7 @@ fun resolveSketchfabModelForBike(bikeModel: String): Pair<String, String> {
             }
         }
     }
-    return "99551e910fac4566bb2555700d6d8404" to (if (bikeModel.isNotBlank()) bikeModel else "Bajaj Pulsar 150")
+    return "99551e910fac4566bb2555700d6d8404" to (if (bikeModel.isNotBlank()) bikeModel else "Digital Twin")
 }
 
 @Composable
@@ -1966,7 +1963,7 @@ fun DashboardBikeStatusSection(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = if (isMachineConfigured && bikeModel.isNotBlank()) bikeModel.uppercase() else "BAJAJ PULSAR 150",
+                        text = if (isMachineConfigured && bikeModel.isNotBlank()) bikeModel.uppercase() else "NO MOTORCYCLE LINKED",
                         color = TextPrimary,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
@@ -1974,10 +1971,10 @@ fun DashboardBikeStatusSection(
                         maxLines = 1
                     )
                     Text(
-                        text = if (isMachineConfigured) {
-                            "${bikeEngineSpec.ifBlank { "Configured Motorcycle" }} • ${bikePlate.ifBlank { "No Plate" }}"
+                        text = if (isMachineConfigured && bikeModel.isNotBlank()) {
+                            "${bikeEngineSpec.ifBlank { "Configured Motorcycle" }} • ${bikePlate.ifBlank { "No Plate Registered" }}"
                         } else {
-                            "Interactive 3D Digital Twin • Tap to Configure"
+                            "Awaiting machine registration • Tap to link your bike"
                         },
                         color = if (isMachineConfigured) HyperCyan else SportAmber,
                         fontSize = 10.sp,
@@ -2012,36 +2009,78 @@ fun DashboardBikeStatusSection(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // 3D Motorcycle Digital Twin (Sketchfab Interactive 360 Viewer - Always Visible)
-        Bike3dSketchfabViewer(
-            bikeModel = if (isMachineConfigured && bikeModel.isNotBlank()) bikeModel else "Bajaj Pulsar 150",
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        if (!isMachineConfigured) {
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
+        if (isMachineConfigured && bikeModel.isNotBlank()) {
+            // 3D Motorcycle Digital Twin (Sketchfab Interactive 360 Viewer)
+            Bike3dSketchfabViewer(
+                bikeModel = bikeModel,
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            // Clean, professional unlinked state card with 1-tap register
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
+                    .height(170.dp)
+                    .clip(RoundedCornerShape(16.dp))
                     .background(ObsidianGlass)
-                    .border(0.5.dp, SportAmber.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
                     .clickable { onOpenRegisterDialog() }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Awaiting custom bike setup. Tap to register Honda, Kawasaki, KTM...",
-                    color = TextSecondary,
-                    fontSize = 9.5.sp
-                )
-                Text(
-                    text = "SETUP →",
-                    color = SportAmber,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Black
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(HyperCyan.copy(alpha = 0.12f))
+                            .border(1.dp, HyperCyan.copy(alpha = 0.35f), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = RhodyIcons.Superbike,
+                            contentDescription = null,
+                            tint = HyperCyan,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Text(
+                        text = "NO MOTORCYCLE LINKED",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "Register your motorcycle model, license plate, and specs to activate live 3D telemetry and digital twin diagnostics.",
+                        fontSize = 9.5.sp,
+                        color = TextSecondary,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        lineHeight = 14.sp,
+                        modifier = Modifier.padding(horizontal = 14.dp)
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(HyperCyan.copy(alpha = 0.15f))
+                            .border(1.dp, HyperCyan.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "+ CONFIGURE MACHINE",
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.6.sp,
+                            color = HyperCyan
+                        )
+                    }
+                }
             }
         }
 
@@ -2058,7 +2097,7 @@ fun DashboardBikeStatusSection(
                 val charging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
                 val validLevel = if (level in 0..100) level else 100
                 validLevel to charging
-            } catch (e: Exception) {
+            } catch (_: Throwable) {
                 100 to false
             }
         }

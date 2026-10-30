@@ -185,10 +185,10 @@ fun AuthScreen(
         } else if (savedRiderEmail.isNotEmpty()) {
             savedRiderEmail
         } else {
-            "pilot@rhody.io"
+            rCodeOrEmail
         }
 
-        val wardCode = if (!rCodeOrEmail.contains("@")) rCodeOrEmail.uppercase() else "RHODY-8821"
+        val wardCode = if (!rCodeOrEmail.contains("@")) rCodeOrEmail.uppercase() else (savedRiderEmail.ifEmpty { "PAIRED" })
 
         // Persist parent credentials to preferences
         val prefs = context.getSharedPreferences("rhody_parent_prefs", Context.MODE_PRIVATE)
@@ -635,7 +635,7 @@ fun AuthScreen(
                         value = riderPairingCodeInput,
                         onValueChange = { riderPairingCodeInput = it },
                         label = { Text("Rider Pairing Code or Email", fontSize = 12.sp) },
-                        placeholder = { Text("RHODY-8821 or pilot@rhody.io", fontSize = 12.sp, color = TextMuted) },
+                        placeholder = { Text("e.g. rider@rhody.io or pairing code", fontSize = 12.sp, color = TextMuted) },
                         leadingIcon = {
                             Icon(Icons.Default.VpnKey, contentDescription = null, tint = guardianPurple, modifier = Modifier.size(18.dp))
                         },
@@ -677,31 +677,31 @@ fun AuthScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Quick Demo Pairing Button
-                    OutlinedButton(
-                        onClick = {
-                            parentNameInput = "Family Guardian"
-                            parentEmailInput = "guardian@family.io"
-                            riderPairingCodeInput = "RHODY-8821"
-                            performParentConnect()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, guardianPurple.copy(alpha = 0.4f)),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = guardianPurple
-                        )
-                    ) {
-                        Text(
-                            text = "Use Demo Pairing (RHODY-8821)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        )
+                    val localRiderPrefs = remember { context.getSharedPreferences("roadpulse_auth_prefs", Context.MODE_PRIVATE) }
+                    val localRiderEmail = remember { localRiderPrefs.getString("user_email", "") ?: "" }
+                    if (localRiderEmail.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedButton(
+                            onClick = {
+                                riderPairingCodeInput = localRiderEmail
+                                if (parentNameInput.isBlank()) parentNameInput = "Guardian"
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, guardianPurple.copy(alpha = 0.4f)),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = guardianPurple
+                            )
+                        ) {
+                            Text(
+                                text = "Link Registered Rider ($localRiderEmail)",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
                     }
                 }
             }

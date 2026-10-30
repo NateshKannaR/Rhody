@@ -102,15 +102,15 @@ fun ParentPanelScreen(
 
     // Guardian Parent Preferences (Separated from Rider)
     val parentPrefs = remember { context.getSharedPreferences("rhody_parent_prefs", Context.MODE_PRIVATE) }
-    val parentName = remember { parentPrefs.getString("parent_name", "Family Guardian") ?: "Family Guardian" }
-    val parentEmail = remember { parentPrefs.getString("parent_email", "guardian@family.io") ?: "guardian@family.io" }
-    val pairedCode = remember { parentPrefs.getString("paired_rider_code", "RHODY-8821") ?: "RHODY-8821" }
-    val monitoredRiderEmail = remember { parentPrefs.getString("monitored_rider_email", "pilot@rhody.io") ?: "pilot@rhody.io" }
+    val parentName = remember { parentPrefs.getString("parent_name", "") ?: "" }
+    val parentEmail = remember { parentPrefs.getString("parent_email", "") ?: "" }
+    val pairedCode = remember { parentPrefs.getString("paired_rider_code", "") ?: "" }
+    val monitoredRiderEmail = remember { parentPrefs.getString("monitored_rider_email", "") ?: "" }
 
     // Vehicle Preferences
     val vehiclePrefs = remember { context.getSharedPreferences("rhody_bike_prefs", Context.MODE_PRIVATE) }
-    val bikeModel = remember { vehiclePrefs.getString("bike_model", "Bajaj Pulsar 150") ?: "Bajaj Pulsar 150" }
-    val bikePlate = remember { vehiclePrefs.getString("bike_plate", "MH-12-RP-8821") ?: "MH-12-RP-8821" }
+    val bikeModel = remember { vehiclePrefs.getString("bike_model", "") ?: "" }
+    val bikePlate = remember { vehiclePrefs.getString("bike_plate", "") ?: "" }
 
     var showLogoutConfirm by remember { mutableStateOf(false) }
 
@@ -119,7 +119,7 @@ fun ParentPanelScreen(
     val dateFormatter = remember { SimpleDateFormat("dd MMM • hh:mm a", Locale.getDefault()) }
 
     // Dynamic guardian alerts based on real telemetry & ride data
-    val alerts = remember(allTrips.size, isMoving) {
+    val alerts = remember(allTrips.size, isMoving, bikeModel, bikePlate) {
         val list = mutableListOf<GuardianAlertItem>()
         val recentOverSpeedTrip = allTrips.firstOrNull { it.maxSpeedKmh > 95f }
         if (recentOverSpeedTrip != null) {
@@ -138,7 +138,7 @@ fun ParentPanelScreen(
                 GuardianAlertItem(
                     id = "live_motion",
                     title = "Active Ride In Progress",
-                    message = "Live telemetry stream active on $bikeModel.",
+                    message = if (bikeModel.isNotBlank()) "Live telemetry stream active on $bikeModel." else "Live telemetry stream active.",
                     severity = "info",
                     timestamp = "Live now"
                 )
@@ -148,7 +148,11 @@ fun ParentPanelScreen(
             GuardianAlertItem(
                 id = "safe_status",
                 title = "Guardian Safety Radar Armed",
-                message = "Paired with $bikeModel ($bikePlate). Safety corridor monitoring active.",
+                message = if (bikeModel.isNotBlank()) {
+                    "Paired with $bikeModel${if (bikePlate.isNotBlank()) " ($bikePlate)" else ""}. Safety corridor monitoring active."
+                } else {
+                    "Safety corridor monitoring active. Awaiting machine telemetry."
+                },
                 severity = "normal",
                 timestamp = "System Active"
             )
@@ -172,8 +176,13 @@ fun ParentPanelScreen(
                 )
             },
             text = {
+                val accountDesc = if (parentEmail.isNotBlank()) {
+                    "${parentName.ifBlank { "Guardian" }} ($parentEmail)"
+                } else {
+                    "Active Session"
+                }
                 Text(
-                    text = "Logged in as Guardian: $parentName ($parentEmail).\n\nExiting will end the monitoring session and return to the role gateway.",
+                    text = "Logged in as Guardian: $accountDesc.\n\nExiting will end the monitoring session and return to the role gateway.",
                     color = TextSecondary,
                     fontSize = 12.5.sp,
                     lineHeight = 17.sp
@@ -264,7 +273,7 @@ fun ParentPanelScreen(
                             }
                         }
                         Text(
-                            text = "Ward: $monitoredRiderEmail",
+                            text = if (monitoredRiderEmail.isNotBlank()) "Ward: $monitoredRiderEmail" else "Ward: Not Paired",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = HyperCyan
@@ -365,13 +374,21 @@ fun ParentPanelScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Machine: $bikeModel • $bikePlate",
+                    text = if (bikeModel.isNotBlank()) {
+                        "Machine: $bikeModel${if (bikePlate.isNotBlank()) " • $bikePlate" else ""}"
+                    } else {
+                        "Machine: Not Linked"
+                    },
                     fontSize = 9.5.sp,
                     fontFamily = FontFamily.Monospace,
                     color = TextSecondary
                 )
                 Text(
-                    text = "Guardian: $parentEmail | Code: $pairedCode",
+                    text = if (parentEmail.isNotBlank()) {
+                        "Guardian: $parentEmail${if (pairedCode.isNotBlank()) " | Code: $pairedCode" else ""}"
+                    } else {
+                        "Guardian Active"
+                    },
                     fontSize = 9.sp,
                     color = TextMuted
                 )
@@ -379,8 +396,20 @@ fun ParentPanelScreen(
         }
 
         // ================= 2. LIVE TELEMETRY STRIP (COMPACT 4-GRID) =================
-        val batteryManager = remember { context.getSystemService(Context.BATTERY_SERVICE) as? android.os.BatteryManager }
-        val deviceBattery = remember { batteryManager?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1 }
+        val batteryManager = remember {
+            try {
+                context.getSystemService(Context.BATTERY_SERVICE) as? android.os.BatteryManager
+            } catch (_: Throwable) {
+                null
+            }
+        }
+        val deviceBattery = remember {
+            try {
+                batteryManager?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1
+            } catch (_: Throwable) {
+                -1
+            }
+        }
         val hasBattery = deviceBattery in 1..100
 
         Row(
