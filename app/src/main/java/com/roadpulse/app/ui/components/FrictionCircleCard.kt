@@ -65,8 +65,8 @@ fun FrictionCircleCard(
     onResetMemory: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val purpleAccent = Color(0xFFA855F7)
-    val purpleLight = Color(0xFFD8B4FE)
+    val cyanAccent = HyperCyan
+    val emeraldAccent = OptimalGreen
 
     // Calculate real physics lean angle theta = atan(lateralG) in degrees if not provided
     val currentLean = remember(lateralG, externalLeanDegrees) {
@@ -101,9 +101,9 @@ fun FrictionCircleCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(MidnightCard)
-            .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
         // Header
@@ -117,14 +117,14 @@ fun FrictionCircleCard(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(purpleAccent.copy(alpha = 0.15f))
-                        .border(1.dp, purpleAccent.copy(alpha = 0.35f), RoundedCornerShape(8.dp)),
+                        .background(cyanAccent.copy(alpha = 0.15f))
+                        .border(1.dp, cyanAccent.copy(alpha = 0.35f), RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.TwoWheeler,
                         contentDescription = "Lean Angle",
-                        tint = purpleAccent,
+                        tint = cyanAccent,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -134,7 +134,7 @@ fun FrictionCircleCard(
                         text = "LEAN ANGLE & FRICTION CIRCLE",
                         color = TextPrimary,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
+                        fontWeight = FontWeight.Bold,
                         letterSpacing = 0.8.sp
                     )
                     Text(
@@ -149,15 +149,15 @@ fun FrictionCircleCard(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .background(purpleAccent.copy(alpha = 0.2f))
-                    .border(1.dp, purpleAccent.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
-                .padding(horizontal = 7.dp, vertical = 3.dp)
+                    .background(cyanAccent.copy(alpha = 0.15f))
+                    .border(1.dp, CardBorder, RoundedCornerShape(6.dp))
+                    .padding(horizontal = 7.dp, vertical = 3.dp)
             ) {
                 Text(
                     text = "${String.format(Locale.US, "%.1f", abs(currentLean))}° LEAN",
-                    color = purpleLight,
+                    color = cyanAccent,
                     fontSize = 9.sp,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace
                 )
             }
@@ -187,9 +187,9 @@ fun FrictionCircleCard(
                     style = Stroke(width = 1.dp.toPx())
                 )
 
-                // 1.0G Ring (Purple boundary)
+                // 1.0G Ring (Cyan boundary)
                 drawCircle(
-                    color = purpleAccent.copy(alpha = 0.35f),
+                    color = cyanAccent.copy(alpha = 0.35f),
                     radius = radius * 0.65f,
                     center = center,
                     style = Stroke(width = 1.dp.toPx())
@@ -248,9 +248,9 @@ fun FrictionCircleCard(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .background(CarbonDark)
-                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                    .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
                     .padding(10.dp)
             ) {
                 Row(
@@ -263,7 +263,7 @@ fun FrictionCircleCard(
                             text = "LEFT APEX MAX",
                             color = TextMuted,
                             fontSize = 8.sp,
-                            fontWeight = FontWeight.Black,
+                            fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
                         )
                         Spacer(modifier = Modifier.height(2.dp))
@@ -271,7 +271,7 @@ fun FrictionCircleCard(
                             text = if (maxLeftLean > 0f) "${String.format(Locale.US, "%.1f", maxLeftLean)}°" else "--°",
                             color = HyperCyan,
                             fontSize = 14.sp,
-                            fontWeight = FontWeight.Black,
+                            fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace
                         )
                     }
@@ -279,7 +279,7 @@ fun FrictionCircleCard(
                         text = "← APEX",
                         color = HyperCyan,
                         fontSize = 9.sp,
-                        fontWeight = FontWeight.Black
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -287,9 +287,9 @@ fun FrictionCircleCard(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .background(CarbonDark)
-                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                    .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
                     .padding(10.dp)
             ) {
                 Row(
@@ -302,23 +302,23 @@ fun FrictionCircleCard(
                             text = "RIGHT APEX MAX",
                             color = TextMuted,
                             fontSize = 8.sp,
-                            fontWeight = FontWeight.Black,
+                            fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = if (maxRightLean > 0f) "${String.format(Locale.US, "%.1f", maxRightLean)}°" else "--°",
-                            color = purpleLight,
+                            color = emeraldAccent,
                             fontSize = 14.sp,
-                            fontWeight = FontWeight.Black,
+                            fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace
                         )
                     }
                     Text(
                         text = "APEX →",
-                        color = purpleAccent,
+                        color = emeraldAccent,
                         fontSize = 9.sp,
-                        fontWeight = FontWeight.Black
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }

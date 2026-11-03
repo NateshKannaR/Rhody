@@ -66,9 +66,9 @@ fun PilotTelemetryDossierCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(MidnightCard)
-            .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -76,7 +76,7 @@ fun PilotTelemetryDossierCard(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.CenterVertically
         ) {
             // Rider Avatar & Info
             Row(
@@ -88,20 +88,18 @@ fun PilotTelemetryDossierCard(
                 // Micro-Precise Avatar with Status Ring
                 Box(
                     modifier = Modifier
-                        .size(54.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            Brush.linearGradient(listOf(HyperCyan.copy(alpha = 0.2f), CobaltBlue.copy(alpha = 0.3f)))
-                        )
-                        .border(1.5.dp, HyperCyan.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(CarbonDark)
+                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.rhody_brand_logo),
                         contentDescription = "Rhody Brand",
                         modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(12.dp)),
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(10.dp)),
                         contentScale = ContentScale.Crop
                     )
                 }
@@ -110,10 +108,10 @@ fun PilotTelemetryDossierCard(
 
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = "PILOT TELEMETRY DOSSIER",
+                        text = "PILOT TELEMETRY",
                         color = HyperCyan,
-                        fontSize = 8.5.sp,
-                        fontWeight = FontWeight.Black,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     )
 
@@ -125,12 +123,12 @@ fun PilotTelemetryDossierCard(
                             text = userName,
                             color = TextPrimary,
                             fontSize = 17.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.3.sp
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.2.sp
                         )
                         Text(
                             text = userHandle,
-                            color = HyperCyan.copy(alpha = 0.8f),
+                            color = TextSecondary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             fontFamily = FontFamily.Monospace
@@ -152,16 +150,16 @@ fun PilotTelemetryDossierCard(
                 IconButton(
                     onClick = onLogoutClick,
                     modifier = Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
                         .background(RacingRed.copy(alpha = 0.12f))
-                        .border(1.dp, RacingRed.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+                        .border(1.dp, RacingRed.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Logout,
                         contentDescription = "Log Out",
                         tint = RacingRed,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                 }
             }
@@ -222,9 +220,9 @@ private fun CareerStatBox(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(10.dp))
             .background(CarbonDark)
-            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
             .padding(vertical = 10.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -232,12 +230,12 @@ private fun CareerStatBox(
             Text(
                 text = title,
                 color = TextMuted,
-                fontSize = 7.sp,
-                fontWeight = FontWeight.Black,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold,
                 letterSpacing = 0.5.sp,
                 maxLines = 1
             )
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.Center
@@ -246,7 +244,7 @@ private fun CareerStatBox(
                     text = value,
                     color = valueColor,
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
                     maxLines = 1
                 )
@@ -263,7 +261,7 @@ private fun CareerStatBox(
             Text(
                 text = subtext,
                 color = TextSecondary,
-                fontSize = 7.sp,
+                fontSize = 7.5.sp,
                 maxLines = 1
             )
         }

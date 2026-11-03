@@ -8,6 +8,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -63,15 +66,15 @@ fun BottomBar(
 
     NavigationBar(
         modifier = modifier
-            .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
-            .background(Brush.verticalGradient(listOf(ObsidianGlass, CarbonDark)))
+            .background(CarbonDark)
             .border(
                 width = 1.dp,
-                brush = Brush.verticalGradient(listOf(HyperCyan.copy(alpha = 0.35f), Color.Transparent)),
-                shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
-            ),
-        containerColor = Color.Transparent,
-        tonalElevation = 10.dp
+                color = CardBorder,
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            )
+            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+        containerColor = CarbonDark,
+        tonalElevation = 0.dp
     ) {
         Screen.bottomNavItems.forEach { screen ->
             val isSelected = when (screen) {
@@ -97,35 +100,20 @@ fun BottomBar(
                     }
                 },
                 icon = {
-                    Box(contentAlignment = Alignment.Center) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(
-                                    if (isSelected) Brush.linearGradient(
-                                        listOf(NeonCyan.copy(alpha = 0.18f), ElectricBlue.copy(alpha = 0.05f))
-                                    ) else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent))
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    brush = if (isSelected) Brush.linearGradient(
-                                        listOf(NeonCyan.copy(alpha = 0.5f), Color.Transparent)
-                                    ) else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent)),
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                                .padding(horizontal = 14.dp, vertical = 5.dp)
-                        ) {
-                            Icon(
-                                imageVector = screen.icon,
-                                contentDescription = screen.title,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
+                    Box(
+                        modifier = Modifier.size(28.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = screen.icon,
+                            contentDescription = screen.title,
+                            modifier = Modifier.size(21.dp)
+                        )
                         // Active recording glowing red dot badge on Trips tab
                         if ((screen == Screen.Trips || screen == Screen.LiveTrip) && isRecording) {
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(7.dp)
                                     .align(Alignment.TopEnd)
                                     .offset(x = 2.dp, y = (-2).dp)
                                     .clip(CircleShape)
@@ -135,19 +123,30 @@ fun BottomBar(
                     }
                 },
                 label = {
-                    Text(
-                        text = screen.title,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
-                        letterSpacing = 0.5.sp
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = screen.title,
+                            fontSize = 10.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            letterSpacing = 0.3.sp
+                        )
+                        if (isSelected) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 12.dp, height = 2.dp)
+                                    .clip(RoundedCornerShape(1.dp))
+                                    .background(HyperCyan)
+                            )
+                        }
+                    }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = NeonCyan,
-                    selectedTextColor = NeonCyan,
+                    selectedIconColor = HyperCyan,
+                    selectedTextColor = Color.White,
                     unselectedIconColor = TextMuted,
                     unselectedTextColor = TextMuted,
-                    indicatorColor = NeonCyan.copy(alpha = 0.14f)
+                    indicatorColor = Color.Transparent
                 )
             )
         }

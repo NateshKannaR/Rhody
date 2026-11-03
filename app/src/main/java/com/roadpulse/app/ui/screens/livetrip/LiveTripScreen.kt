@@ -70,12 +70,9 @@ import com.roadpulse.app.domain.calculator.SprintTimerCalculator
 import com.roadpulse.app.domain.calculator.TripCalculator
 import com.roadpulse.app.domain.model.TripStatus
 import com.roadpulse.app.service.TripRecordingController
-import com.roadpulse.app.ui.components.CrosswindRadarCard
 import com.roadpulse.app.ui.components.FrictionCircleCard
-import com.roadpulse.app.ui.components.GpsElevationCard
 import com.roadpulse.app.ui.components.GpsHardwareSensorsCard
 import com.roadpulse.app.ui.components.GpsStatusBadge
-import com.roadpulse.app.ui.components.MotoGpApexTelematicsCard
 import com.roadpulse.app.ui.components.RouteMapView
 import com.roadpulse.app.ui.components.SprintDynoCard
 import com.roadpulse.app.ui.screens.dashboard.DashboardCrashTestDialog
@@ -131,34 +128,6 @@ fun LiveTripScreen(
         else null
     }
 
-    // Dynamic simulation injection for friction circle dot when running dyno test
-    var dynoSimLatG by remember { mutableFloatStateOf(0f) }
-    var dynoSimLongG by remember { mutableFloatStateOf(0f) }
-
-    // MotoGP Cornering Telematics State
-    var apexScoreTier by remember { mutableStateOf("AWAITING CORNER PULL") }
-    var apexEntrySpeed by remember { mutableStateOf("-- km/h") }
-    var apexRollAngle by remember { mutableStateOf("--° Roll") }
-    var apexLateralG by remember { mutableStateOf("-- G") }
-    var apexExitSpeed by remember { mutableStateOf("-- km/h") }
-    var apexCoachTip by remember {
-        mutableStateOf("No corner telemetry recorded yet. Mount your device firmly and lean through curves during an active ride to log entry speed, apex roll angle, lateral G-load, and exit acceleration.")
-    }
-
-    // Elevation Altimeter State
-    var currentAltitudeM by remember { mutableFloatStateOf(142f) }
-    var peakAltitudeM by remember { mutableFloatStateOf(185f) }
-    var climbGainM by remember { mutableFloatStateOf(43f) }
-    var elevationGradeText by remember { mutableStateOf("LEVEL ROAD (0.0%)") }
-    var elevationGradeColor by remember { mutableStateOf(HyperCyan) }
-
-    // Crosswind Radar State
-    var crosswindSpeed by remember { mutableStateOf("18 km/h NW") }
-    var crosswindLeanComp by remember { mutableStateOf("2.4° Left Counter-Lean") }
-    var crosswindDragPenalty by remember { mutableStateOf("6.8% Resistance") }
-    var crosswindRiskText by remember { mutableStateOf("MODERATE SHEAR") }
-    var crosswindRiskColor by remember { mutableStateOf(SportAmber) }
-
     // Pulse animation for recording badge
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseAlpha by infiniteTransition.animateFloat(
@@ -207,9 +176,9 @@ fun LiveTripScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(MidnightCard)
-                .border(1.dp, HyperCyan.copy(alpha = 0.25f), RoundedCornerShape(22.dp))
+                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
                 .padding(16.dp)
         ) {
             // Header Status Row: REC LIVE + Started At + GPS
@@ -572,9 +541,9 @@ fun LiveTripScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(260.dp)
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(CarbonDark)
-                .border(1.dp, HyperCyan.copy(alpha = 0.25f), RoundedCornerShape(22.dp))
+                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
         ) {
             RouteMapView(
                 points = livePoints,
@@ -686,24 +655,14 @@ fun LiveTripScreen(
             SprintDynoCard(
                 currentGpsSpeedKmh = metrics.currentSpeedKmh,
                 best0to60Sec = sprintResults?.time0to60Seconds,
-                best0to100Sec = sprintResults?.time0to100Seconds,
-                onDynoSprintPoint = { simLat, simLong ->
-                    dynoSimLatG = simLat
-                    dynoSimLongG = simLong
-                }
+                best0to100Sec = sprintResults?.time0to100Seconds
             )
 
             // 2. Lean Angle & Friction Circle Card
-            val activeLatG = if (dynoSimLatG != 0f) dynoSimLatG else liveGForce.lateralG
-            val activeLongG = if (dynoSimLongG != 0f) dynoSimLongG else liveGForce.longitudinalG
             FrictionCircleCard(
-                lateralG = activeLatG,
-                longitudinalG = activeLongG,
-                externalLeanDegrees = animatedLean,
-                onResetMemory = {
-                    dynoSimLatG = 0f
-                    dynoSimLongG = 0f
-                }
+                lateralG = liveGForce.lateralG,
+                longitudinalG = liveGForce.longitudinalG,
+                externalLeanDegrees = animatedLean
             )
 
             // 3. GPS & Hardware Sensors Radar Card
@@ -715,77 +674,13 @@ fun LiveTripScreen(
             )
         }
 
-        // ================= 4. MOTOGP AI CORNERING, ELEVATION & CROSSWIND SUITE =================
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            // MotoGP AI Apex Cornering Telematics
-            MotoGpApexTelematicsCard(
-                scoreTier = apexScoreTier,
-                entrySpeed = apexEntrySpeed,
-                rollAngle = apexRollAngle,
-                lateralG = apexLateralG,
-                exitSpeed = apexExitSpeed,
-                coachTip = apexCoachTip,
-                isAnalyzing = false,
-                onAnalyze = {
-                    val latMag = abs(liveGForce.lateralG).coerceAtLeast(0.35f)
-                    val rollDeg = Math.toDegrees(atan(latMag.toDouble())).toFloat()
-                    val entrySpd = (metrics.currentSpeedKmh.coerceAtLeast(42f) * 1.15f).roundToInt()
-                    val exitSpd = (entrySpd * 1.12f).roundToInt()
-
-                    apexScoreTier = if (rollDeg >= 40f) "MOTO-PRO S-TIER" else "TRACK-RIDER A-TIER"
-                    apexEntrySpeed = "$entrySpd km/h"
-                    apexRollAngle = String.format(Locale.US, "%.1f° Roll", rollDeg)
-                    apexLateralG = String.format(Locale.US, "%.2f G", latMag)
-                    apexExitSpeed = "$exitSpd km/h"
-                    apexCoachTip = if (rollDeg >= 40f) {
-                        "Superb apex commitment! High lateral G (${String.format(Locale.US, "%.2f", latMag)}G) with clean line transition. Maintain smooth throttle roll-on on exit."
-                    } else {
-                        "Good steady corner entry. Increase trail-braking pressure deeper into turn-in to achieve sharper apex lean before opening the throttle."
-                    }
-                    Toast.makeText(context, "Analyzed latest corner pull", Toast.LENGTH_SHORT).show()
-                }
-            )
-
-            // GPS Elevation & Climb Profile Altimeter
-            GpsElevationCard(
-                currentAltM = currentAltitudeM,
-                peakAltM = peakAltitudeM,
-                climbGainM = climbGainM,
-                gradeText = elevationGradeText,
-                gradeColor = elevationGradeColor,
-                onSyncElevation = {
-                    currentAltitudeM += 12f
-                    if (currentAltitudeM > peakAltitudeM) peakAltitudeM = currentAltitudeM
-                    climbGainM += 12f
-                    elevationGradeText = "+3.8% CLIMB"
-                    elevationGradeColor = OptimalGreen
-                    Toast.makeText(context, "GPS Altimeter calibrated to 3D satellite altitude", Toast.LENGTH_SHORT).show()
-                }
-            )
-
-            // Aerodynamic Crosswind Vector Radar
-            CrosswindRadarCard(
-                windSpeed = crosswindSpeed,
-                leanComp = crosswindLeanComp,
-                dragPenalty = crosswindDragPenalty,
-                riskText = crosswindRiskText,
-                riskColor = crosswindRiskColor,
-                onTestCrashBox = {
-                    showCrashTestDialog = true
-                }
-            )
-        }
-
         // ================= 5. RECENT TELEMETRY RUNS LEDGER =================
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(MidnightCard)
-                .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {

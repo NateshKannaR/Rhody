@@ -161,7 +161,6 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val focusManager = LocalFocusManager.current
     val authState by AuthManager.authState.collectAsState()
     val metrics by TripRecordingController.metrics.collectAsState()
     val liveGForce by TripRecordingController.liveGForce.collectAsState()
@@ -286,6 +285,7 @@ fun DashboardScreen(
         Spacer(modifier = Modifier.height(14.dp))
 
 
+        if (hasPendingRiderConsent) {
             DashboardRiderConsentAndActionsSection(
                 hasPendingRiderConsent = hasPendingRiderConsent,
                 onAcceptConsent = {
@@ -296,79 +296,64 @@ fun DashboardScreen(
                 onDeclineConsent = {
                     hasPendingRiderConsent = false
                     Toast.makeText(context, "Guardian request declined", Toast.LENGTH_SHORT).show()
-                },
-                onOpenHud = { showHudMirrorDialog = true },
-                onOpenCrashTest = { showCrashTestDialog = true }
+                }
             )
-
-            // ================= 2. BIKE STATUS & VITALS CARD ("Tells about his bike") =================
-            DashboardBikeStatusSection(
-                isMachineConfigured = isMachineConfigured,
-                bikeModel = bikeModel,
-                bikeEngineSpec = bikeEngineSpec,
-                bikePlate = bikePlate,
-                bikeOdo = bikeOdo,
-                metrics = metrics,
-                onOpenRegisterDialog = { showBikeRegisterDialog = true }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ================= 3. HERO PILOT TELEMETRY COCKPIT LAUNCHER =================
-            DashboardCockpitLauncherHeroCard(
-                metrics = metrics,
-                isMachineConfigured = isMachineConfigured,
-                bikeModel = bikeModel,
-                onNavigateToLiveTrip = onNavigateToLiveTrip
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ================= 4. STATUTORY DOCUMENT VAULT & SERVICE INVOICES LEDGER =================
-            DocumentVaultCard(
-                rcUploaded = rcUploaded,
-                rcDocNum = rcDocNum,
-                dlUploaded = dlUploaded,
-                dlDocNum = dlDocNum,
-                insuranceUploaded = insuranceUploaded,
-                insuranceDocNum = insuranceDocNum,
-                pucUploaded = pucUploaded,
-                pucDocNum = pucDocNum,
-                helmetUploaded = helmetUploaded,
-                helmetDocNum = helmetDocNum,
-                onUploadDoc = { type -> activeUploadDocType = type }
-            )
-
             Spacer(modifier = Modifier.height(14.dp))
+        }
 
-            ServiceHistoryCard(
-                records = serviceRecords,
-                onAddRecordClick = { showAddServiceDialog = true }
-            )
+        // ================= 2. BIKE STATUS & VITALS CARD ("Tells about his bike") =================
+        DashboardBikeStatusSection(
+            isMachineConfigured = isMachineConfigured,
+            bikeModel = bikeModel,
+            bikeEngineSpec = bikeEngineSpec,
+            bikePlate = bikePlate,
+            bikeOdo = bikeOdo,
+            metrics = metrics,
+            onOpenRegisterDialog = { showBikeRegisterDialog = true }
+        )
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            // ================= 6. MOTORCYCLE WHOLE MANAGEMENT HUB =================
-            DashboardMotorcycleManagementSection(
-                isMachineConfigured = isMachineConfigured,
-                bikeModel = bikeModel,
-                bikePlate = bikePlate,
-                bikeEngineSpec = bikeEngineSpec,
-                bikeOdo = bikeOdo,
-                insuranceUploaded = insuranceUploaded,
-                insuranceDocNum = insuranceDocNum,
-                pucUploaded = pucUploaded,
-                pucDocNum = pucDocNum
-            )
+        // ================= 3. HERO PILOT TELEMETRY COCKPIT LAUNCHER =================
+        DashboardCockpitLauncherHeroCard(
+            metrics = metrics,
+            isMachineConfigured = isMachineConfigured,
+            bikeModel = bikeModel,
+            onNavigateToLiveTrip = onNavigateToLiveTrip
+        )
 
-            Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            // ================= 7. BIKE PARENTING & GUARDIAN SAFETY BEACON =================
-            DashboardGuardianSafetySection(
-                currentSpeedKmh = metrics.currentSpeedKmh
-            )
+        // ================= 4. STATUTORY DOCUMENT VAULT & SERVICE INVOICES LEDGER =================
+        DocumentVaultCard(
+            rcUploaded = rcUploaded,
+            rcDocNum = rcDocNum,
+            dlUploaded = dlUploaded,
+            dlDocNum = dlDocNum,
+            insuranceUploaded = insuranceUploaded,
+            insuranceDocNum = insuranceDocNum,
+            pucUploaded = pucUploaded,
+            pucDocNum = pucDocNum,
+            helmetUploaded = helmetUploaded,
+            helmetDocNum = helmetDocNum,
+            onUploadDoc = { type -> activeUploadDocType = type }
+        )
 
-            Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(14.dp))
+
+        ServiceHistoryCard(
+            records = serviceRecords,
+            onAddRecordClick = { showAddServiceDialog = true }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ================= 5. BIKE PARENTING & GUARDIAN SAFETY BEACON =================
+        DashboardGuardianSafetySection(
+            currentSpeedKmh = metrics.currentSpeedKmh
+        )
+
+        Spacer(modifier = Modifier.height(30.dp))
     } // closes outer Column
 
     // ================= FULLSCREEN OLED HUD MIRROR DIALOG =================
@@ -1591,12 +1576,13 @@ fun DocumentVaultCard(
     onUploadDoc: (type: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(MidnightCard)
-            .border(1.dp, HyperCyan.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
         Row(
@@ -1618,11 +1604,11 @@ fun DocumentVaultCard(
                         text = "MOTORCYCLE DOCUMENT VAULT",
                         color = Color.White,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
+                        fontWeight = FontWeight.Bold,
                         letterSpacing = 0.8.sp
                     )
                     Text(
-                        text = "Encrypted statutory compliance documents & file picker",
+                        text = "Encrypted statutory compliance documents & RSA",
                         color = TextSecondary,
                         fontSize = 9.sp
                     )
@@ -1631,15 +1617,15 @@ fun DocumentVaultCard(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .background(OptimalGreen.copy(alpha = 0.2f))
-                    .border(1.dp, OptimalGreen.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                    .background(OptimalGreen.copy(alpha = 0.15f))
+                    .border(1.dp, CardBorder, RoundedCornerShape(6.dp))
                     .padding(horizontal = 7.dp, vertical = 3.dp)
             ) {
                 Text(
                     text = "VAULT SECURED",
                     color = OptimalGreen,
                     fontSize = 9.sp,
-                    fontWeight = FontWeight.Black
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -1653,6 +1639,51 @@ fun DocumentVaultCard(
             DocVaultRow("3. MOTOR COMPREHENSIVE INSURANCE", if (insuranceUploaded) insuranceDocNum else "Not Uploaded", insuranceUploaded) { onUploadDoc("insurance") }
             DocVaultRow("4. EMISSION POLLUTION (PUC)", if (pucUploaded) pucDocNum else "Not Uploaded", pucUploaded) { onUploadDoc("puc") }
             DocVaultRow("5. HELMET ISI CERTIFICATION", if (helmetUploaded) helmetDocNum else "Not Uploaded", helmetUploaded) { onUploadDoc("helmet") }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Integrated 24x7 Roadside Assistance
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(ObsidianSurface)
+                .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                .clickable { launchEmergencyCall(context, "18004201600") }
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Phone,
+                    contentDescription = null,
+                    tint = HyperCyan,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = "24x7 ROADSIDE ASSISTANCE (RSA)",
+                        color = TextPrimary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Toll-Free: 1800-420-1600",
+                        color = HyperCyan,
+                        fontSize = 9.sp,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
+            }
+            Text(
+                text = "CALL NOW",
+                color = OptimalGreen,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -1710,9 +1741,7 @@ fun DocVaultRow(
 fun DashboardRiderConsentAndActionsSection(
     hasPendingRiderConsent: Boolean,
     onAcceptConsent: () -> Unit,
-    onDeclineConsent: () -> Unit,
-    onOpenHud: () -> Unit,
-    onOpenCrashTest: () -> Unit
+    onDeclineConsent: () -> Unit
 ) {
     val guardianPurple = Color(0xFFA855F7)
     val guardianPurpleDark = Color(0xFF1E1035)
@@ -1820,106 +1849,6 @@ fun DashboardRiderConsentAndActionsSection(
         }
         Spacer(modifier = Modifier.height(14.dp))
     }
-
-    // ================= 1.5 ADVANCED MOTORSPORT ACTIONS (HUD & CRASH BOX) =================
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 14.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // HUD Mirror Launcher Chip
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(HyperCyan.copy(alpha = 0.12f))
-                .border(1.dp, HyperCyan.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
-                .clickable { onOpenHud() }
-                .padding(horizontal = 12.dp, vertical = 10.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(HyperCyan.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Visibility,
-                        contentDescription = "HUD",
-                        tint = HyperCyan,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        text = "HUD MIRROR MODE",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        color = TextPrimary,
-                        letterSpacing = 0.5.sp
-                    )
-                    Text(
-                        text = "Windshield Reflect & LEDs",
-                        fontSize = 8.sp,
-                        color = HyperCyan,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-
-        // G-Shock Crash Box Armed Chip
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(LaserCrimson.copy(alpha = 0.12f))
-                .border(1.dp, LaserCrimson.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
-                .clickable { onOpenCrashTest() }
-                .padding(horizontal = 12.dp, vertical = 10.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(LaserCrimson.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "Crash Box",
-                        tint = LaserCrimson,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        text = "G-SHOCK CRASH BOX",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        color = TextPrimary,
-                        letterSpacing = 0.5.sp
-                    )
-                    Text(
-                        text = "Autonomous IMU Armed",
-                        fontSize = 8.sp,
-                        color = OptimalGreen,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -1937,13 +1866,9 @@ fun DashboardBikeStatusSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(MidnightCard, ObsidianGlass)
-                )
-            )
-            .border(1.dp, CardBorderGlow, RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(MidnightCard)
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
         // Bike Header Row
@@ -2166,20 +2091,12 @@ fun DashboardCockpitLauncherHeroCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = if (isRecording) {
-                        listOf(RacingRed.copy(alpha = 0.2f), MidnightCard)
-                    } else {
-                        listOf(HyperCyan.copy(alpha = 0.12f), MidnightCard)
-                    }
-                )
-            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(MidnightCard)
             .border(
                 1.dp,
                 if (isRecording) RacingRed.copy(alpha = 0.5f) else CardBorder,
-                RoundedCornerShape(22.dp)
+                RoundedCornerShape(16.dp)
             )
             .padding(18.dp)
     ) {
@@ -2194,12 +2111,12 @@ fun DashboardCockpitLauncherHeroCard(
                     modifier = Modifier
                         .background(
                             if (isRecording) RacingRed.copy(alpha = 0.15f) else HyperCyan.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(20.dp)
+                            shape = RoundedCornerShape(12.dp)
                         )
                         .border(
                             1.dp,
                             if (isRecording) RacingRed.copy(alpha = 0.4f) else HyperCyan.copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(20.dp)
+                            shape = RoundedCornerShape(12.dp)
                         )
                         .padding(horizontal = 10.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -2215,7 +2132,7 @@ fun DashboardCockpitLauncherHeroCard(
                         text = if (isRecording) "TRIP IN PROGRESS" else "STANDBY • READY TO RIDE",
                         color = if (isRecording) RacingRed else OptimalGreen,
                         fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
+                        fontWeight = FontWeight.Bold,
                         letterSpacing = 0.8.sp
                     )
                 }
@@ -2234,9 +2151,9 @@ fun DashboardCockpitLauncherHeroCard(
                 Text(
                     text = if (isRecording) "LIVE TELEMETRY ACTIVE" else "PILOT TELEMETRY COCKPIT",
                     color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = (-0.3).sp
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.2).sp
                 )
                 Text(
                     text = if (isRecording) {
@@ -2245,7 +2162,7 @@ fun DashboardCockpitLauncherHeroCard(
                         "High-frequency IMU lean angle fusion, velocity radar & live Guardian parent beacon in the dedicated Trips tab."
                     },
                     color = TextSecondary,
-                    fontSize = 12.5.sp,
+                    fontSize = 12.sp,
                     lineHeight = 17.sp
                 )
             }
@@ -2255,30 +2172,30 @@ fun DashboardCockpitLauncherHeroCard(
                 onClick = onNavigateToLiveTrip,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
+                    .height(48.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isRecording) RacingRed else HyperCyan,
                     contentColor = if (isRecording) Color.White else CarbonDark
                 ),
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(
                     imageVector = if (isRecording) Icons.Default.Visibility else Icons.Default.Explore,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = if (isRecording) "OPEN LIVE COCKPIT" else "LAUNCH TRIPS COCKPIT",
-                    fontSize = 13.5.sp,
-                    fontWeight = FontWeight.Black,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
                     letterSpacing = 0.8.sp
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
