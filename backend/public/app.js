@@ -456,6 +456,9 @@ function ensureLeaflet(callback, attempt = 0) {
 // TAB SWITCHING (EXACT 4 TABS)
 // ----------------------------------------------------
 function switchMainView(viewName) {
+  if (window.RhodyAudio) {
+    window.RhodyAudio.playTabSwitch();
+  }
   currentView = viewName;
   const views = ['dashboard', 'trips', 'parenting', 'settings', 'analysis'];
 
@@ -3219,6 +3222,15 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 }
 
 function showToast(message, type = 'info') {
+  if (window.RhodyAudio) {
+    if (type === 'error' || type === 'danger') {
+      window.RhodyAudio.playAlertSiren();
+    } else if (type === 'success') {
+      window.RhodyAudio.playLockChime();
+    } else {
+      window.RhodyAudio.playClick();
+    }
+  }
   let toastContainer = document.getElementById('rhodyToastContainer');
   if (!toastContainer) {
     toastContainer = document.createElement('div');
@@ -4660,6 +4672,9 @@ var gpsAltitudeHistory = [];
 // 1. FULLSCREEN OLED OPTICAL HUD REFLECT MODE
 // ----------------------------------------------------
 function openHudMirrorModal() {
+  if (window.RhodyAudio) {
+    window.RhodyAudio.playLockChime();
+  }
   const modal = document.getElementById('hudMirrorModal');
   if (!modal) return;
   modal.classList.remove('hidden');

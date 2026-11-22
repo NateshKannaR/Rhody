@@ -133,6 +133,11 @@ import com.roadpulse.app.ui.components.GForceMeter
 import com.roadpulse.app.ui.components.GpsStatusBadge
 import com.roadpulse.app.ui.components.SpeedometerGauge
 import com.roadpulse.app.ui.components.StatCard
+import com.roadpulse.app.ui.components.SegmentedTelemetryBar
+import com.roadpulse.app.ui.components.HoloDnaBadge
+import com.roadpulse.app.ui.components.HoloStatusPill
+import com.roadpulse.app.ui.theme.OmniGreen
+import com.roadpulse.app.ui.theme.GalvanCyan
 import com.roadpulse.app.ui.theme.CarbonDark
 import com.roadpulse.app.ui.theme.CardBorder
 import com.roadpulse.app.ui.theme.CardBorderGlow
@@ -2073,6 +2078,47 @@ fun DashboardBikeStatusSection(
                 status = "LOGGED",
                 accentColor = SportAmber,
                 modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Omnitrix / Galvan Segmented Battery & Hardware Vitals Bar
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(CarbonDark)
+                .border(1.dp, CardBorder, RoundedCornerShape(8.dp))
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "HARDWARE BATTERY & SENSOR BUS",
+                    color = TextMuted,
+                    fontSize = 7.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 0.5.sp
+                )
+                Text(
+                    text = "${phoneBatteryPct}% • ${if (isPhoneCharging) "CHARGING" else "NORMAL"}",
+                    color = if (phoneBatteryPct > 20) OmniGreen else RacingRed,
+                    fontSize = 7.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+            SegmentedTelemetryBar(
+                activeSegments = (phoneBatteryPct / 10).coerceIn(0, 10),
+                totalSegments = 10,
+                activeColor = if (phoneBatteryPct > 20) OmniGreen else RacingRed,
+                height = 5.dp
             )
         }
     }
