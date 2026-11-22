@@ -14,12 +14,6 @@ val CardBorderGlow = Color(0xFF263045) // Subtle refined highlight border
 val GlassBorderSubtle = Color(0xFF171C28)
 
 // Executive Precision Telemetry Accents
-val OmniGreen = Color(0xFF39FF14) // Galvan / Omnitrix Cyber Neon Green
-val OmniGreenGlow = Color(0x3339FF14)
-val GalvanCyan = Color(0xFF00E5FF) // Galvan High-Tech Cyan
-val CyberDark = Color(0xFF030806) // Deep Cyber Void
-val CyberSurface = Color(0xFF0A1410) // High-Tech Surface
-val CyberBorder = Color(0xFF1E382B) // High-Tech Border
 val NeonCyan = Color(0xFF00E5FF) // Precision Cyan
 val HyperCyan = Color(0xFF38BDF8) // Automotive Ice Azure
 val ElectricBlue = Color(0xFF38BDF8) // Precision Azure

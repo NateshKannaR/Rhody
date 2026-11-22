@@ -43,8 +43,6 @@ import com.roadpulse.app.ui.theme.HyperCyan
 import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
 import com.roadpulse.app.ui.theme.OptimalGreen
-import com.roadpulse.app.ui.theme.OmniGreen
-import com.roadpulse.app.ui.theme.GalvanCyan
 import com.roadpulse.app.ui.theme.RacingRed
 import com.roadpulse.app.ui.theme.TextMuted
 import com.roadpulse.app.ui.theme.TextPrimary
@@ -136,15 +134,6 @@ fun PilotTelemetryDossierCard(
                             fontFamily = FontFamily.Monospace
                         )
                     }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.padding(top = 2.dp)
-                    ) {
-                        HoloDnaBadge(code = "MOTO-DNA #8821")
-                        HoloStatusPill(text = "60Hz RTK", accentColor = GalvanCyan)
-                    }
                 }
             }
 
@@ -215,42 +204,6 @@ fun PilotTelemetryDossierCard(
                 subtext = if (careerRunsLogged > 0) "Completed" else "Ready",
                 valueColor = OptimalGreen,
                 modifier = Modifier.weight(1f)
-            )
-        }
-
-        // ================= SEGMENTED TELEMETRY HEALTH SENSOR MATRIX =================
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "TELEMETRY SENSOR MATRIX (6-AXIS IMU + GPS + ROOM DB)",
-                    color = TextMuted,
-                    fontSize = 7.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
-                    fontFamily = FontFamily.Monospace
-                )
-                Text(
-                    text = "CALIBRATED 10/10",
-                    color = OmniGreen,
-                    fontSize = 7.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                )
-            }
-            SegmentedTelemetryBar(
-                activeSegments = 10,
-                totalSegments = 10,
-                activeColor = OmniGreen,
-                height = 5.dp
             )
         }
     }

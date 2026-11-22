@@ -38,7 +38,6 @@ import com.roadpulse.app.ui.theme.CardBorder
 import com.roadpulse.app.ui.theme.CardBorderGlow
 import com.roadpulse.app.ui.theme.ElectricBlue
 import com.roadpulse.app.ui.theme.HyperCyan
-import com.roadpulse.app.ui.theme.OmniGreen
 import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
 import com.roadpulse.app.ui.theme.ObsidianGlass
@@ -135,15 +134,15 @@ fun BottomBar(
                             Spacer(modifier = Modifier.height(2.dp))
                             Box(
                                 modifier = Modifier
-                                    .size(width = 16.dp, height = 2.dp)
+                                    .size(width = 12.dp, height = 2.dp)
                                     .clip(RoundedCornerShape(1.dp))
-                                    .background(Brush.horizontalGradient(listOf(OmniGreen, HyperCyan)))
+                                    .background(HyperCyan)
                             )
                         }
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = OmniGreen,
+                    selectedIconColor = HyperCyan,
                     selectedTextColor = Color.White,
                     unselectedIconColor = TextMuted,
                     unselectedTextColor = TextMuted,
