@@ -46,7 +46,6 @@ var peakTripSpeed = 0.0;
 var peakTripLean = 0.0;
 var lastKnownGpsFix = null;
 var gpsWatchId = null;
-var parentPollInterval = null;
 var beaconPushInterval = null;
 
 // Motorcycle Garage State (Zero hardcoded fake bikes; dynamically populated from user setup)
@@ -408,6 +407,11 @@ function t(key, fallback) {
 document.addEventListener('DOMContentLoaded', function() {
   initTheme();
   initLanguage();
+  const liveTripId = new URLSearchParams(window.location.search).get('live');
+  if (liveTripId) {
+    initParentLiveTrackingMode(liveTripId);
+    return;
+  }
   // Initialize Maps with Leaflet
   ensureLeaflet(function() {
     initTripsMap();
@@ -424,13 +428,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Setup Real Device Orientation / Gyroscope Listeners for Lean Angle
   setupDeviceSensorFusion();
-
-  // Handle URL live query param (e.g. ?live=tripId) for Parent Live Tracking
-  const urlParams = new URLSearchParams(window.location.search);
-  const liveTripId = urlParams.get('live');
-  if (liveTripId) {
-    initParentLiveTrackingMode(liveTripId);
-  }
 
   // Production Authentication & Role Gateway check on application load
   checkProductionAuthOnLoad();
@@ -1680,12 +1677,12 @@ function renderParentingView() {
   if (callBtn) callBtn.onclick = function() { window.location.href = `tel:${guardianParentConfig.guardianPhone}`; };
 
   if (liveSpeed) {
-    liveSpeed.textContent = (currentTripSpeedKmh || 0).toFixed(1);
+    liveSpeed.textContent = (liveSpeedKmh || 0).toFixed(1);
   }
 
   if (motionStatus) {
-    if (isTripRecording && !isTripPaused && currentTripSpeedKmh > 2) {
-      motionStatus.textContent = `BIKE IS MOVING — ${currentTripSpeedKmh.toFixed(1)} KM/H`;
+    if (isTripRecording && !isTripPaused && liveSpeedKmh > 2) {
+      motionStatus.textContent = `BIKE IS MOVING — ${liveSpeedKmh.toFixed(1)} KM/H`;
       motionStatus.className = 'text-xs text-emerald-400 font-mono font-bold block mt-1 tracking-wider';
     } else if (isTripRecording) {
       motionStatus.textContent = 'BIKE IS STATIONARY (IDLE ENGINE)';
@@ -1699,9 +1696,9 @@ function renderParentingView() {
   // Check parent speed alert limit
   const alertBox = document.getElementById('parentSpeedAlertBox');
   if (alertBox) {
-    if (isTripRecording && currentTripSpeedKmh > guardianParentConfig.speedLimitKmh) {
+    if (isTripRecording && liveSpeedKmh > guardianParentConfig.speedLimitKmh) {
       alertBox.classList.remove('hidden');
-      alertBox.textContent = `⚠️ PARENT SPEED WARNING: Current speed (${currentTripSpeedKmh.toFixed(1)} km/h) exceeds safe threshold (${guardianParentConfig.speedLimitKmh} km/h)!`;
+      alertBox.textContent = `⚠️ PARENT SPEED WARNING: Current speed (${liveSpeedKmh.toFixed(1)} km/h) exceeds safe threshold (${guardianParentConfig.speedLimitKmh} km/h)!`;
     } else {
       alertBox.classList.add('hidden');
     }
@@ -1709,33 +1706,13 @@ function renderParentingView() {
 }
 
 function getParentLiveBeaconUrl() {
-  const baseUrl = window.location.origin;
-  const tripParam = activeTripDoc ? (activeTripDoc._id || activeTripDoc.id) : 'live-safety-beacon';
-  return `${baseUrl}/?live=${tripParam}`;
-}
-
-function copyParentTrackingLink() {
-  const url = getParentLiveBeaconUrl();
-  navigator.clipboard.writeText(url).then(() => {
-    showToast('Guardian live tracking link copied to clipboard!', 'success');
-  }).catch(() => {
-    prompt('Copy guardian tracking link:', url);
-  });
+  return isTripRecording && activeTripId ? `${window.location.origin}/?live=${activeTripId}` : '';
 }
 
 function openParentViewNewTab() {
   const url = getParentLiveBeaconUrl();
-  window.open(url, '_blank');
-}
-
-function shareTripWithParents() {
-  const url = getParentLiveBeaconUrl();
-  const text = encodeURIComponent(
-    `Rhody Live Ride Beacon:\nI am riding my bike right now!\nTrack my live speed, location, and safety status here:\n${url}`
-  );
-  const waUrl = `https://wa.me/?text=${text}`;
-  window.open(waUrl, '_blank');
-  showToast('Opening WhatsApp to share live beacon with family...', 'info');
+  if (!url) return showToast('Start recording a ride to share its live link.', 'info');
+  window.open(url, '_blank', 'noopener');
 }
 
 // ----------------------------------------------------
@@ -2464,8 +2441,8 @@ async function syncFinishedTrip() {
 }
 
 function shareTripWithParents() {
-  const tripId = activeTripId || (allTripsCache[0] && allTripsCache[0]._id) || 'live_ride';
-  const liveUrl = `${window.location.origin}/?live=${tripId}`;
+  const liveUrl = getParentLiveBeaconUrl();
+  if (!liveUrl) return showToast('Start recording a ride to share its live link.', 'info');
   const riderName = riderProfile.name || "Pilot";
   const text = encodeURIComponent(`Hi! ${riderName} has started a motorcycle ride on Rhody. Track real live speed, motion status & GPS location here: ${liveUrl}`);
   window.open(`https://wa.me/?text=${text}`, '_blank');
@@ -2473,8 +2450,8 @@ function shareTripWithParents() {
 }
 
 function copyParentTrackingLink() {
-  const tripId = activeTripId || (allTripsCache[0] && allTripsCache[0]._id) || 'live_ride';
-  const liveUrl = `${window.location.origin}/?live=${tripId}`;
+  const liveUrl = getParentLiveBeaconUrl();
+  if (!liveUrl) return showToast('Start recording a ride to share its live link.', 'info');
   navigator.clipboard.writeText(liveUrl).then(() => {
     showToast('Parent Live Safety link copied to clipboard!', 'success');
   }).catch(() => {
@@ -2486,62 +2463,35 @@ function copyParentTrackingLink() {
 // PARENT LIVE TRACKING MONITOR MODE (?live=<tripId>)
 // ----------------------------------------------------
 function initParentLiveTrackingMode(liveTripId) {
-  switchMainView('trips');
-  showToast(`Connected to Parent Live Safety Monitor for trip #${liveTripId}`, 'info');
+  setAuthGate(true);
+  document.getElementById('platformEntryModal').classList.add('hidden');
+  document.getElementById('sharedRidePage').classList.remove('hidden');
+  const status = document.getElementById('sharedRideStatus');
+  const speed = document.getElementById('sharedRideSpeed');
+  const distance = document.getElementById('sharedRideDistance');
+  const location = document.getElementById('sharedRideLocation');
 
-  const banner = document.getElementById('parentLiveAlertBanner');
-  if (banner) banner.classList.remove('hidden');
+  async function refresh() {
+    try {
+      const beacon = await apiRequest(`/api/trips/${encodeURIComponent(liveTripId)}/live`);
+      status.textContent = beacon.status === 'PAUSED' ? 'Ride paused' : 'Live ride update';
+      speed.textContent = `${beacon.currentSpeedKmh.toFixed(1)} km/h`;
+      distance.textContent = `${beacon.totalDistanceKm.toFixed(2)} km`;
+      const hasLocation = Number.isFinite(beacon.latitude) && Number.isFinite(beacon.longitude);
+      if (hasLocation) location.href = `https://www.google.com/maps?q=${beacon.latitude},${beacon.longitude}`;
+      else location.removeAttribute('href');
+      location.classList.toggle('hidden', !hasLocation);
+    } catch {
+      status.textContent = 'No current ride update. This link refreshes automatically.';
+      speed.textContent = '—';
+      distance.textContent = '—';
+      location.removeAttribute('href');
+      location.classList.add('hidden');
+    }
+    setTimeout(refresh, 4000);
+  }
 
-  // Poll real live beacon every 3 seconds
-  if (parentPollInterval) clearInterval(parentPollInterval);
-
-  parentPollInterval = setInterval(function() {
-    fetch(`/api/trips/${liveTripId}/live`)
-      .then(r => r.json())
-      .then(beacon => {
-        if (!beacon) return;
-
-        const speedEl = document.getElementById('liveCurrentSpeed');
-        const distEl = document.getElementById('liveCurrentDist');
-        const moveEl = document.getElementById('liveMovementStatus');
-        const pill = document.getElementById('tripLiveStatusPill');
-
-        if (speedEl) speedEl.textContent = (beacon.currentSpeedKmh || 0).toFixed(1);
-        if (distEl) distEl.textContent = (beacon.totalDistanceKm || 0).toFixed(2);
-
-        if (moveEl) {
-          if (beacon.isMoving) {
-            moveEl.textContent = `BIKE IS MOVING — ${(beacon.currentSpeedKmh || 0).toFixed(1)} KM/H`;
-            moveEl.className = 'text-xs text-emerald-400 font-mono font-bold block mt-1 tracking-wider';
-          } else {
-            moveEl.textContent = `BIKE IS STOPPED — 0.0 KM/H`;
-            moveEl.className = 'text-xs text-amber-400 font-mono font-bold block mt-1 tracking-wider';
-          }
-        }
-
-        if (pill) {
-          pill.textContent = beacon.status === 'RECORDING' ? 'RIDER ACTIVE ON ROAD' : 'RIDE FINISHED';
-        }
-
-        drawSpeedGauge('tripsSpeedCanvas', beacon.currentSpeedKmh || 0);
-
-        if (beacon.latitude && beacon.longitude && tripsMapInstance) {
-          if (!activeTripMarker) {
-            const beaconIcon = L.divIcon({
-              className: 'parent-live-beacon',
-              html: `<div style="width: 20px; height: 20px; border-radius: 9999px; background: #00F0FF; border: 3px solid #FFFFFF; box-shadow: 0 0 15px #00F0FF;"></div>`,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10]
-            });
-            activeTripMarker = L.marker([beacon.latitude, beacon.longitude], { icon: beaconIcon }).addTo(tripsMapInstance);
-          } else {
-            activeTripMarker.setLatLng([beacon.latitude, beacon.longitude]);
-          }
-          tripsMapInstance.panTo([beacon.latitude, beacon.longitude]);
-        }
-      })
-      .catch(() => {});
-  }, 3000);
+  refresh();
 }
 
 // ----------------------------------------------------
@@ -3464,7 +3414,6 @@ function handlePlatformLogout() {
   isTripPaused = false;
   clearInterval(tripTimerInterval);
   clearInterval(beaconPushInterval);
-  clearInterval(parentPollInterval);
   clearInterval(parentTelemetryPollTimer);
   clearInterval(riderGuardianPollTimer);
   riderGuardianPollTimer = null;

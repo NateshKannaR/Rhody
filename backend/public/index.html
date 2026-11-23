@@ -309,6 +309,7 @@
       background: var(--bg-card);
       box-shadow: 0 24px 64px rgb(0 0 0 / 16%);
     }
+    .share-shell { max-width: 480px; grid-template-columns: minmax(0, 1fr); }
     .auth-brand {
       min-width: 0;
       padding: clamp(1.75rem, 5vw, 3.25rem);
@@ -2913,6 +2914,22 @@
     </div>
   </div>
 
+  <section id="sharedRidePage" class="auth-page hidden" aria-labelledby="sharedRideTitle">
+    <div class="auth-shell share-shell">
+      <div class="auth-panel">
+        <div class="auth-wordmark mb-5"><img src="/rhody_app_icon.png" alt="" width="40" height="40"> Rhody</div>
+        <h1 id="sharedRideTitle">Shared live ride</h1>
+        <p id="sharedRideStatus" class="auth-description" role="status">Checking for a ride update…</p>
+        <dl class="grid grid-cols-2 gap-4 mb-5">
+          <div><dt class="text-sm">Speed</dt><dd id="sharedRideSpeed" class="text-2xl font-bold">—</dd></div>
+          <div><dt class="text-sm">Distance</dt><dd id="sharedRideDistance" class="text-2xl font-bold">—</dd></div>
+        </dl>
+        <a id="sharedRideLocation" class="hidden underline" target="_blank" rel="noopener noreferrer">Open location</a>
+        <a class="block underline mt-5" href="/">Open Rhody</a>
+      </div>
+    </div>
+  </section>
+
   <section id="platformEntryModal" class="auth-page" role="dialog" aria-modal="true" aria-labelledby="authTitle">
     <div class="auth-shell">
       <aside class="auth-brand">
@@ -3302,6 +3319,6 @@
   </div>
 
   <!-- Application Logic -->
-  <script src="/app.js?v=2.5"></script>
+  <script src="/app.js?v=2.5.1"></script>
 </body>
 </html>

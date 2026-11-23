@@ -64,6 +64,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.roadpulse.app.data.sync.CloudSyncManager
 import com.roadpulse.app.RoadPulseApp
 import com.roadpulse.app.data.database.TripEntity
 import com.roadpulse.app.domain.calculator.SprintTimerCalculator
@@ -349,9 +350,9 @@ fun LiveTripScreen(
                     .clip(RoundedCornerShape(12.dp))
                     .background(CarbonDark.copy(alpha = 0.92f))
                     .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-                    .clickable {
-                        val activeId = metrics.activeTripId ?: System.currentTimeMillis()
-                        val shareUrl = "https://rhodyy.vercel.app/?live=$activeId"
+                    .clickable(enabled = metrics.activeTripId != null) {
+                        val shareUrl = CloudSyncManager.liveShareUrl(metrics.activeTripId)
+                            ?: return@clickable
                         val sendIntent = Intent().apply {
                             action = Intent.ACTION_SEND
                             putExtra(Intent.EXTRA_TEXT, "Track my live motorcycle ride on Rhody: $shareUrl")

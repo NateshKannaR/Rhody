@@ -371,7 +371,8 @@ fun DashboardScreen(
 
         // ================= 5. BIKE PARENTING & GUARDIAN SAFETY BEACON =================
         DashboardGuardianSafetySection(
-            currentSpeedKmh = metrics.currentSpeedKmh
+            currentSpeedKmh = metrics.currentSpeedKmh,
+            activeTripId = metrics.activeTripId
         )
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -1508,9 +1509,9 @@ fun LegalDocCard(
     }
 }
 
-fun shareLiveRideViaWhatsApp(context: Context, speedKmh: Float) {
+private fun shareLiveRideViaWhatsApp(context: Context, speedKmh: Float, activeTripId: Long?) {
+    val shareUrl = CloudSyncManager.liveShareUrl(activeTripId) ?: return
     try {
-        val shareUrl = "https://rhodyy.vercel.app/?live=pilot-active"
         val message = "RHODY LIVE RIDE BEACON:\nI am riding my bike right now!\nCurrent Speed: ${"%.1f".format(speedKmh)} km/h\nTrack my live location & safety status here:\n$shareUrl"
         val intent = Intent(Intent.ACTION_VIEW).apply {
             data = Uri.parse("https://wa.me/?text=${Uri.encode(message)}")
@@ -2465,7 +2466,8 @@ fun DashboardMotorcycleManagementSection(
 
 @Composable
 fun DashboardGuardianSafetySection(
-    currentSpeedKmh: Float
+    currentSpeedKmh: Float,
+    activeTripId: Long?
 ) {
     val context = LocalContext.current
 
@@ -2610,7 +2612,8 @@ fun DashboardGuardianSafetySection(
 
                 // 1-Tap WhatsApp Share Ride Button
                 Button(
-                    onClick = { shareLiveRideViaWhatsApp(context, currentSpeedKmh) },
+                    onClick = { shareLiveRideViaWhatsApp(context, currentSpeedKmh, activeTripId) },
+                    enabled = activeTripId != null,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = OptimalGreen,

@@ -16,6 +16,7 @@ import java.net.URL
 object CloudSyncManager {
     private const val PREFS_NAME = "roadpulse_sync_prefs"
     private const val KEY_SERVER_URL = "server_base_url"
+    private lateinit var syncPrefs: android.content.SharedPreferences
 
     const val DEFAULT_SERVER_URL = "https://rhodyy.vercel.app"
 
@@ -23,8 +24,8 @@ object CloudSyncManager {
         private set
 
     fun init(context: Context) {
-        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val saved = prefs.getString(KEY_SERVER_URL, null)
+        syncPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val saved = syncPrefs.getString(KEY_SERVER_URL, null)
         serverBaseUrl = if (saved.isNullOrEmpty() || saved.contains("10.0.2.2")) {
             DEFAULT_SERVER_URL
         } else {
@@ -156,6 +157,22 @@ object CloudSyncManager {
         }
     }
 
+    @Synchronized
+    private fun liveShareId(tripId: Long, userId: String): String {
+        val rideKey = "$userId:$tripId"
+        if (syncPrefs.getString("live_share_ride", null) == rideKey) {
+            syncPrefs.getString("live_share_id", null)?.let { return it }
+        }
+        val id = "trip_${java.util.UUID.randomUUID()}"
+        syncPrefs.edit().putString("live_share_ride", rideKey).putString("live_share_id", id).apply()
+        return id
+    }
+
+    fun liveShareUrl(tripId: Long?): String? {
+        val userId = com.roadpulse.app.data.auth.AuthManager.authState.value.user?.id ?: return null
+        return tripId?.let { "$serverBaseUrl/?live=${liveShareId(it, userId)}" }
+    }
+
     suspend fun broadcastLiveBeacon(
         tripId: Long,
         metrics: com.roadpulse.app.domain.model.TripMetrics,
@@ -164,8 +181,10 @@ object CloudSyncManager {
     ): Result<Boolean> = withContext(Dispatchers.IO) {
         var connection: HttpURLConnection? = null
         try {
-            val url = URL("$serverBaseUrl/api/trips/$tripId/live")
             val authState = com.roadpulse.app.data.auth.AuthManager.authState.value
+            val userId = authState.user?.id
+                ?: return@withContext Result.failure(IllegalStateException("Sign in to share a ride."))
+            val url = URL("$serverBaseUrl/api/trips/${liveShareId(tripId, userId)}/live")
             connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 setRequestProperty("Content-Type", "application/json; charset=UTF-8")
