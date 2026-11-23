@@ -8,16 +8,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -35,14 +29,12 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.roadpulse.app.ui.theme.CarbonDark
 import com.roadpulse.app.ui.theme.CardBorder
-import com.roadpulse.app.ui.theme.CardBorderGlow
-import com.roadpulse.app.ui.theme.ElectricBlue
 import com.roadpulse.app.ui.theme.HyperCyan
-import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
 import com.roadpulse.app.ui.theme.ObsidianGlass
+import com.roadpulse.app.ui.theme.TextPrimary
+import com.roadpulse.app.ui.theme.TextSecondary
 import com.roadpulse.app.ui.theme.RacingRed
-import com.roadpulse.app.ui.theme.TextMuted
 
 @Composable
 fun BottomBar(
@@ -106,7 +98,7 @@ fun BottomBar(
                     ) {
                         Icon(
                             imageVector = screen.icon,
-                            contentDescription = screen.title,
+                            contentDescription = if (screen == Screen.Trips && isRecording) "Recording active" else null,
                             modifier = Modifier.size(21.dp)
                         )
                         // Active recording glowing red dot badge on Trips tab
@@ -123,30 +115,18 @@ fun BottomBar(
                     }
                 },
                 label = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = screen.title,
-                            fontSize = 10.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            letterSpacing = 0.3.sp
-                        )
-                        if (isSelected) {
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Box(
-                                modifier = Modifier
-                                    .size(width = 12.dp, height = 2.dp)
-                                    .clip(RoundedCornerShape(1.dp))
-                                    .background(HyperCyan)
-                            )
-                        }
-                    }
+                    Text(
+                        text = screen.title,
+                        fontSize = 12.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    )
                 },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = HyperCyan,
-                    selectedTextColor = Color.White,
-                    unselectedIconColor = TextMuted,
-                    unselectedTextColor = TextMuted,
-                    indicatorColor = Color.Transparent
+                    selectedTextColor = TextPrimary,
+                    unselectedIconColor = TextSecondary,
+                    unselectedTextColor = TextSecondary,
+                    indicatorColor = ObsidianGlass
                 )
             )
         }
