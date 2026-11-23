@@ -185,8 +185,8 @@ object CloudSyncManager {
                 put("isMoving", isMoving)
                 put("currentSpeedKmh", metrics.currentSpeedKmh.toDouble())
                 put("maxSpeedKmh", metrics.maxSpeedKmh.toDouble())
-                put("latitude", metrics.currentLatitude ?: 0.0)
-                put("longitude", metrics.currentLongitude ?: 0.0)
+                put("latitude", metrics.currentLatitude ?: JSONObject.NULL)
+                put("longitude", metrics.currentLongitude ?: JSONObject.NULL)
                 if (batteryPercent != null) put("batteryPercent", batteryPercent)
                 put("totalDistanceKm", metrics.totalDistanceMeters / 1000.0)
                 put("elapsedTimeMs", metrics.elapsedTimeMs)
@@ -211,50 +211,33 @@ object CloudSyncManager {
         }
     }
 
-    suspend fun fetchUserProfileAndBike(context: Context): Result<JSONObject> = withContext(Dispatchers.IO) {
-        var connection: HttpURLConnection? = null
-        try {
-            val authState = com.roadpulse.app.data.auth.AuthManager.authState.value
-            val url = URL("$serverBaseUrl/api/user/profile")
-            connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                setRequestProperty("Accept", "application/json")
-                if (!authState.token.isNullOrEmpty()) {
-                    setRequestProperty("Authorization", "Bearer ${authState.token}")
-                }
-                connectTimeout = 6000
-                readTimeout = 8000
-            }
-
-            val responseCode = connection.responseCode
-            if (responseCode in 200..299) {
-                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
-                val root = JSONObject(responseText)
-                val profile = root.optJSONObject("profile")
-                if (profile != null) {
-                    val bikeModel = profile.optString("bikeModel", "")
-                    val bikeSpecs = profile.optString("bikeSpecs", "")
-                    val bikePlate = profile.optString("bikePlate", "")
-
-                    val bikePrefs = context.applicationContext.getSharedPreferences("rhody_bike_prefs", Context.MODE_PRIVATE)
-                    val editor = bikePrefs.edit()
-                    if (bikeModel.isNotBlank()) {
-                        editor.putString("bike_model", bikeModel)
-                        editor.putBoolean("is_configured", true)
-                    }
-                    if (bikeSpecs.isNotBlank()) editor.putString("bike_specs", bikeSpecs)
-                    if (bikePlate.isNotBlank()) editor.putString("bike_plate", bikePlate)
-                    editor.apply()
-                }
-                Result.success(root)
-            } else {
-                Result.failure(Exception("HTTP $responseCode"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        } finally {
-            connection?.disconnect()
+    suspend fun fetchUserProfileAndBike(context: Context): Result<JSONObject> {
+        val auth = com.roadpulse.app.data.auth.AuthManager
+        val token = auth.authState.value.token
+            ?: return Result.failure(IllegalStateException("Sign in to sync your profile."))
+        val profileResult = auth.cloudRequest("/api/user/profile", token = token)
+        val profile = profileResult.getOrNull()?.optJSONObject("profile") ?: return profileResult
+        val bikeResult = auth.cloudRequest("/api/user/bike-management", token = token)
+        val bike = bikeResult.getOrNull()?.optJSONObject("data")
+            ?: return Result.failure(bikeResult.exceptionOrNull() ?: IllegalStateException("Could not load bike details."))
+        if (auth.authState.value.token != token) {
+            return Result.failure(IllegalStateException("Your session changed while syncing."))
         }
+        val specs = bike.optJSONObject("specs")
+        val documents = bike.optJSONObject("documents")
+        val model = specs?.optString("makeModel").orEmpty().ifBlank { profile.optString("bikeModel") }
+        val engine = specs?.optString("engine").orEmpty().ifBlank { profile.optString("bikeSpecs") }
+        val plate = documents?.optString("rcNumber").orEmpty()
+            .ifBlank { documents?.optJSONObject("rc")?.optString("number").orEmpty() }
+            .ifBlank { profile.optString("bikePlate") }
+        context.applicationContext.getSharedPreferences("rhody_bike_prefs", Context.MODE_PRIVATE).edit()
+            .putString("bike_model", model)
+            .putString("bike_specs", engine)
+            .putString("bike_plate", plate)
+            .putString("bike_odo", specs?.optString("currentOdometer", "0") ?: "0")
+            .putBoolean("is_configured", bike.optBoolean("isConfigured") || model.isNotBlank())
+            .apply()
+        return profileResult
     }
 
     suspend fun saveUserProfileAndBike(
@@ -345,7 +328,7 @@ object CloudSyncManager {
                 .putBoolean("is_configured", true)
                 .apply()
 
-            if (profileCode in 200..299 || bikeCode in 200..299) {
+            if (profileCode in 200..299 && bikeCode in 200..299) {
                 Result.success(true)
             } else {
                 Result.failure(Exception("HTTP Profile: $profileCode, Bike: $bikeCode"))

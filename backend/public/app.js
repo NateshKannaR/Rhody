@@ -35,6 +35,7 @@ var tripStartTime = null;
 var tripElapsedSeconds = 0;
 var tripTimerInterval = null;
 var activeTripId = null;
+var pendingTripSync = null;
 var activeTripPoints = [];
 var activeTripPolyline = null;
 var activeTripMarker = null;
@@ -113,6 +114,9 @@ var bikeManagementData = {
   serviceHistory: [],
   fuelLogs: []
 };
+
+const initialRiderProfile = structuredClone(riderProfile);
+const initialBikeManagement = structuredClone(bikeManagementData);
 
 // Guardian Parent Alert Configuration & Portal State
 var guardianParentConfig = {
@@ -404,22 +408,11 @@ function t(key, fallback) {
 document.addEventListener('DOMContentLoaded', function() {
   initTheme();
   initLanguage();
-  loadProfileFromStorage();
-  loadBikeManagementFromStorage();
-  renderDashboardProfile();
-  renderDashboardBike();
-  renderBikeManagement();
-  renderYoutubeDynamicHub();
-  populateSettingsForm();
-
   // Initialize Maps with Leaflet
   ensureLeaflet(function() {
     initTripsMap();
     initAnalysisMap();
   });
-
-  // Fetch real user trips from MongoDB Atlas
-  refreshRealTrips();
 
   // Draw initial high-precision gauges
   try {
@@ -541,58 +534,20 @@ function capitalizeFirst(s) {
 // ----------------------------------------------------
 // PROFILE & BIKE LOGIC
 // ----------------------------------------------------
-function loadProfileFromStorage() {
-  const cached = localStorage.getItem('rhody_rider_profile');
-  const cachedAvatar = localStorage.getItem('rhody_user_avatar');
-
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached);
-      riderProfile = Object.assign({}, riderProfile, parsed);
-      if (riderProfile.bikeModel === "Yamaha MT-15 V2" || riderProfile.bikeModel === "Yamaha MT-09 SP") {
-        riderProfile.bikeModel = "";
-      }
-      if (riderProfile.bikePlate === "KA-01-EQ-1550") {
-        riderProfile.bikePlate = "";
-      }
-      if (riderProfile.tireSetup && riderProfile.tireSetup.includes("MRF Nylogrip")) {
-        riderProfile.tireSetup = "";
-      }
-    } catch (e) {}
+async function loadProfileFromStorage() {
+  if (!currentAuthUser || currentAuthUser.role === 'parent') return;
+  const email = currentAuthUser.email;
+  try {
+    const { profile } = await apiRequest('/api/user/profile');
+    if (currentAuthUser?.email !== email) return;
+    riderProfile = { ...initialRiderProfile, ...riderProfile, ...profile };
+    renderDashboardProfile();
+    renderDashboardBike();
+    renderYoutubeDynamicHub();
+    populateSettingsForm();
+  } catch (error) {
+    if (currentAuthUser?.email === email) showToast(error.message, 'error');
   }
-
-  // Backup avatar persistence
-  if (cachedAvatar && !riderProfile.avatar) {
-    riderProfile.avatar = cachedAvatar;
-  }
-
-  fetch('/api/user/profile')
-    .then(r => r.json())
-    .then(data => {
-      if (data && data.profile) {
-        // PERMANENT FIX: Never overwrite an existing user avatar with empty string or null!
-        const currentAvatar = riderProfile.avatar || localStorage.getItem('rhody_user_avatar') || '';
-        
-        riderProfile = Object.assign({}, riderProfile, data.profile);
-
-        if (!data.profile.avatar && currentAvatar) {
-          riderProfile.avatar = currentAvatar;
-        } else if (data.profile.avatar) {
-          try {
-            localStorage.setItem('rhody_user_avatar', data.profile.avatar);
-          } catch (e) {}
-        }
-
-        try {
-          localStorage.setItem('rhody_rider_profile', JSON.stringify(riderProfile));
-        } catch (e) {}
-
-        renderDashboardProfile();
-        renderDashboardBike();
-        renderYoutubeDynamicHub();
-      }
-    })
-    .catch(() => {});
 }
 
 function renderDashboardProfile() {
@@ -614,7 +569,7 @@ function renderDashboardProfile() {
   const initial = (riderProfile.name || "P").charAt(0).toUpperCase();
 
   // Check backup avatar if state is missing it
-  const activeAvatar = riderProfile.avatar || localStorage.getItem('rhody_user_avatar') || '';
+  const activeAvatar = riderProfile.avatar || localStorage.getItem(accountStorageKey('rhody_user_avatar')) || '';
   if (activeAvatar && !riderProfile.avatar) {
     riderProfile.avatar = activeAvatar;
   }
@@ -672,11 +627,11 @@ function renderCareerStatsFromTrips() {
 
   if (runsCount > 0) {
     allTripsCache.forEach(t => {
-      const d = parseFloat(t.distanceKm) || 0;
+      const d = t.distance || 0;
       totalTripDistance += d;
-      const s = parseFloat(t.maxSpeedKmh) || 0;
+      const s = t.maxSpeed || 0;
       if (s > maxSpeed) maxSpeed = s;
-      const l = parseFloat(t.maxLeanAngleDeg) || 0;
+      const l = t.maxLeanAngle || 0;
       if (l > maxLean) maxLean = l;
     });
   }
@@ -1004,7 +959,7 @@ async function handleCockpitBikeSubmit(event) {
 
   // Persist locally
   try {
-    localStorage.setItem('rhody_rider_profile', JSON.stringify(riderProfile));
+    localStorage.setItem(accountStorageKey('rhody_rider_profile'), JSON.stringify(riderProfile));
     localStorage.setItem('rhody_bike_specs', JSON.stringify(bikeManagementData.specs));
   } catch (e) {}
 
@@ -1290,7 +1245,7 @@ function handleProfilePhotoUpload(event) {
       const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.82);
       riderProfile.avatar = optimizedBase64;
       try {
-        localStorage.setItem('rhody_user_avatar', optimizedBase64);
+        localStorage.setItem(accountStorageKey('rhody_user_avatar'), optimizedBase64);
       } catch (err) {
         console.warn('Avatar backup storage warning:', err);
       }
@@ -1306,7 +1261,7 @@ function handleProfilePhotoUpload(event) {
 function removeRiderAvatar() {
   riderProfile.avatar = '';
   try {
-    localStorage.removeItem('rhody_user_avatar');
+    localStorage.removeItem(accountStorageKey('rhody_user_avatar'));
   } catch (err) {}
   saveProfile();
   renderDashboardProfile();
@@ -1315,11 +1270,11 @@ function removeRiderAvatar() {
 
 function saveProfile() {
   try {
-    localStorage.setItem('rhody_rider_profile', JSON.stringify(riderProfile));
+    localStorage.setItem(accountStorageKey('rhody_rider_profile'), JSON.stringify(riderProfile));
     if (riderProfile.avatar) {
-      localStorage.setItem('rhody_user_avatar', riderProfile.avatar);
+      localStorage.setItem(accountStorageKey('rhody_user_avatar'), riderProfile.avatar);
     } else {
-      localStorage.removeItem('rhody_user_avatar');
+      localStorage.removeItem(accountStorageKey('rhody_user_avatar'));
     }
   } catch (e) {
     console.warn('LocalStorage save warning:', e);
@@ -1329,18 +1284,18 @@ function saveProfile() {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  fetch('/api/user/profile', {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify(riderProfile)
-  }).catch(function() {});
+  if (token) {
+    apiRequest('/api/user/profile', {
+      method: 'POST', headers, body: JSON.stringify(riderProfile)
+    }).catch(error => showToast(error.message, 'error'));
+  }
 }
 
 // ----------------------------------------------------
 // DASHBOARD: MOTORCYCLE WHOLE MANAGEMENT ENGINE (PILLAR 1 & 4)
 // ----------------------------------------------------
 function loadBikeManagementFromStorage() {
-  const cached = localStorage.getItem('rhody_bike_management');
+  const cached = localStorage.getItem(accountStorageKey('rhody_bike_management'));
   if (cached) {
     try {
       const parsed = JSON.parse(cached);
@@ -1350,33 +1305,29 @@ function loadBikeManagementFromStorage() {
     } catch (e) {}
   }
 
-  fetch('/api/user/bike-management')
-    .then(r => r.json())
-    .then(res => {
-      if (res && res.data && res.data.specs) {
-        bikeManagementData = Object.assign({}, bikeManagementData, res.data);
-        saveBikeManagementToStorage(false);
-      }
+  const email = currentAuthUser?.email;
+  if (!email || currentAuthUser.role === 'parent') return;
+  apiRequest('/api/user/bike-management')
+    .then(({ data }) => {
+      if (currentAuthUser?.email !== email) return;
+      bikeManagementData = data;
+      saveBikeManagementToStorage(false);
       renderBikeManagement();
       renderParentingView();
     })
-    .catch(() => {
-      renderBikeManagement();
-      renderParentingView();
-    });
+    .catch(error => showToast(error.message, 'error'));
 }
 
 function saveBikeManagementToStorage(syncBackend = true) {
   try {
-    localStorage.setItem('rhody_bike_management', JSON.stringify(bikeManagementData));
+    localStorage.setItem(accountStorageKey('rhody_bike_management'), JSON.stringify(bikeManagementData));
   } catch (e) {}
 
-  if (syncBackend) {
-    fetch('/api/user/bike-management', {
+  if (syncBackend && authToken) {
+    apiRequest('/api/user/bike-management', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(bikeManagementData)
-    }).catch(() => {});
+    }).catch(error => showToast(error.message, 'error'));
   }
 }
 
@@ -2126,7 +2077,7 @@ function startNewTripSession() {
   activeTripDistanceKm = 0.0;
   peakTripSpeed = 0.0;
   peakTripLean = 0.0;
-  activeTripId = 'trip_' + Date.now();
+  activeTripId = 'trip_' + crypto.randomUUID();
 
   // Reset live polyline on map
   if (tripsMapInstance && activeTripPolyline) {
@@ -2364,17 +2315,16 @@ function startRealLiveBeaconBroadcast() {
       isMoving: liveSpeedKmh >= 2.0,
       currentSpeedKmh: liveSpeedKmh,
       maxSpeedKmh: peakTripSpeed,
-      latitude: lastKnownGpsFix ? lastKnownGpsFix.lat : 0,
-      longitude: lastKnownGpsFix ? lastKnownGpsFix.lng : 0,
+      latitude: lastKnownGpsFix?.lat ?? null,
+      longitude: lastKnownGpsFix?.lng ?? null,
       altitudeMeters: lastKnownGpsFix ? lastKnownGpsFix.altitude : null,
       totalDistanceKm: activeTripDistanceKm,
       elapsedTimeMs: tripElapsedSeconds * 1000,
       timestamp: Date.now()
     };
 
-    fetch(`/api/trips/${activeTripId}/live`, {
+    apiRequest(`/api/trips/${activeTripId}/live`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     }).catch(() => {});
   }, 3000);
@@ -2434,6 +2384,7 @@ function finishTripSession() {
 
   // Reset controls
   document.getElementById('btnStartTrip').classList.remove('hidden');
+  document.getElementById('btnStartTrip').disabled = false;
   document.getElementById('btnPauseTrip').classList.add('hidden');
   document.getElementById('btnFinishTrip').classList.add('hidden');
 
@@ -2443,7 +2394,7 @@ function finishTripSession() {
 
   if (title) title.textContent = 'Trip Completed Safely';
   if (pill) {
-    pill.textContent = 'SAVED TO CLOUD';
+    pill.textContent = 'SAVING RIDE…';
     pill.className = 'px-3 py-1 text-xs font-bold rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40';
   }
   if (navPulse) navPulse.classList.add('hidden');
@@ -2465,9 +2416,9 @@ function finishTripSession() {
 
   const tripRecord = {
     _id: activeTripId,
-    title: 'Motorcycle Ride &mdash; ' + finishTime.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-    startTime: tripStartTime ? tripStartTime.toISOString() : new Date().toISOString(),
-    endTime: finishTime.toISOString(),
+    title: 'Motorcycle ride — ' + finishTime.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+    startTime: tripStartTime?.getTime() || Date.now(),
+    endTime: finishTime.getTime(),
     duration: tripElapsedSeconds,
     distance: activeTripDistanceKm,
     maxSpeed: peakTripSpeed,
@@ -2478,29 +2429,38 @@ function finishTripSession() {
     points: activeTripPoints
   };
 
-  allTripsCache.unshift(tripRecord);
-  renderRecentTripsTable();
-  renderCareerStatsFromTrips();
+  pendingTripSync = { trip: tripRecord, points: tripRecord.points };
+  syncFinishedTrip();
+}
 
-  // Save Real Trip and Track Points to MongoDB Atlas Backend
-  fetch('/api/trips', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(tripRecord)
-  })
-    .then(r => r.json())
-    .then(() => {
-      showToast('Trip successfully persisted to MongoDB Atlas!', 'success');
-    })
-    .catch(() => {
-      showToast('Trip saved locally in browser memory', 'info');
-    });
-
-  // Automatically switch to Analysis view and load this real run
-  setTimeout(function() {
+async function syncFinishedTrip() {
+  const pending = pendingTripSync;
+  if (!pending) return;
+  const account = currentAuthUser?.email;
+  const retry = document.getElementById('btnRetryTripSync');
+  const start = document.getElementById('btnStartTrip');
+  const pill = document.getElementById('tripLiveStatusPill');
+  retry.disabled = true;
+  start.disabled = true;
+  try {
+    const data = await apiRequest('/api/trips/sync', { method: 'POST', body: JSON.stringify(pending) });
+    if (currentAuthUser?.email !== account || pendingTripSync !== pending) return;
+    pendingTripSync = null;
+    pill.textContent = 'SAVED TO CLOUD';
+    retry.classList.add('hidden');
+    await refreshRealTrips();
+    if (currentAuthUser?.email !== account) return;
     switchMainView('analysis');
-    loadTripForAnalysis(tripRecord._id);
-  }, 1000);
+    loadTripForAnalysis(data.tripId);
+  } catch (error) {
+    if (currentAuthUser?.email !== account || pendingTripSync !== pending) return;
+    pill.textContent = 'RIDE NOT SYNCED';
+    retry.classList.remove('hidden');
+    showToast('This ride is still in this tab. Retry before closing it.', 'error');
+  } finally {
+    retry.disabled = false;
+    start.disabled = Boolean(pendingTripSync);
+  }
 }
 
 function shareTripWithParents() {
@@ -2587,12 +2547,30 @@ function initParentLiveTrackingMode(liveTripId) {
 // ----------------------------------------------------
 // ANALYSIS LOGIC: 100% REAL RECORDED TRIPS & HEATMAP
 // ----------------------------------------------------
+function escapeHtml(value) {
+  const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  return String(value).replace(/[&<>"']/g, character => entities[character]);
+}
+
+function normalizeRide(trip) {
+  return {
+    ...trip,
+    distance: Number(trip.distance ?? trip.distanceKm ?? (trip.totalDistanceMeters || 0) / 1000),
+    duration: Number(trip.duration ?? (trip.totalDurationMs || 0) / 1000),
+    maxSpeed: Number(trip.maxSpeed ?? trip.maxSpeedKmh ?? (trip.maxSpeedMps || 0) * 3.6),
+    avgSpeed: Number(trip.avgSpeed ?? (trip.avgOverallSpeedMps || 0) * 3.6),
+    maxLeanAngle: Number(trip.maxLeanAngle ?? trip.maxLeanAngleDeg ?? 0)
+  };
+}
+
 function refreshRealTrips() {
-  fetch('/api/trips')
-    .then(r => r.json())
+  const email = currentAuthUser?.email;
+  if (!email || currentAuthUser.role === 'parent') return Promise.resolve();
+  return apiRequest('/api/trips')
     .then(trips => {
+      if (currentAuthUser?.email !== email) return;
       if (Array.isArray(trips)) {
-        allTripsCache = trips;
+        allTripsCache = trips.map(normalizeRide);
       }
       renderRecentTripsTable();
       populateAnalysisDropdown();
@@ -2634,7 +2612,7 @@ function renderRecentTripsTable() {
 
     return `
       <tr class="hover:bg-white/[0.04] transition border-b border-white/[0.04]">
-        <td class="py-3 px-3 font-semibold text-white text-xs">${t.title || 'Motorcycle Ride'}</td>
+        <td class="py-3 px-3 font-semibold text-white text-xs">${escapeHtml(t.title || 'Motorcycle Ride')}</td>
         <td class="py-3 px-3 text-slate-400 text-[11px] font-mono">${dStr}</td>
         <td class="py-3 px-3 font-bold text-cyan-300 font-mono">${(t.distance || 0).toFixed(1)} KM</td>
         <td class="py-3 px-3 text-slate-300 text-xs font-mono">${durMins} min</td>
@@ -2661,7 +2639,7 @@ function populateAnalysisDropdown() {
   select.innerHTML = allTripsCache.map(t => {
     const dStr = new Date(t.startTime).toLocaleDateString([], { month: 'short', day: 'numeric' });
     const dist = (t.distance || 0).toFixed(1);
-    return `<option value="${t._id || t.id}">${t.title || 'Ride'} (${dStr} &bull; ${dist} km)</option>`;
+    return `<option value="${t._id || t.id}">${escapeHtml(t.title || 'Ride')} (${dStr} &bull; ${dist} km)</option>`;
   }).join('');
 }
 
@@ -2710,12 +2688,12 @@ function loadTripForAnalysis(tripId) {
 
   const trip = allTripsCache.find(t => (t._id || t.id) === tripId);
   if (!trip) {
-    fetch(`/api/trips/${tripId}`)
-      .then(r => r.json())
+    apiRequest(`/api/trips/${encodeURIComponent(tripId)}`)
       .then(fetchedTrip => {
         if (fetchedTrip && !fetchedTrip.error) {
-          allTripsCache.push(fetchedTrip);
-          applyTripToAnalysis(fetchedTrip);
+          const normalized = normalizeRide(fetchedTrip);
+          allTripsCache.push(normalized);
+          applyTripToAnalysis(normalized);
         }
       })
       .catch(() => {});
@@ -2727,6 +2705,7 @@ function loadTripForAnalysis(tripId) {
 
 function applyTripToAnalysis(trip) {
   activeAnalysisTrip = trip;
+  activeAnalysisPoints = [];
 
   const titleEl = document.getElementById('analysisTripTitle');
   const selectEl = document.getElementById('analysisTripSelect');
@@ -2758,10 +2737,9 @@ function applyTripToAnalysis(trip) {
   if (trip.points && Array.isArray(trip.points) && trip.points.length > 0) {
     processRealAnalysisPoints(trip.points);
   } else {
-    fetch(`/api/trips/${trip._id || trip.id}`)
-      .then(r => r.json())
+    apiRequest(`/api/trips/${encodeURIComponent(trip._id || trip.id)}`)
       .then(fullTrip => {
-        if (fullTrip && fullTrip.points && fullTrip.points.length > 0) {
+        if (activeAnalysisTrip === trip && fullTrip.points?.length > 0) {
           processRealAnalysisPoints(fullTrip.points);
         } else {
           showToast('No detailed GPS fixes recorded for this trip', 'info');
@@ -3069,26 +3047,30 @@ function saveSettingsFromForm() {
   showToast('Settings & Motorcycle specifications saved and synced!', 'success');
 }
 
-function exportAnalysisGpx() {
-  if (!activeAnalysisTrip) {
-    showToast('No trip selected for export', 'error');
-    return;
-  }
-  window.open(`/api/trips/${activeAnalysisTrip._id || activeAnalysisTrip.id}/export/gpx`, '_blank');
-}
+function exportAnalysisGpx() { exportAnalysisRide('gpx'); }
+function exportAnalysisCsv() { exportAnalysisRide('csv'); }
 
-function exportAnalysisCsv() {
-  if (!activeAnalysisTrip) {
-    showToast('No trip selected for export', 'error');
-    return;
+async function exportAnalysisRide(format) {
+  const id = activeAnalysisTrip?._id;
+  if (!id) return showToast('Select a ride to export.', 'error');
+  try {
+    const response = await fetch(`/api/trips/${encodeURIComponent(id)}/export/${format}`, { headers: getAuthHeaders() });
+    if (!response.ok) throw new Error('The export could not be downloaded.');
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `rhody_${id}.${format}`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  } catch (error) {
+    showToast(error.message, 'error');
   }
-  window.open(`/api/trips/${activeAnalysisTrip._id || activeAnalysisTrip.id}/export/csv`, '_blank');
 }
 
 function clearLocalDataCache() {
   if (!confirm('Clear local telemetry cache and re-sync from MongoDB Atlas?')) return;
-  localStorage.removeItem('rhody_bike_management');
-  localStorage.removeItem('rhody_saved_places');
+  localStorage.removeItem(accountStorageKey('rhody_bike_management'));
+  localStorage.removeItem(accountStorageKey('rhody_saved_places'));
   loadBikeManagementFromStorage();
   refreshRealTrips();
   showToast('Cache cleared and re-synced with cloud', 'success');
@@ -3279,362 +3261,191 @@ function getAuthHeaders() {
   return headers;
 }
 
-function checkProductionAuthOnLoad() {
-  const token = localStorage.getItem('rhody_auth_token');
-  if (!token) {
-    openPlatformEntryModal();
-    return;
+function accountStorageKey(key) {
+  return `${key}:${currentAuthUser?.email || 'signed-out'}`;
+}
+
+async function apiRequest(path, init = {}) {
+  const response = await fetch(path, {
+    ...init,
+    cache: 'no-store',
+    headers: { ...getAuthHeaders(), ...init.headers },
+    signal: AbortSignal.timeout(15000)
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data) {
+    const error = new Error(data?.error || 'Rhody Cloud could not complete the request.');
+    error.status = response.status;
+    throw error;
   }
+  return data;
+}
 
-  fetch('/api/auth/me', {
-    headers: { 'Authorization': 'Bearer ' + token }
-  })
-    .then(r => {
-      if (!r.ok) throw new Error('Unauthorized');
-      return r.json();
-    })
-    .then(data => {
-      if (data && data.user) {
-        currentAuthUser = data.user;
-        localStorage.setItem('rhody_auth_user', JSON.stringify(data.user));
-        localStorage.setItem('rhody_user_role', data.user.role || 'rider');
-        localStorage.setItem('rhody_onboarding_completed', 'true');
+function setAuthGate(open) {
+  const gate = document.getElementById('platformEntryModal');
+  gate.classList.toggle('hidden', !open);
+  document.body.style.overflow = open ? 'hidden' : '';
+  document.querySelectorAll('body > header, body > main, #mobileBottomNav').forEach(element => {
+    element.inert = open;
+  });
+  if (!open && gate.contains(document.activeElement)) document.activeElement.blur();
+}
 
-        if (data.user.role === 'rider') {
-          riderProfile.name = data.user.name || riderProfile.name;
-          riderProfile.email = data.user.email || riderProfile.email;
-          if (data.user.bikeModel) {
-            riderProfile.bikeModel = data.user.bikeModel;
-            if (typeof bikeManagementData !== 'undefined' && bikeManagementData.specs) {
-              bikeManagementData.specs.makeModel = data.user.bikeModel;
-            }
-          }
-          if (data.user.bikePlate) {
-            riderProfile.bikePlate = data.user.bikePlate;
-            if (typeof bikeManagementData !== 'undefined' && bikeManagementData.documents) {
-              bikeManagementData.documents.rcNumber = data.user.bikePlate;
-            }
-          }
-          if (data.user.emergencyContactPhone) {
-            riderProfile.emergencyContactPhone = data.user.emergencyContactPhone;
-          }
-          saveProfile();
-          renderDashboardProfile();
-          renderDashboardBike();
-          switchRole('rider');
-        } else if (data.user.role === 'parent') {
-          localStorage.setItem('rhody_parent_logged_in', 'true');
-          localStorage.setItem('rhody_parent_email', data.user.email);
-          localStorage.setItem('rhody_parent_rider_code', data.user.wardEmail || '');
-          parentConnectedRider = data.user.wardEmail || '';
-          switchRole('parent');
-        }
-
-        const modal = document.getElementById('platformEntryModal');
-        if (modal) modal.classList.add('hidden');
-      } else {
-        throw new Error('Invalid user payload');
-      }
-    })
-    .catch(err => {
-      console.warn('Session verification failed:', err);
+async function checkProductionAuthOnLoad() {
+  if (!authToken) return openPlatformEntryModal();
+  try {
+    const data = await apiRequest('/api/auth/me');
+    // Accept the earlier flat response during a rolling backend deployment.
+    enterAccount(authToken, data.user || data);
+  } catch (error) {
+    if (error.status === 401 || error.status === 404) {
       localStorage.removeItem('rhody_auth_token');
       localStorage.removeItem('rhody_auth_user');
-      openPlatformEntryModal();
-    });
+      authToken = null;
+      currentAuthUser = null;
+    }
+    openPlatformEntryModal();
+    if (authToken) showAuthAlert('Rhody Cloud is temporarily unavailable. Refresh to retry or sign in again.');
+  }
+}
+
+function enterAccount(token, user) {
+  if (typeof token !== 'string' || !token || !user?.email || !user?.id) {
+    throw new Error('Rhody Cloud returned an incomplete session.');
+  }
+  authToken = token;
+  currentAuthUser = user;
+  localStorage.setItem('rhody_auth_token', token);
+  localStorage.setItem('rhody_auth_user', JSON.stringify(user));
+  localStorage.setItem('rhody_user_role', user.role || 'rider');
+  localStorage.setItem('rhody_onboarding_completed', 'true');
+
+  riderProfile = { ...structuredClone(initialRiderProfile), ...user };
+  bikeManagementData = structuredClone(initialBikeManagement);
+  allTripsCache = [];
+  activeAnalysisTrip = null;
+  activeAnalysisPoints = [];
+  if (user.role === 'parent') {
+    localStorage.setItem('rhody_parent_email', user.email);
+    parentConnectedRider = user.wardEmail || '';
+    switchRole('parent');
+  } else {
+    renderDashboardProfile();
+    renderDashboardBike();
+    renderYoutubeDynamicHub();
+    populateSettingsForm();
+    switchRole('rider');
+    loadProfileFromStorage();
+    loadBikeManagementFromStorage();
+    refreshRealTrips();
+  }
+  setAuthGate(false);
 }
 
 function openPlatformEntryModal() {
-  const modal = document.getElementById('platformEntryModal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    switchAuthMode(authActiveMode || 'signin');
-    selectAuthRole(authSelectedRole || 'rider');
-  }
+  setAuthGate(true);
+  switchAuthMode(authActiveMode);
+  selectAuthRole(authSelectedRole);
 }
 
 function closePlatformEntryModal() {
-  // Production security: Unauthenticated users cannot bypass or dismiss gateway
-  const token = localStorage.getItem('rhody_auth_token');
-  if (!token) {
-    return;
-  }
-  const modal = document.getElementById('platformEntryModal');
-  if (modal) modal.classList.add('hidden');
+  if (currentAuthUser && authToken) setAuthGate(false);
 }
 
 function switchAuthMode(mode) {
+  const register = mode === 'register';
   authActiveMode = mode;
-  const tabSignIn = document.getElementById('authTabSignIn');
-  const tabRegister = document.getElementById('authTabRegister');
-  const formSignIn = document.getElementById('authFormSignIn');
-  const formRegister = document.getElementById('authFormRegister');
-  const alertBanner = document.getElementById('authAlertBanner');
-
-  if (alertBanner) alertBanner.classList.add('hidden');
-
-  if (mode === 'signin') {
-    if (tabSignIn) {
-      tabSignIn.className = 'flex-1 py-2 rounded-xl text-center transition bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-sm';
-    }
-    if (tabRegister) {
-      tabRegister.className = 'flex-1 py-2 rounded-xl text-center transition text-slate-400 hover:text-white';
-    }
-    if (formSignIn) formSignIn.classList.remove('hidden');
-    if (formRegister) formRegister.classList.add('hidden');
-  } else {
-    if (tabRegister) {
-      tabRegister.className = 'flex-1 py-2 rounded-xl text-center transition bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-sm';
-    }
-    if (tabSignIn) {
-      tabSignIn.className = 'flex-1 py-2 rounded-xl text-center transition text-slate-400 hover:text-white';
-    }
-    if (formRegister) formRegister.classList.remove('hidden');
-    if (formSignIn) formSignIn.classList.add('hidden');
-  }
+  document.getElementById('authTabSignIn').setAttribute('aria-pressed', String(!register));
+  document.getElementById('authTabRegister').setAttribute('aria-pressed', String(register));
+  document.getElementById('authFormSignIn').classList.toggle('hidden', register);
+  document.getElementById('authFormRegister').classList.toggle('hidden', !register);
+  document.getElementById('authTitle').textContent = register ? 'Create your account' : 'Sign in';
+  document.getElementById('authDescription').textContent = register
+    ? 'Choose how you’ll use Rhody.'
+    : 'Use your Rhody email and password.';
+  document.getElementById('authAlertBanner').classList.add('hidden');
 }
 
 function selectAuthRole(role) {
   authSelectedRole = role;
-  const btnRider = document.getElementById('authRoleRiderBtn');
-  const btnParent = document.getElementById('authRoleParentBtn');
-  const riderFields = document.getElementById('authRegRiderFields');
-  const parentFields = document.getElementById('authRegParentFields');
-  const signInBtnText = document.getElementById('authSignInBtnText');
-  const regBtnText = document.getElementById('authRegBtnText');
-  const alertBanner = document.getElementById('authAlertBanner');
-
-  if (alertBanner) alertBanner.classList.add('hidden');
-
-  if (role === 'parent') {
-    if (btnParent) {
-      btnParent.className = 'p-3.5 rounded-2xl bg-purple-500/15 border-2 border-purple-400 text-left transition relative group shadow-[0_0_15px_rgba(168,85,247,0.3)]';
-    }
-    if (btnRider) {
-      btnRider.className = 'p-3.5 rounded-2xl bg-white/[0.02] border-2 border-white/10 text-left transition relative group hover:border-cyan-400/40';
-    }
-    if (riderFields) riderFields.classList.add('hidden');
-    if (parentFields) parentFields.classList.remove('hidden');
-    if (signInBtnText) signInBtnText.textContent = 'SIGN IN TO GUARDIAN RADAR';
-    if (regBtnText) regBtnText.textContent = 'CREATE GUARDIAN RADAR ACCOUNT';
-  } else {
-    if (btnRider) {
-      btnRider.className = 'p-3.5 rounded-2xl bg-cyan-500/10 border-2 border-cyan-400 text-left transition relative group shadow-[0_0_15px_rgba(0,240,255,0.2)]';
-    }
-    if (btnParent) {
-      btnParent.className = 'p-3.5 rounded-2xl bg-white/[0.02] border-2 border-white/10 text-left transition relative group hover:border-purple-400/40';
-    }
-    if (riderFields) riderFields.classList.remove('hidden');
-    if (parentFields) parentFields.classList.add('hidden');
-    if (signInBtnText) signInBtnText.textContent = 'SIGN IN TO RIDER COCKPIT';
-    if (regBtnText) regBtnText.textContent = 'CREATE RIDER ACCOUNT';
-  }
+  const guardian = role === 'parent';
+  document.getElementById('authRoleRiderBtn').setAttribute('aria-pressed', String(!guardian));
+  document.getElementById('authRoleParentBtn').setAttribute('aria-pressed', String(guardian));
+  document.getElementById('authRegParentFields').classList.toggle('hidden', !guardian);
+  const riderEmail = document.getElementById('authRegWardEmail');
+  riderEmail.disabled = !guardian;
+  riderEmail.required = guardian;
+  document.getElementById('authAlertBanner').classList.add('hidden');
 }
 
-function showAuthAlert(msg) {
-  const alertBanner = document.getElementById('authAlertBanner');
-  const alertText = document.getElementById('authAlertText');
-  if (alertText) alertText.textContent = msg;
-  if (alertBanner) alertBanner.classList.remove('hidden');
+function toggleAuthPassword(button) {
+  const input = document.getElementById(button.getAttribute('aria-controls'));
+  const hide = input.type === 'text';
+  input.type = hide ? 'password' : 'text';
+  button.textContent = hide ? 'Show' : 'Hide';
+  button.setAttribute('aria-label', hide ? 'Show password' : 'Hide password');
 }
 
-function handleProductionLogin(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  const alertBanner = document.getElementById('authAlertBanner');
-  if (alertBanner) alertBanner.classList.add('hidden');
+function showAuthAlert(message) {
+  document.getElementById('authAlertText').textContent = message;
+  document.getElementById('authAlertBanner').classList.remove('hidden');
+}
 
-  const email = (document.getElementById('authSignInEmail')?.value || '').trim();
-  const password = (document.getElementById('authSignInPassword')?.value || '').trim();
+function handleProductionLogin(event) {
+  return submitAuthForm(event, false);
+}
 
-  if (!email || !password) {
-    showAuthAlert('Please enter both email and password.');
-    return;
-  }
+function handleProductionRegister(event) {
+  return submitAuthForm(event, true);
+}
 
-  const submitBtn = document.getElementById('authSignInBtn');
-  const origText = submitBtn ? submitBtn.innerHTML : '';
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="animate-spin inline-block mr-2">⟳</span> AUTHENTICATING...';
-  }
-
-  fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
-  })
-    .then(async r => {
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) {
-        throw new Error(data.error || 'Authentication failed. Please check credentials.');
-      }
-      return data;
-    })
-    .then(data => {
-      authToken = data.token;
-      currentAuthUser = data.user;
-      localStorage.setItem('rhody_auth_token', data.token);
-      localStorage.setItem('rhody_auth_user', JSON.stringify(data.user));
-      localStorage.setItem('rhody_user_role', data.user.role || 'rider');
-      localStorage.setItem('rhody_onboarding_completed', 'true');
-
-      if (data.user.role === 'rider') {
-        riderProfile.name = data.user.name || riderProfile.name;
-        riderProfile.email = data.user.email || riderProfile.email;
-        if (data.user.bikeModel) {
-          riderProfile.bikeModel = data.user.bikeModel;
-          if (bikeManagementData && bikeManagementData.specs) bikeManagementData.specs.makeModel = data.user.bikeModel;
-        }
-        if (data.user.bikePlate) {
-          riderProfile.bikePlate = data.user.bikePlate;
-          if (bikeManagementData && bikeManagementData.documents) bikeManagementData.documents.rcNumber = data.user.bikePlate;
-        }
-        if (data.user.emergencyContactPhone) {
-          riderProfile.emergencyContactPhone = data.user.emergencyContactPhone;
-        }
-        saveProfile();
-        renderDashboardProfile();
-        renderDashboardBike();
-        switchRole('rider');
-        showToast('Welcome back, ' + (data.user.name || 'Pilot') + '!', 'success');
-      } else {
-        localStorage.setItem('rhody_parent_logged_in', 'true');
-        localStorage.setItem('rhody_parent_email', data.user.email);
-        localStorage.setItem('rhody_parent_rider_code', data.user.wardEmail || '');
-        parentConnectedRider = data.user.wardEmail || '';
-        switchRole('parent');
-        showToast('Connected to Guardian Safety Radar for ' + (data.user.wardEmail || 'ward'), 'success');
-      }
-
-      const modal = document.getElementById('platformEntryModal');
-      if (modal) modal.classList.add('hidden');
-    })
-    .catch(err => {
-      showAuthAlert(err.message || 'Login failed. Please check your credentials.');
-    })
-    .finally(() => {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = origText;
-      }
+async function submitAuthForm(event, register) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit.disabled) return;
+  document.getElementById('authAlertBanner').classList.add('hidden');
+  const fields = new FormData(form);
+  const payload = { email: fields.get('email').trim(), password: fields.get('password') };
+  if (register) {
+    Object.assign(payload, {
+      name: fields.get('name').trim(),
+      role: authSelectedRole,
+      wardCodeOrEmail: fields.get('riderEmail') || ''
     });
-}
-
-function handleProductionRegister(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  const alertBanner = document.getElementById('authAlertBanner');
-  if (alertBanner) alertBanner.classList.add('hidden');
-
-  const name = (document.getElementById('authRegName')?.value || '').trim();
-  const email = (document.getElementById('authRegEmail')?.value || '').trim();
-  const password = (document.getElementById('authRegPassword')?.value || '').trim();
-  const role = authSelectedRole || 'rider';
-
-  if (!name || !email || !password) {
-    showAuthAlert('Please fill in all required account fields.');
-    return;
   }
 
-  if (password.length < 6) {
-    showAuthAlert('Password must be at least 6 characters.');
-    return;
-  }
-
-  let bikeModel = '';
-  let bikePlate = '';
-  let emergencyContactPhone = '';
-  let wardCodeOrEmail = '';
-
-  if (role === 'rider') {
-    bikeModel = (document.getElementById('authRegBikeModel')?.value || '').trim();
-    bikePlate = (document.getElementById('authRegBikePlate')?.value || '').trim();
-    emergencyContactPhone = (document.getElementById('authRegEmergencyPhone')?.value || '').trim();
-  } else {
-    wardCodeOrEmail = (document.getElementById('authRegWardEmail')?.value || '').trim();
-    if (!wardCodeOrEmail) {
-      showAuthAlert("Please provide your ward's rider email or pairing code.");
-      return;
-    }
-    if (email.toLowerCase() === wardCodeOrEmail.toLowerCase()) {
-      showAuthAlert('Guardian email cannot be the same as the rider/ward email address. Please use your distinct guardian email.');
-      return;
-    }
-  }
-
-  const submitBtn = document.getElementById('authRegBtn');
-  const origText = submitBtn ? submitBtn.innerHTML : '';
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="animate-spin inline-block mr-2">⟳</span> CREATING ACCOUNT...';
-  }
-
-  fetch('/api/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name,
-      email,
-      password,
-      role,
-      bikeModel,
-      bikePlate,
-      emergencyContactPhone,
-      wardCodeOrEmail
-    })
-  })
-    .then(async r => {
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) {
-        throw new Error(data.error || 'Registration failed. Email may already be registered.');
-      }
-      return data;
-    })
-    .then(data => {
-      authToken = data.token;
-      currentAuthUser = data.user;
-      localStorage.setItem('rhody_auth_token', data.token);
-      localStorage.setItem('rhody_auth_user', JSON.stringify(data.user));
-      localStorage.setItem('rhody_user_role', data.user.role || 'rider');
-      localStorage.setItem('rhody_onboarding_completed', 'true');
-
-      if (data.user.role === 'rider') {
-        riderProfile.name = data.user.name || name;
-        riderProfile.email = data.user.email || email;
-        riderProfile.bikeModel = bikeModel;
-        riderProfile.bikePlate = bikePlate;
-        riderProfile.emergencyContactPhone = emergencyContactPhone;
-        saveProfile();
-        renderDashboardProfile();
-        renderDashboardBike();
-        switchRole('rider');
-        showToast('Account registered successfully! Welcome to Rhody Cockpit.', 'success');
-      } else {
-        localStorage.setItem('rhody_parent_logged_in', 'true');
-        localStorage.setItem('rhody_parent_email', email);
-        localStorage.setItem('rhody_parent_rider_code', wardCodeOrEmail);
-        parentConnectedRider = wardCodeOrEmail;
-        switchRole('parent');
-        showToast('Guardian account registered! Connected to ward telemetry radar.', 'success');
-      }
-
-      const modal = document.getElementById('platformEntryModal');
-      if (modal) modal.classList.add('hidden');
-    })
-    .catch(err => {
-      showAuthAlert(err.message || 'Registration failed. Please check your details.');
-    })
-    .finally(() => {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = origText;
-      }
+  const controls = Array.from(document.querySelectorAll('#platformEntryModal button, #platformEntryModal input'))
+    .filter(control => !control.disabled);
+  controls.forEach(control => { control.disabled = true; });
+  const label = submit.textContent;
+  submit.textContent = register ? 'Creating account…' : 'Signing in…';
+  form.setAttribute('aria-busy', 'true');
+  try {
+    const data = await apiRequest(register ? '/api/auth/register' : '/api/auth/login', {
+      method: 'POST', body: JSON.stringify(payload)
     });
+    enterAccount(data.token, data.user);
+    form.reset();
+    form.querySelector('[name="password"]').type = 'password';
+    const showPassword = form.querySelector('.auth-password button');
+    showPassword.textContent = 'Show';
+    showPassword.setAttribute('aria-label', 'Show password');
+  } catch (error) {
+    showAuthAlert(error.status ? error.message : 'Could not connect to Rhody Cloud. Please try again.');
+  } finally {
+    controls.forEach(control => { control.disabled = false; });
+    submit.textContent = label;
+    form.removeAttribute('aria-busy');
+  }
 }
 
 function handlePlatformLogout() {
   if (!confirm('Are you sure you want to log out of your session?')) {
     return;
   }
+
+  fetch('/api/auth/logout', { method: 'POST', headers: getAuthHeaders(), keepalive: true }).catch(() => {});
 
   // Clear all authentication & role tokens
   localStorage.removeItem('rhody_auth_token');
@@ -3649,11 +3460,27 @@ function handlePlatformLogout() {
   authToken = null;
   currentAuthUser = null;
 
-  if (typeof isTripRecording !== 'undefined' && isTripRecording) {
-    if (typeof stopTripRecording === 'function') {
-      try { stopTripRecording(); } catch (e) {}
-    }
-  }
+  isTripRecording = false;
+  isTripPaused = false;
+  clearInterval(tripTimerInterval);
+  clearInterval(beaconPushInterval);
+  clearInterval(parentPollInterval);
+  clearInterval(parentTelemetryPollTimer);
+  clearInterval(riderGuardianPollTimer);
+  riderGuardianPollTimer = null;
+  if (gpsWatchId != null) navigator.geolocation.clearWatch(gpsWatchId);
+  allTripsCache = [];
+  activeAnalysisTrip = null;
+  activeAnalysisPoints = [];
+  activeTripPoints = [];
+  pendingTripSync = null;
+  document.getElementById('btnRetryTripSync').classList.add('hidden');
+  document.getElementById('btnStartTrip').classList.remove('hidden');
+  document.getElementById('btnStartTrip').disabled = false;
+  document.getElementById('btnPauseTrip').classList.add('hidden');
+  document.getElementById('btnFinishTrip').classList.add('hidden');
+  currentView = 'dashboard';
+  authActiveMode = 'signin';
 
   showToast('Logged out successfully.', 'info');
   openPlatformEntryModal();
@@ -3937,10 +3764,10 @@ let activeGuardianRequestId = null;
 let riderGuardianPollTimer = null;
 
 function checkRiderGuardianRequests() {
-  const riderCode = 'RHODY-8821';
-  fetch(`/api/rider/guardian-requests?riderCode=${encodeURIComponent(riderCode)}`)
-    .then(r => r.json())
+  const account = currentAuthUser?.email;
+  apiRequest('/api/rider/guardian-requests')
     .then(data => {
+      if (currentAuthUser?.email !== account) return;
       const banner = document.getElementById('riderGuardianRequestBanner');
       if (!banner) return;
       if (data && data.requests && data.requests.length > 0) {
@@ -3960,110 +3787,22 @@ function checkRiderGuardianRequests() {
     .catch(() => {});
 }
 
-function respondGuardianRequest(action) {
-  const reqId = activeGuardianRequestId || 'req_1';
-  const apiAction = action === 'accept' ? 'approved' : 'rejected';
-
-  fetch('/api/rider/respond-guardian-request', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      requestId: reqId,
-      action: apiAction,
-      parentEmail: 'guardian@family.io'
-    })
-  })
-    .then(r => r.json())
-    .then(data => {
-      const banner = document.getElementById('riderGuardianRequestBanner');
-      if (banner) banner.classList.add('hidden');
-      if (action === 'accept') {
-        showToast('Guardian access granted! Telemetry & safety radar shared.', 'success');
-      } else {
-        showToast('Guardian connection request declined.', 'info');
-      }
-    })
-    .catch(() => {
-      const banner = document.getElementById('riderGuardianRequestBanner');
-      if (banner) banner.classList.add('hidden');
-      showToast(action === 'accept' ? 'Guardian access granted' : 'Request declined', 'info');
+async function respondGuardianRequest(action) {
+  if (!activeGuardianRequestId) return;
+  try {
+    await apiRequest('/api/rider/respond-guardian-request', {
+      method: 'POST',
+      body: JSON.stringify({
+        requestId: activeGuardianRequestId,
+        action: action === 'accept' ? 'approved' : 'rejected'
+      })
     });
-}
-
-function simulateRiderAcceptanceDemo() {
-  fetch('/api/rider/respond-guardian-request', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      requestId: activeGuardianRequestId || 'req_demo_01',
-      action: 'approved',
-      parentEmail: localStorage.getItem('rhody_parent_email') || 'guardian@family.io'
-    })
-  })
-    .then(() => {
-      showToast('Rider authorized telemetry access! Radar unlocked.', 'success');
-      fetchParentRiderStatus();
-    })
-    .catch(() => {
-      showToast('Rider authorized access (Demo)', 'success');
-      const waitingBanner = document.getElementById('parentWaitingApprovalBanner');
-      const authorizedGrid = document.getElementById('parentAuthorizedGrid');
-      if (waitingBanner) waitingBanner.classList.add('hidden');
-      if (authorizedGrid) authorizedGrid.classList.remove('hidden');
-    });
-}
-
-// ========================================================
-// PARENT / GUARDIAN LIVE PORTAL & ROLE SWITCHER
-// ========================================================
-function toggleParentRole() {
-  if (currentRole === 'rider') {
-    const parentAuth = localStorage.getItem('rhody_parent_logged_in');
-    if (parentAuth === 'true') {
-      switchRole('parent');
-    } else {
-      openParentLoginModal();
-    }
-  } else {
-    switchRole('rider');
+    activeGuardianRequestId = null;
+    checkRiderGuardianRequests();
+    showToast(action === 'accept' ? 'Guardian access approved.' : 'Guardian request declined.', 'info');
+  } catch (error) {
+    showToast(error.message, 'error');
   }
-}
-
-function openParentLoginModal() {
-  const modal = document.getElementById('parentLoginModal');
-  if (modal) modal.classList.remove('hidden');
-}
-
-function closeParentLoginModal() {
-  const modal = document.getElementById('parentLoginModal');
-  if (modal) modal.classList.add('hidden');
-}
-
-function handleParentLoginSubmit(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  const email = (document.getElementById('parentLoginEmail')?.value || '').trim() || 'guardian@family.io';
-  const riderCode = (document.getElementById('parentLoginRiderCode')?.value || '').trim() || 'RHODY-8821';
-
-  fetch('/api/parent/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, riderCode })
-  })
-    .then(r => r.json())
-    .then(data => {
-      localStorage.setItem('rhody_parent_logged_in', 'true');
-      localStorage.setItem('rhody_parent_email', email);
-      parentConnectedRider = (data && data.profile && data.profile.connectedRiderEmail) || riderCode;
-      closeParentLoginModal();
-      switchRole('parent');
-      showToast('Welcome to Guardian Safety Radar', 'success');
-    })
-    .catch(() => {
-      localStorage.setItem('rhody_parent_logged_in', 'true');
-      closeParentLoginModal();
-      switchRole('parent');
-      showToast('Connected to Guardian Safety Radar', 'info');
-    });
 }
 
 function switchRole(role) {
@@ -4135,32 +3874,21 @@ function switchRole(role) {
   }
 }
 
-function connectParentRider() {
+async function connectParentRider() {
   const input = document.getElementById('parentPairingCodeInput');
-  const code = (input?.value || '').trim();
-  if (!code) {
-    showToast('Please enter a rider code or email', 'error');
-    return;
-  }
-  const parentEmail = localStorage.getItem('rhody_parent_email') || 'guardian@family.io';
-
-  fetch('/api/parent/connect-rider', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ parentEmail, riderCodeOrEmail: code })
-  })
-    .then(r => r.json())
-    .then(data => {
-      parentConnectedRider = (data && data.parentProfile && data.parentProfile.connectedRiderEmail) || code;
-      if (input) input.value = '';
-      fetchParentRiderStatus();
-      showToast(`Link request sent to rider ${parentConnectedRider}. Awaiting approval.`, 'success');
-    })
-    .catch(() => {
-      parentConnectedRider = code;
-      fetchParentRiderStatus();
-      showToast(`Connection request sent to ${code}`, 'info');
+  if (!input.value.trim() || !input.reportValidity()) return;
+  try {
+    const result = await apiRequest('/api/parent/connect-rider', {
+      method: 'POST',
+      body: JSON.stringify({ riderCodeOrEmail: input.value.trim() })
     });
+    parentConnectedRider = result.riderEmail;
+    input.value = '';
+    fetchParentRiderStatus();
+    showToast('Rider access request sent.', 'success');
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
 }
 
 function startParentTelemetryPolling() {
@@ -4168,34 +3896,17 @@ function startParentTelemetryPolling() {
   parentTelemetryPollTimer = setInterval(fetchParentRiderStatus, 3500);
 }
 
-function fetchParentRiderStatus() {
-  const riderQuery = parentConnectedRider || 'pilot@rhody.io';
-  const parentEmail = localStorage.getItem('rhody_parent_email') || 'guardian@family.io';
-
-  fetch(`/api/parent/rider-status?riderEmail=${encodeURIComponent(riderQuery)}&parentEmail=${encodeURIComponent(parentEmail)}`)
-    .then(r => r.json())
-    .then(data => {
-      if (!data) return;
-      updateParentDashboardUI(data);
-    })
-    .catch(() => {
-      // In case backend is offline, update with safe local state
-      updateParentDashboardUI({
-        authorized: true,
-        rider: riderProfile,
-        bike: bikeManagementData,
-        beacon: {
-          currentSpeedKmh: liveSpeedKmh || 0,
-          maxSpeedKmh: peakTripSpeed || 86.4,
-          batteryPercent: 88,
-          isMoving: isTripRecording && liveSpeedKmh > 2,
-          latitude: lastKnownGpsFix ? lastKnownGpsFix.coords.latitude : 12.9716,
-          longitude: lastKnownGpsFix ? lastKnownGpsFix.coords.longitude : 77.5946
-        },
-        trips: allTripsCache || [],
-        notifications: parentNotificationsList
-      });
-    });
+async function fetchParentRiderStatus() {
+  const account = currentAuthUser?.email;
+  if (currentAuthUser?.role !== 'parent') return;
+  try {
+    const data = await apiRequest('/api/parent/rider-status');
+    if (currentAuthUser?.email !== account) return;
+    parentConnectedRider = data.rider?.email || '';
+    updateParentDashboardUI(data);
+  } catch {
+    if (currentAuthUser?.email === account) updateParentDashboardUI({ authorized: false, status: 'unavailable' });
+  }
 }
 
 function updateParentDashboardUI(data) {
@@ -4207,8 +3918,23 @@ function updateParentDashboardUI(data) {
   if (data.authorized === false) {
     if (waitingBanner) waitingBanner.classList.remove('hidden');
     if (authorizedGrid) authorizedGrid.classList.add('hidden');
+    if (parentMapMarker) { parentMapMarker.remove(); parentMapMarker = null; }
+    const pairing = document.getElementById('parentPairedCodeDisplay');
+    if (pairing) pairing.textContent = data.rider?.email || 'No rider linked';
+    const radarStatus = document.getElementById('parentRadarStatusPill');
+    if (radarStatus) radarStatus.textContent = 'Access pending';
+    const name = document.getElementById('parentPairedRiderName');
+    if (name) name.textContent = 'Awaiting approval';
     if (waitingRiderEmail) {
-      waitingRiderEmail.textContent = (data.rider && data.rider.email) || parentConnectedRider || 'pilot@rhody.io';
+      waitingRiderEmail.textContent = data.rider?.email || parentConnectedRider || 'No rider linked';
+      const status = document.getElementById('guardianWaitStatus');
+      const messages = {
+        pending_approval: 'The rider needs to approve your request.',
+        rejected: 'The rider declined your request.',
+        revoked: 'The rider removed your access.',
+        unavailable: 'Rhody Cloud is unavailable. Retrying shortly.'
+      };
+      status.textContent = messages[data.status] || 'Enter your rider’s registered email to request access.';
     }
     return;
   }
@@ -4217,10 +3943,14 @@ function updateParentDashboardUI(data) {
   if (waitingBanner) waitingBanner.classList.add('hidden');
   if (authorizedGrid) authorizedGrid.classList.remove('hidden');
 
-  const rider = data.rider || riderProfile;
-  const bike = data.bike || bikeManagementData;
+  const rider = data.rider || {};
+  const bike = data.bike || {};
   const beacon = data.beacon || {};
-  const trips = data.trips || [];
+  const lastSeen = document.getElementById('parentTelemetryLastSeen');
+  const radarStatus = document.getElementById('parentRadarStatusPill');
+  if (lastSeen) lastSeen.textContent = beacon.updatedAt ? new Date(beacon.updatedAt).toLocaleTimeString() : 'Awaiting an update';
+  if (radarStatus) radarStatus.textContent = data.beacon ? 'Live ride' : 'Access approved';
+  const trips = (data.trips || []).map(normalizeRide);
   const notifs = data.notifications || [];
 
   // 1. Rider & Bike Identity
@@ -4249,7 +3979,7 @@ function updateParentDashboardUI(data) {
 
   if (speedVal) speedVal.textContent = curSpeed.toFixed(1);
   if (topSpeed) topSpeed.textContent = maxSpd.toFixed(1);
-  if (batteryVal) batteryVal.textContent = `${beacon.batteryPercent || 88}%`;
+  if (batteryVal) batteryVal.textContent = beacon.batteryPercent == null ? '—' : `${beacon.batteryPercent}%`;
   if (speedThresholdDisplay) speedThresholdDisplay.textContent = `${guardianParentConfig.speedLimitKmh} km/h`;
 
   if (motionStatus) {
@@ -4261,10 +3991,19 @@ function updateParentDashboardUI(data) {
   }
 
   // 3. Live Radar Map Marker & Coordinates
-  const lat = beacon.latitude || (lastKnownGpsFix && lastKnownGpsFix.coords && lastKnownGpsFix.coords.latitude) || 12.9716;
-  const lng = beacon.longitude || (lastKnownGpsFix && lastKnownGpsFix.coords && lastKnownGpsFix.coords.longitude) || 77.5946;
+  const lat = beacon.latitude;
+  const lng = beacon.longitude;
+  if (!data.beacon) {
+    if (motionStatus) motionStatus.textContent = 'No current ride update';
+    if (speedVal) speedVal.textContent = '—';
+    if (topSpeed) topSpeed.textContent = '—';
+  }
+  if (parentMapMarker && (!Number.isFinite(lat) || !Number.isFinite(lng))) {
+    parentMapMarker.remove();
+    parentMapMarker = null;
+  }
 
-  if (parentMapInstance) {
+  if (parentMapInstance && Number.isFinite(lat) && Number.isFinite(lng)) {
     const latLng = [lat, lng];
     if (!parentMapMarker) {
       const bikeIcon = L.divIcon({
@@ -4322,6 +4061,7 @@ function updateParentDashboardUI(data) {
 
   // 5. Recent Trips Ledger for Parent
   const recentTripsList = document.getElementById('parentRecentTripsList');
+  if (recentTripsList && !trips.length) recentTripsList.textContent = 'No recorded rides.';
   if (recentTripsList && trips.length > 0) {
     recentTripsList.innerHTML = trips.slice(0, 4).map(t => `
       <div class="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/30 transition">
@@ -4330,13 +4070,13 @@ function updateParentDashboardUI(data) {
             <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>
           </div>
           <div>
-            <span class="text-xs font-bold text-white block">${t.title || 'Recorded Ride'}</span>
-            <span class="text-[10px] text-slate-400">${new Date(t.startTime || t.createdAt || Date.now()).toLocaleDateString()} &bull; ${t.durationFormatted || '24m 12s'}</span>
+            <span class="text-xs font-bold text-white block">${escapeHtml(t.title || 'Recorded ride')}</span>
+            <span class="text-[10px] text-slate-400">${new Date(t.startTime || t.createdAt || Date.now()).toLocaleDateString()} &bull; ${Math.round(t.duration / 60)} min</span>
           </div>
         </div>
         <div class="text-right">
-          <span class="text-xs font-black text-cyan-300 block font-mono-numbers">${(t.distanceKm || 0).toFixed(1)} KM</span>
-          <span class="text-[10px] text-slate-400 font-mono-numbers">Top: ${(t.topSpeedKmh || 0).toFixed(0)} km/h</span>
+          <span class="text-xs font-black text-cyan-300 block font-mono-numbers">${t.distance.toFixed(1)} KM</span>
+          <span class="text-[10px] text-slate-400 font-mono-numbers">Top: ${t.maxSpeed.toFixed(0)} km/h</span>
         </div>
       </div>
     `).join('');
@@ -4442,59 +4182,16 @@ function renderParentNotifications(notifs) {
   }).join('');
 }
 
-function simulateSpeedAlert() {
-  const speed = 104.5;
-  const newAlert = {
-    id: 'notif_' + Date.now(),
-    type: 'speed_warning',
-    title: 'Speed Threshold Alert',
-    message: `Rider ${riderProfile.name || 'Pilot'} exceeded guardian safety limit (${guardianParentConfig.speedLimitKmh} km/h) reaching ${speed} km/h on Bangalore Expressway.`,
-    severity: 'warning',
-    riderEmail: parentConnectedRider || 'pilot@rhody.io',
-    timestamp: new Date().toISOString()
-  };
-
-  fetch('/api/parent/notifications', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(newAlert)
-  })
-    .then(r => r.json())
-    .then(data => {
-      fetchParentRiderStatus();
-      showToast('Speed alert notification dispatched to parent feed', 'error');
-    })
-    .catch(() => {
-      parentNotificationsList.unshift(newAlert);
-      renderParentNotifications(parentNotificationsList);
-      showToast('Speed alert logged', 'error');
-    });
+async function dismissParentNotification(id) {
+  try {
+    await apiRequest(`/api/parent/notifications/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    fetchParentRiderStatus();
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
 }
 
-function dismissParentNotification(id) {
-  fetch(`/api/parent/notifications/${id}`, { method: 'DELETE' })
-    .then(() => {
-      parentNotificationsList = parentNotificationsList.filter(n => n.id !== id);
-      renderParentNotifications(parentNotificationsList);
-    })
-    .catch(() => {
-      parentNotificationsList = parentNotificationsList.filter(n => n.id !== id);
-      renderParentNotifications(parentNotificationsList);
-    });
-}
-
-function clearParentNotifications() {
-  fetch('/api/parent/notifications/all', { method: 'DELETE' })
-    .then(() => {
-      parentNotificationsList = [];
-      renderParentNotifications([]);
-      showToast('Notifications cleared', 'info');
-    })
-    .catch(() => {
-      parentNotificationsList = [];
-      renderParentNotifications([]);
-    });
-}
+function clearParentNotifications() { dismissParentNotification('all'); }
 
 // ========================================================
 // ADVANCED MOTORSPORT DYNO & FRICTION CIRCLE ENGINE
@@ -5071,15 +4768,9 @@ async function dispatchCrashEmergency(immediate = false) {
   }
 
   try {
-    const res = await fetch('/api/emergency/crash-event', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(currentCrashPayload)
-    });
-    const data = await res.json();
-    console.log('Crash event broadcast response:', data);
+    await apiRequest('/api/emergency/crash-event', { method: 'POST', body: JSON.stringify(currentCrashPayload) });
 
-    showToast('CRITICAL SOS DISPATCHED: Rescue beacon sent to Parent Guardian Network', 'error');
+    showToast('Crash alert shared with approved guardians.', 'info');
 
     // Refresh parent notifications if viewing parent dashboard
     if (typeof fetchParentNotifications === 'function') {
@@ -5087,7 +4778,7 @@ async function dispatchCrashEmergency(immediate = false) {
     }
   } catch (err) {
     console.error('Failed to post crash event:', err);
-    showToast('Emergency alert broadcast queued locally', 'error');
+    showToast('Rhody could not send the crash alert.', 'error');
   }
 }
 

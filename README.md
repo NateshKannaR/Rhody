@@ -83,7 +83,7 @@ adb install -r Rhody-v1.0.0.apk
 ### 5. Companion Web Platform & MongoDB Atlas Integration
 - **Direct MongoDB Atlas Cloud Sync**: Integrated with MongoDB Atlas cluster:
   ```
-  mongodb+srv://Natesh:Natesh@cluster0.wwp3oig.mongodb.net/roadpulse
+  MONGODB_URI
   ```
 - **Companion Web Dashboard (`backend/public/index.html`)**:
   - Interactive Leaflet dark-mode map with speed gradient polylines and scrubber point inspection.
@@ -148,8 +148,8 @@ Rhody
 ```
 
 - **Android App**: Kotlin 1.9.24, Jetpack Compose (BOM 2024.05.00), Room 2.6.1, MapLibre Native 11.0.0, Coroutines & StateFlow.
-- **Web Backend**: Node.js, Express.js, MongoDB Native Driver v6.12, Leaflet 1.9.4, Chart.js, Tailwind CSS.
-- **Database**: MongoDB Atlas (`cluster0.wwp3oig.mongodb.net/roadpulse`) & Android Local SQLite/Room.
+- **Web Backend**: Node.js, Express.js, MongoDB Node.js driver, Leaflet 1.9.4, Chart.js, Tailwind CSS.
+- **Database**: MongoDB Atlas (`roadpulse` database by default) & Android Local SQLite/Room.
 
 ---
 
@@ -159,10 +159,12 @@ Rhody
 In the project root:
 ```bash
 cd backend
-npm install
+npm ci
 npm start
 ```
-The server will connect directly to MongoDB Atlas and serve the web dashboard on:
+Set `MONGODB_URI` in your shell or in a local `backend/.env` file before starting the server. On Vercel, set the same variable in **Project Settings → Environment Variables → Production** and deploy. The database defaults to `roadpulse`. Set `MONGODB_DB` only when using a different database name.
+
+The API uses the database user to read and write Rhody records and create the required indexes. A successful readiness check returns HTTP 200 with `{"status":"online"}`. The website is served on:
 ```
 http://localhost:3000
 ```
@@ -172,8 +174,10 @@ http://localhost:3000/api/status
 ```
 
 ### 2. Build the Native Android APK
+
+Install JDK 17 and Android SDK 34, then set `JAVA_HOME` and `ANDROID_HOME` for your system.
 ```bash
-JAVA_HOME=/home/natesh/.tools/jdk-17 ANDROID_HOME=/home/natesh/android-sdk ./gradlew assembleDebug
+bash ./gradlew assembleDebug
 ```
 The compiled, production-ready debug APK is generated at:
 ```
@@ -206,8 +210,8 @@ Rhody supports unified user accounts powered by MongoDB Atlas:
 
 ### Features & Security
 - **Email ID Registration & Login**: Drivers and riders can sign up with their email and password.
-- **Salted Hash Security**: Passwords are securely hashed with per-user cryptographic salts using Node.js `pbkdf2Sync` (SHA-512, 1000 iterations).
-- **HMAC Session Tokens**: Cryptographically signed bearer tokens authenticate API operations and tie telemetry records to specific user profiles.
+- **Password hashing**: New accounts use salted scrypt. Existing passwords migrate to scrypt after a successful sign-in.
+- **Database-backed sessions**: Rhody stores a hash of each random bearer token in MongoDB. Sessions expire after 30 days and are revoked on sign-out when online. Users with sessions from an older release need to sign in again.
 - **User-Filtered Cloud Trips**: When logged in, both the Android app and the Web Dashboard query and synchronize trips specific to the logged-in email.
 - **Native Android Account Screen**:
   - Accessible via the Account tab (bottom navigation) or the top header profile pill.
@@ -215,8 +219,7 @@ Rhody supports unified user accounts powered by MongoDB Atlas:
   - Active MongoDB Atlas connection indicator.
   - One-tap "Sync All Local Trips Now" pushing Room database trips to MongoDB Atlas.
   - Configurable backend server gateway endpoint.
-- **Web Dashboard Auth Modal**:
-  - Sleek dark-mode modal for instant sign-in or account registration.
+- **Responsive web sign-in**: Riders and guardians use the same sign-in form. Guardian registration requires a rider’s registered email and the rider’s approval before sharing.
   - Local session storage with real-time reactive UI update.
   - Live simulation & upload tied directly to the logged-in email.
 

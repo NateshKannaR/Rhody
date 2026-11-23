@@ -1,415 +1,260 @@
+require('dotenv').config({ quiet: true });
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const path = require('path');
 const crypto = require('crypto');
+const { promisify } = require('node:util');
+const scrypt = promisify(crypto.scrypt);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://Natesh:Natesh@cluster0.wwp3oig.mongodb.net/?retryWrites=true&w=majority';
-const DB_NAME = 'roadpulse';
-const AUTH_SECRET = process.env.AUTH_SECRET || 'roadpulse_secret_key_2026';
+const { MONGODB_URI } = process.env;
+const DB_NAME = process.env.MONGODB_DB || 'roadpulse';
+const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
-let db;
-let client;
 let clientPromise;
 
-async function getDb() {
-  if (db) return db;
+function getDb() {
+  if (!MONGODB_URI) return Promise.reject(new Error('MONGODB_URI is missing'));
   if (!clientPromise) {
-    client = new MongoClient(MONGODB_URI, {
-      serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-      },
-      connectTimeoutMS: 15000,
-      socketTimeoutMS: 45000,
-      maxPoolSize: 10,
+    const client = new MongoClient(MONGODB_URI, {
+      serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
+      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 10
     });
-    clientPromise = client.connect().then(async (c) => {
-      const database = c.db(DB_NAME);
+    clientPromise = (async () => {
       try {
-        await database.collection('trips').createIndex({ startTime: -1 });
-        await database.collection('trips').createIndex({ userEmail: 1, startTime: -1 });
-        await database.collection('track_points').createIndex({ tripId: 1, timestamp: 1 });
-        await database.collection('users').createIndex({ email: 1 }, { unique: true });
-        await database.collection('places').createIndex({ userEmail: 1, createdAt: -1 });
-      } catch (err) {
-        console.warn('[RoadPulse] Index creation notice:', err.message);
+        await client.connect();
+        const database = client.db(DB_NAME);
+        await Promise.all([
+          database.collection('trips').createIndex({ userEmail: 1, startTime: -1 }),
+          database.collection('track_points').createIndex({ tripId: 1, timestamp: 1 }),
+          database.collection('sessions').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+          database.collection('users').createIndex({ email: 1 }, { unique: true }),
+          database.collection('live_beacons').createIndex({ userEmail: 1, updatedAt: -1 }),
+          database.collection('guardian_connections').createIndex({ riderEmail: 1, status: 1 })
+        ]);
+        return database;
+      } catch (error) {
+        await client.close().catch(() => {});
+        clientPromise = null;
+        throw error;
       }
-      db = database;
-      console.log(`[RoadPulse] Successfully connected to MongoDB Atlas database: ${DB_NAME}`);
-      return db;
-    }).catch(err => {
-      console.error('[RoadPulse] Failed to connect to MongoDB Atlas:', err.message);
-      clientPromise = null;
-      throw err;
-    });
+    })();
   }
-  return await clientPromise;
+  return clientPromise;
 }
-
-// Initial eager connect attempt
-getDb().catch(() => {});
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Serverless-ready MongoDB injection middleware
-app.use(async (req, res, next) => {
-  if (req.path.startsWith('/api') && req.path !== '/api/status') {
-    try {
-      req.db = await getDb();
-      next();
-    } catch (err) {
-      // For parent and bike management routes, allow graceful offline fallback
-      if (req.path.startsWith('/api/parent') || req.path.startsWith('/api/user/bike-management') || req.path.startsWith('/api/trips')) {
-        req.db = null;
-        return next();
-      }
-      console.error('[RoadPulse] Database error on request:', err.message);
-      return res.status(503).json({
-        error: 'Database disconnected. Please check MongoDB Atlas IP whitelist (ensure 0.0.0.0/0 is added in Network Access for Vercel cloud hosting).',
-        details: err.message
-      });
-    }
-  } else {
+app.use('/api', async (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (['/status', '/youtube/search', '/sketchfab/search'].includes(req.path)) return next();
+  try {
+    req.db = await getDb();
     next();
+  } catch (error) {
+    console.error('[Rhody] Database initialization failed:', error.name);
+    res.status(503).json({ error: 'Rhody Cloud is unavailable. Try again shortly.' });
   }
 });
 
-// Password & Token Utilities
-function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
-  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-  return { hash, salt };
+function safeEqual(left, right) {
+  const first = Buffer.from(left);
+  const second = Buffer.from(right);
+  return first.length === second.length && crypto.timingSafeEqual(first, second);
 }
 
-function verifyPassword(password, hash, salt) {
-  const checkHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-  return checkHash === hash;
+async function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
+  return { hash: (await scrypt(password, salt, 64)).toString('hex'), salt };
 }
 
-function generateToken(user) {
-  const payload = Buffer.from(JSON.stringify({
-    userId: user._id.toString(),
-    email: user.email,
-    name: user.name || '',
-    iat: Date.now()
-  })).toString('base64url');
-  const signature = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('base64url');
-  return `${payload}.${signature}`;
+async function verifyPassword(password, user) {
+  if (typeof user.passwordHash !== 'string' || typeof user.salt !== 'string') return false;
+  const hash = user.passwordVersion === 2
+    ? (await hashPassword(password, user.salt)).hash
+    : crypto.pbkdf2Sync(password, user.salt, 1000, 64, 'sha512').toString('hex');
+  return safeEqual(hash, user.passwordHash);
 }
 
-function verifyToken(token) {
+function sessionKey(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+function requestToken(req) {
+  return req.headers.authorization?.match(/^Bearer ([A-Za-z0-9_-]{43})$/i)?.[1];
+}
+
+async function createSession(database, user) {
+  const token = crypto.randomBytes(32).toString('base64url');
+  await database.collection('sessions').insertOne({
+    _id: sessionKey(token),
+    userId: user._id,
+    expiresAt: new Date(Date.now() + SESSION_MAX_AGE_MS)
+  });
+  return token;
+}
+
+async function findSessionUser(req) {
+  const token = requestToken(req);
   if (!token) return null;
-  const parts = token.split('.');
-  if (parts.length !== 2) return null;
-  const [payload, signature] = parts;
-  const expectedSig = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('base64url');
-  if (signature !== expectedSig) return null;
-  try {
-    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
-  } catch (e) {
-    return null;
-  }
+  const session = await req.db.collection('sessions').findOne({
+    _id: sessionKey(token),
+    expiresAt: { $gt: new Date() }
+  });
+  return session ? req.db.collection('users').findOne({ _id: session.userId }) : null;
+}
+
+async function requireSession(req, res, next) {
+  req.user = await findSessionUser(req);
+  if (!req.user) return res.status(401).json({ error: 'Please sign in to continue.' });
+  next();
+}
+
+function requireRider(req, res, next) {
+  if (req.user.role === 'parent') return res.status(403).json({ error: 'A rider account is required.' });
+  next();
+}
+
+function requireGuardian(req, res, next) {
+  if (req.user.role !== 'parent') return res.status(403).json({ error: 'A guardian account is required.' });
+  next();
+}
+
+function publicUser(user) {
+  return {
+    id: user._id.toString(),
+    email: user.email,
+    name: user.name || user.email.split('@')[0],
+    role: user.role || 'rider',
+    wardEmail: user.wardEmail || '',
+    avatar: user.avatar || '',
+    bio: user.bio || '',
+    bikeModel: user.bikeModel || '',
+    bikeSpecs: user.bikeSpecs || '',
+    bikePlate: user.bikePlate || '',
+    tireSetup: user.tireSetup || '',
+    emergencyContactName: user.emergencyContactName || '',
+    emergencyContactPhone: user.emergencyContactPhone || '',
+    speedUnit: user.speedUnit || 'kmh'
+  };
+}
+
+function normalizeEmail(email) {
+  return typeof email === 'string' ? email.trim().toLowerCase() : '';
+}
+
+function cleanText(value) {
+  return typeof value === 'string' ? value.trim() : '';
 }
 
 // ----------------------------------------------------
 // AUTHENTICATION ROUTES
 // ----------------------------------------------------
 
-// POST /api/auth/register
 app.post('/api/auth/register', async (req, res) => {
-  if (!db) return res.status(503).json({ error: 'Database disconnected' });
-  try {
-    const { email, password, name, role, wardCodeOrEmail, bikeModel, bikePlate, emergencyContactPhone } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
-    const cleanEmail = email.trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) {
-      return res.status(400).json({ error: 'Please enter a valid email address' });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
+  const { email, password, name, role, wardCodeOrEmail, bikeModel, bikePlate, emergencyContactPhone } = req.body || {};
+  const cleanEmail = normalizeEmail(email);
+  if (cleanEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    return res.status(400).json({ error: 'Enter a valid email address.' });
+  }
+  if (typeof password !== 'string' || password.length < 6 || password.length > 256) {
+    return res.status(400).json({ error: 'Use a password between 6 and 256 characters.' });
+  }
 
-    const userRole = (role === 'parent' || role === 'guardian') ? 'parent' : 'rider';
-    const wardClean = wardCodeOrEmail ? String(wardCodeOrEmail).trim().toLowerCase() : '';
-
-    if (userRole === 'parent') {
-      if (!wardClean) {
-        return res.status(400).json({ error: 'Please enter the ward rider code or email to monitor' });
-      }
-      if (cleanEmail === wardClean) {
-        return res.status(400).json({ error: 'Guardian email cannot be the same as rider email! A guardian and rider must be separate individuals.' });
-      }
-      const existingRider = await db.collection('users').findOne({ email: cleanEmail, role: 'rider' });
-      if (existingRider) {
-        return res.status(400).json({ error: 'This email is already registered as a Rider. Guardians must use a distinct email address.' });
-      }
-    }
-
-    const existing = await db.collection('users').findOne({ email: cleanEmail });
-    if (existing) {
-      return res.status(409).json({ error: 'An account with this email already exists' });
-    }
-
-    const { hash, salt } = hashPassword(password);
-    const userDoc = {
-      email: cleanEmail,
-      name: (name || '').trim() || cleanEmail.split('@')[0],
-      role: userRole,
-      wardEmail: wardClean,
-      passwordHash: hash,
-      salt: salt,
-      bikeModel: bikeModel || (userRole === 'rider' ? 'Bajaj Pulsar 150' : ''),
-      bikePlate: bikePlate || (userRole === 'rider' ? 'MH-12-RP-8821' : ''),
-      emergencyContactPhone: emergencyContactPhone || '',
-      createdAt: new Date(),
-      lastLoginAt: new Date()
-    };
-
-    const insertResult = await db.collection('users').insertOne(userDoc);
-    userDoc._id = insertResult.insertedId;
-
-    if (userRole === 'parent' && db) {
-      await db.collection('guardian_connections').updateOne(
-        { parentEmail: cleanEmail },
-        {
-          $set: {
-            parentEmail: cleanEmail,
-            parentName: userDoc.name,
-            riderEmail: wardClean,
-            status: 'approved',
-            approvedAt: new Date(),
-            updatedAt: new Date()
-          }
-        },
-        { upsert: true }
-      );
-    }
-
-    const token = generateToken(userDoc);
-
-    res.status(201).json({
-      success: true,
-      message: 'Account created successfully',
-      token,
-      user: {
-        id: userDoc._id.toString(),
-        email: userDoc.email,
-        name: userDoc.name,
-        role: userDoc.role,
-        wardEmail: userDoc.wardEmail || '',
-        avatar: userDoc.avatar || '',
-        bio: userDoc.bio || '',
-        bikeModel: userDoc.bikeModel || '',
-        bikeSpecs: userDoc.bikeSpecs || '',
-        bikePlate: userDoc.bikePlate || '',
-        tireSetup: userDoc.tireSetup || '',
-        emergencyContactName: userDoc.emergencyContactName || '',
-        emergencyContactPhone: userDoc.emergencyContactPhone || '',
-        speedUnit: userDoc.speedUnit || 'kmh'
-      }
+  const userRole = role === 'parent' || role === 'guardian' ? 'parent' : 'rider';
+  const wardEmail = userRole === 'parent' ? normalizeEmail(wardCodeOrEmail) : '';
+  if (userRole === 'parent') {
+    const rider = wardEmail !== cleanEmail && await req.db.collection('users').findOne({
+      email: wardEmail, role: { $ne: 'parent' }, passwordHash: { $type: 'string' }
     });
-  } catch (err) {
-    console.error('[Auth Register Error]:', err);
-    res.status(500).json({ error: err.message });
+    if (!rider) return res.status(400).json({ error: 'Enter the email of a different, registered rider.' });
+  }
+
+  const { hash, salt } = await hashPassword(password);
+  const user = {
+    email: cleanEmail,
+    name: cleanText(name) || cleanEmail.split('@')[0],
+    role: userRole,
+    wardEmail,
+    passwordHash: hash,
+    passwordVersion: 2,
+    salt,
+    bikeModel: cleanText(bikeModel),
+    bikePlate: cleanText(bikePlate),
+    emergencyContactPhone: cleanText(emergencyContactPhone),
+    createdAt: new Date(),
+    lastLoginAt: new Date()
+  };
+  try {
+    const { insertedId } = await req.db.collection('users').insertOne(user);
+    user._id = insertedId;
+    res.status(201).json({ success: true, token: await createSession(req.db, user), user: publicUser(user) });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ error: 'An account with this email already exists.' });
+    }
+    throw error;
   }
 });
 
-// POST /api/auth/login
 app.post('/api/auth/login', async (req, res) => {
-  if (!db) return res.status(503).json({ error: 'Database disconnected' });
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
-    const cleanEmail = email.trim().toLowerCase();
-    const user = await db.collection('users').findOne({ email: cleanEmail });
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-
-    const isValid = verifyPassword(password, user.passwordHash, user.salt);
-    if (!isValid) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-
-    await db.collection('users').updateOne(
-      { _id: user._id },
-      { $set: { lastLoginAt: new Date() } }
-    );
-
-    const token = generateToken(user);
-    res.json({
-      success: true,
-      message: 'Login successful',
-      token,
-      user: {
-        id: user._id.toString(),
-        email: user.email,
-        name: user.name || user.email.split('@')[0],
-        role: user.role || 'rider',
-        wardEmail: user.wardEmail || '',
-        avatar: user.avatar || '',
-        bio: user.bio || '',
-        bikeModel: user.bikeModel || '',
-        bikeSpecs: user.bikeSpecs || '',
-        bikePlate: user.bikePlate || '',
-        tireSetup: user.tireSetup || '',
-        emergencyContactName: user.emergencyContactName || '',
-        emergencyContactPhone: user.emergencyContactPhone || '',
-        speedUnit: user.speedUnit || 'kmh'
-      }
-    });
-  } catch (err) {
-    console.error('[Auth Login Error]:', err);
-    res.status(500).json({ error: err.message });
+  const { email, password } = req.body || {};
+  const cleanEmail = normalizeEmail(email);
+  if (!cleanEmail || typeof password !== 'string' || !password || password.length > 256) {
+    return res.status(400).json({ error: 'Enter your email and password.' });
   }
+  const users = req.db.collection('users');
+  const user = await users.findOne({ email: cleanEmail });
+  if (!user || !await verifyPassword(password, user)) {
+    return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+
+  const update = { lastLoginAt: new Date() };
+  if (user.passwordVersion !== 2) {
+    const { hash, salt } = await hashPassword(password);
+    Object.assign(update, { passwordHash: hash, salt, passwordVersion: 2 });
+  }
+  await users.updateOne({ _id: user._id, passwordHash: user.passwordHash }, { $set: update });
+  res.json({ success: true, token: await createSession(req.db, user), user: publicUser(user) });
 });
 
-// GET /api/auth/me
-app.get('/api/auth/me', async (req, res) => {
-  if (!db) return res.status(503).json({ error: 'Database disconnected' });
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
-  const decoded = verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ error: 'Unauthorized or invalid token' });
-  }
-  try {
-    const user = await db.collection('users').findOne({ email: decoded.email.toLowerCase() });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({
-      id: user._id.toString(),
-      email: user.email,
-      name: user.name || 'Pilot',
-      role: user.role || 'rider',
-      wardEmail: user.wardEmail || '',
-      avatar: user.avatar || '',
-      bio: user.bio || '',
-      bikeModel: user.bikeModel || '',
-      bikeSpecs: user.bikeSpecs || '',
-      bikePlate: user.bikePlate || '',
-      tireSetup: user.tireSetup || '',
-      emergencyContactName: user.emergencyContactName || '',
-      emergencyContactPhone: user.emergencyContactPhone || '',
-      speedUnit: user.speedUnit || 'kmh'
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+app.post('/api/auth/logout', async (req, res) => {
+  const token = requestToken(req);
+  if (token) await req.db.collection('sessions').deleteOne({ _id: sessionKey(token) });
+  res.status(204).end();
 });
 
-let guestProfileCache = {
-  id: 'guest',
-  name: 'Pilot',
-  email: '',
-  avatar: '',
-  bio: 'Precision motorcycle telemetry & dynamic apex trajectory tracking.',
-  bikeModel: '',
-  bikeSpecs: '',
-  bikePlate: '',
-  tireSetup: '',
-  emergencyContactName: '',
-  emergencyContactPhone: '',
-  speedUnit: 'kmh'
-};
-
-// GET /api/user/profile
-app.get('/api/user/profile', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
-  const decoded = verifyToken(token);
-  const targetEmail = (decoded && decoded.email) ? decoded.email.toLowerCase() : 'pilot@rhody.io';
-
-  if (!db) {
-    return res.json({ success: true, profile: guestProfileCache });
-  }
-
-  try {
-    const user = await db.collection('users').findOne({ email: targetEmail });
-    if (!user) {
-      return res.json({ success: true, profile: guestProfileCache });
-    }
-    const profile = {
-      id: user._id ? user._id.toString() : 'guest',
-      name: user.name || guestProfileCache.name,
-      email: user.email || targetEmail,
-      avatar: (user.avatar !== undefined && user.avatar !== '') ? user.avatar : guestProfileCache.avatar,
-      bio: user.bio || guestProfileCache.bio,
-      bikeModel: user.bikeModel || guestProfileCache.bikeModel,
-      bikeSpecs: user.bikeSpecs || guestProfileCache.bikeSpecs,
-      bikePlate: user.bikePlate || guestProfileCache.bikePlate,
-      tireSetup: user.tireSetup || guestProfileCache.tireSetup,
-      emergencyContactName: user.emergencyContactName || guestProfileCache.emergencyContactName,
-      emergencyContactPhone: user.emergencyContactPhone || guestProfileCache.emergencyContactPhone,
-      speedUnit: user.speedUnit || guestProfileCache.speedUnit || 'kmh'
-    };
-    if (targetEmail === 'pilot@rhody.io' && profile.avatar) {
-      guestProfileCache.avatar = profile.avatar;
-    }
-    res.json({ success: true, profile });
-  } catch (err) {
-    res.json({ success: true, profile: guestProfileCache });
-  }
+app.get('/api/auth/me', requireSession, (req, res) => {
+  const user = publicUser(req.user);
+  res.json({ ...user, user });
 });
 
-// POST & PUT /api/user/profile
-const handleProfileUpdate = async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
-  const decoded = verifyToken(token);
-  const targetEmail = (decoded && decoded.email) ? decoded.email.toLowerCase() : 'pilot@rhody.io';
+app.get('/api/user/profile', requireSession, (req, res) => {
+  res.json({ success: true, profile: publicUser(req.user) });
+});
 
-  const {
-    name, avatar, bio, bikeModel, bikeSpecs, bikePlate,
-    tireSetup, emergencyContactName, emergencyContactPhone, speedUnit
-  } = req.body;
-
-  const updateFields = { updatedAt: new Date() };
-  if (name !== undefined) updateFields.name = String(name).trim();
-  if (avatar !== undefined) updateFields.avatar = avatar; // base64 data URL or empty string
-  if (bio !== undefined) updateFields.bio = String(bio).trim();
-  if (bikeModel !== undefined) updateFields.bikeModel = String(bikeModel).trim();
-  if (bikeSpecs !== undefined) updateFields.bikeSpecs = String(bikeSpecs).trim();
-  if (bikePlate !== undefined) updateFields.bikePlate = String(bikePlate).trim();
-  if (tireSetup !== undefined) updateFields.tireSetup = String(tireSetup).trim();
-  if (emergencyContactName !== undefined) updateFields.emergencyContactName = String(emergencyContactName).trim();
-  if (emergencyContactPhone !== undefined) updateFields.emergencyContactPhone = String(emergencyContactPhone).trim();
-  if (speedUnit !== undefined) updateFields.speedUnit = speedUnit;
-
-  guestProfileCache = Object.assign({}, guestProfileCache, updateFields);
-
-  if (db) {
-    try {
-      await db.collection('users').updateOne(
-        { email: targetEmail },
-        { $set: { ...updateFields, email: targetEmail } },
-        { upsert: true }
-      );
-    } catch (err) {
-      console.warn('[Profile Save Warning]:', err.message);
-    }
+async function handleProfileUpdate(req, res) {
+  const update = { updatedAt: new Date() };
+  for (const field of ['name', 'avatar', 'bio', 'bikeModel', 'bikeSpecs', 'bikePlate',
+    'tireSetup', 'emergencyContactName', 'emergencyContactPhone', 'speedUnit']) {
+    if (typeof req.body?.[field] === 'string') update[field] = req.body[field].trim();
   }
+  const profile = await req.db.collection('users').findOneAndUpdate(
+    { _id: req.user._id },
+    { $set: update },
+    { returnDocument: 'after' }
+  );
+  res.json({ success: true, profile: publicUser(profile) });
+}
 
-  res.json({
-    success: true,
-    message: 'Profile updated successfully',
-    profile: guestProfileCache
-  });
-};
-
-app.post('/api/user/profile', handleProfileUpdate);
-app.put('/api/user/profile', handleProfileUpdate);
+app.post('/api/user/profile', requireSession, handleProfileUpdate);
+app.put('/api/user/profile', requireSession, handleProfileUpdate);
 
 const defaultMotorcyclePlaces = [
   {
@@ -512,158 +357,90 @@ const defaultBikeManagement = {
   fuelLogs: []
 };
 
-let guestBikeManagementStore = JSON.parse(JSON.stringify(defaultBikeManagement));
+async function getBikeManagement(database, userEmail) {
+  const record = await database.collection('bike_management').findOne({ userEmail });
+  return {
+    ...defaultBikeManagement,
+    ...record?.data,
+    specs: { ...defaultBikeManagement.specs, ...record?.data?.specs },
+    documents: { ...defaultBikeManagement.documents, ...record?.data?.documents }
+  };
+}
 
-// GET /api/user/bike-management
-app.get('/api/user/bike-management', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
-  const decoded = verifyToken(token);
-  const userEmail = decoded ? decoded.email.toLowerCase() : 'guest';
+app.get('/api/user/bike-management', requireSession, requireRider, async (req, res) => {
+  res.json({ success: true, data: await getBikeManagement(req.db, req.user.email) });
+});
 
-  if (!db) {
-    return res.json({ success: true, data: guestBikeManagementStore });
+app.post('/api/user/bike-management', requireSession, requireRider, async (req, res) => {
+  const userEmail = req.user.email;
+  const update = { updatedAt: new Date() };
+  // Android sends selected fields. Update those fields without replacing web-managed records.
+  for (const key of ['isConfigured', 'serviceHistory', 'fuelLogs']) {
+    if (Object.hasOwn(req.body || {}, key)) update[`data.${key}`] = req.body[key];
   }
-
-  try {
-    const doc = await db.collection('bike_management').findOne({ userEmail });
-    if (doc && doc.data) {
-      if (userEmail === 'guest') {
-        guestBikeManagementStore = doc.data;
+  for (const section of ['specs', 'components', 'documents']) {
+    for (const key of Object.keys(defaultBikeManagement[section])) {
+      if (Object.hasOwn(req.body?.[section] || {}, key)) {
+        update[`data.${section}.${key}`] = req.body[section][key];
       }
-      return res.json({ success: true, data: doc.data });
     }
-    res.json({ success: true, data: guestBikeManagementStore });
-  } catch (err) {
-    res.json({ success: true, data: guestBikeManagementStore });
   }
+  await req.db.collection('bike_management').updateOne(
+    { userEmail },
+    { $set: update, $setOnInsert: { userEmail } },
+    { upsert: true }
+  );
+  res.json({ success: true, data: await getBikeManagement(req.db, userEmail) });
 });
 
-// POST /api/user/bike-management
-app.post('/api/user/bike-management', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
-  const decoded = verifyToken(token);
-  const userEmail = decoded ? decoded.email.toLowerCase() : 'guest';
-
-  try {
-    const mgmtData = req.body;
-    if (userEmail === 'guest') {
-      guestBikeManagementStore = Object.assign({}, guestBikeManagementStore, mgmtData);
-    }
-    if (db) {
-      await db.collection('bike_management').updateOne(
-        { userEmail },
-        { $set: { userEmail, data: mgmtData, updatedAt: new Date() } },
-        { upsert: true }
-      );
-    }
-    res.json({ success: true, message: 'Motorcycle management records updated', data: mgmtData });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+app.delete('/api/user/places/:id', requireSession, requireRider, async (req, res) => {
+  const id = req.params.id;
+  const ids = ObjectId.isValid(id) ? [id, new ObjectId(id)] : [id];
+  await req.db.collection('places').deleteOne({ userEmail: req.user.email, _id: { $in: ids } });
+  res.json({ success: true });
 });
 
-// DELETE /api/user/places/:id (Clean fallback for legacy calls)
-app.delete('/api/user/places/:id', async (req, res) => {
-  res.json({ success: true, message: 'Saved places removed' });
-});
-
-// ----------------------------------------------------
-// SYSTEM & TELEMETRY ROUTES
-// ----------------------------------------------------
-
-// API: System & MongoDB Status
 app.get('/api/status', async (req, res) => {
-  let isConnected = false;
-  let database = null;
   try {
-    database = await getDb();
-    isConnected = !!database;
-  } catch (e) {
-    isConnected = false;
-  }
-  let tripCount = 0;
-  let pointCount = 0;
-  let userCount = 0;
-  if (isConnected && database) {
-    try {
-      tripCount = await database.collection('trips').countDocuments();
-      pointCount = await database.collection('track_points').countDocuments();
-      userCount = await database.collection('users').countDocuments();
-    } catch (e) {
-      console.error(e);
-    }
-  }
-  res.json({
-    status: isConnected ? 'online' : 'disconnected',
-    database: DB_NAME,
-    cluster: 'cluster0.wwp3oig.mongodb.net',
-    totalUsers: userCount,
-    totalTrips: tripCount,
-    totalPoints: pointCount,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// API: Get trips (filtered by user if requested or authenticated)
-app.get('/api/trips', async (req, res) => {
-  if (!db) return res.status(503).json({ error: 'Database disconnected' });
-  try {
-    let query = {};
-    const emailParam = req.query.email;
-    if (emailParam) {
-      query.userEmail = emailParam.toLowerCase();
-    } else {
-      const authHeader = req.headers.authorization;
-      const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
-      const decoded = verifyToken(token);
-      if (decoded && decoded.email) {
-        query.userEmail = decoded.email.toLowerCase();
-      }
-    }
-
-    const trips = await db.collection('trips')
-      .find(query)
-      .sort({ startTime: -1 })
-      .toArray();
-    res.json(trips);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const database = await getDb();
+    await database.command({ ping: 1 });
+    res.json({ status: 'online' });
+  } catch (error) {
+    console.error('[Rhody] Readiness check failed:', error.name);
+    res.status(503).json({ status: 'disconnected', error: 'Rhody Cloud is unavailable.' });
   }
 });
 
-// API: Get trip details with track points
-app.get('/api/trips/:id', async (req, res) => {
-  if (!db) return res.status(503).json({ error: 'Database disconnected' });
-  try {
-    const tripId = req.params.id;
-    let query = { _id: tripId };
-    if (ObjectId.isValid(tripId)) {
-      query = { $or: [{ _id: new ObjectId(tripId) }, { localId: Number(tripId) }, { _id: tripId }] };
-    } else if (!isNaN(tripId)) {
-      query = { localId: Number(tripId) };
-    }
+function tripFilter(id, userEmail) {
+  const alternatives = [{ _id: id }];
+  if (ObjectId.isValid(id)) alternatives.push({ _id: new ObjectId(id) });
+  if (/^\d+$/.test(id)) alternatives.push({ localId: Number(id) });
+  return { userEmail, $or: alternatives };
+}
 
-    const trip = await db.collection('trips').findOne(query);
-    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+async function tripPoints(database, trip) {
+  return database.collection('track_points')
+    .find({ tripId: trip._id.toString(), ...(trip.pointBatch ? { pointBatch: trip.pointBatch } : {}) })
+    .sort({ timestamp: 1 })
+    .toArray();
+}
 
-    const points = await db.collection('track_points')
-      .find({ tripId: trip._id.toString() })
-      .sort({ timestamp: 1 })
-      .toArray();
-
-    res.json({ ...trip, points });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+app.get('/api/trips', requireSession, requireRider, async (req, res) => {
+  const trips = await req.db.collection('trips')
+    .find({ userEmail: req.user.email })
+    .sort({ startTime: -1 })
+    .toArray();
+  res.json(trips);
 });
 
-// In-memory live beacons cache for ultra-fast real-time parent tracking
-const liveBeacons = new Map();
+app.get('/api/trips/:id', requireSession, requireRider, async (req, res) => {
+  const trip = await req.db.collection('trips').findOne(tripFilter(req.params.id, req.user.email));
+  if (!trip) return res.status(404).json({ error: 'Trip not found.' });
+  res.json({ ...trip, points: await tripPoints(req.db, trip) });
+});
 
 // API: Broadcast live telemetry beacon (from rider's Android app)
-app.post('/api/trips/:id/live', async (req, res) => {
+app.post('/api/trips/:id/live', requireSession, requireRider, async (req, res) => {
   try {
     const tripId = req.params.id;
     const {
@@ -683,13 +460,14 @@ app.post('/api/trips/:id/live', async (req, res) => {
 
     const beaconData = {
       tripId,
+      userEmail: req.user.email,
       riderName: riderName || 'Rider',
       status: status || 'RECORDING',
       isMoving: Boolean(isMoving),
       currentSpeedKmh: Number(currentSpeedKmh || 0),
       maxSpeedKmh: Number(maxSpeedKmh || 0),
-      latitude: Number(latitude || 0),
-      longitude: Number(longitude || 0),
+      latitude: Number.isFinite(latitude) ? latitude : null,
+      longitude: Number.isFinite(longitude) ? longitude : null,
       altitudeMeters: altitudeMeters ? Number(altitudeMeters) : null,
       batteryPercent: batteryPercent ? Number(batteryPercent) : null,
       totalDistanceKm: Number(totalDistanceKm || 0),
@@ -698,15 +476,11 @@ app.post('/api/trips/:id/live', async (req, res) => {
       timestamp: timestamp || Date.now()
     };
 
-    liveBeacons.set(tripId, beaconData);
-
-    if (db) {
-      db.collection('live_beacons').updateOne(
-        { tripId },
-        { $set: beaconData },
-        { upsert: true }
-      ).catch(e => console.warn('[Beacon DB write]:', e.message));
-    }
+    await req.db.collection('live_beacons').updateOne(
+      { _id: `${req.user._id}:${tripId}` },
+      { $set: beaconData },
+      { upsert: true }
+    );
 
     res.json({ success: true, timestamp: beaconData.updatedAt });
   } catch (err) {
@@ -714,180 +488,77 @@ app.post('/api/trips/:id/live', async (req, res) => {
   }
 });
 
-// API: Get live telemetry beacon (for Parents / Guardians to monitor)
+// Browser sharing links are unguessable. Android uses local numeric ride IDs.
 app.get('/api/trips/:id/live', async (req, res) => {
-  try {
-    const tripId = req.params.id;
-    let beacon = liveBeacons.get(tripId);
-
-    if (!beacon && db) {
-      beacon = await db.collection('live_beacons').findOne({ tripId });
-    }
-
-    if (!beacon && db) {
-      let query = { _id: tripId };
-      if (ObjectId.isValid(tripId)) {
-        query = { $or: [{ _id: new ObjectId(tripId) }, { localId: Number(tripId) }, { _id: tripId }] };
-      }
-      const trip = await db.collection('trips').findOne(query);
-      if (trip) {
-        beacon = {
-          tripId: trip._id.toString(),
-          riderName: trip.userEmail ? trip.userEmail.split('@')[0] : 'Rider',
-          status: trip.status || 'FINISHED',
-          isMoving: false,
-          currentSpeedKmh: 0,
-          maxSpeedKmh: Math.round((trip.maxSpeedMps || 0) * 3.6),
-          totalDistanceKm: ((trip.totalDistanceMeters || 0) / 1000).toFixed(2),
-          elapsedTimeMs: trip.totalDurationMs || trip.movingDurationMs || 0,
-          updatedAt: trip.updatedAt || new Date()
-        };
-      }
-    }
-
-    if (!beacon) {
-      return res.status(404).json({ error: 'Live ride beacon not found or expired' });
-    }
-
-    res.json(beacon);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const tripId = req.params.id;
+  const isShareLink = /^trip_[0-9a-f-]{36}$/.test(tripId);
+  const user = await findSessionUser(req);
+  if (!user && !isShareLink) return res.status(404).json({ error: 'Live ride not found.' });
+  const query = { tripId, updatedAt: { $gte: new Date(Date.now() - 30000) } };
+  if (!isShareLink) query.userEmail = user.email;
+  const beacon = await req.db.collection('live_beacons').findOne(query, { projection: { _id: 0, userEmail: 0 } });
+  if (!beacon) return res.status(404).json({ error: 'Live ride not found.' });
+  res.json(beacon);
 });
 
-
-// API: Sync trip from Android or Web client
-app.post('/api/trips/sync', async (req, res) => {
-  if (!db) return res.status(503).json({ error: 'Database disconnected' });
-  try {
-    const { trip, points, userEmail } = req.body;
-    if (!trip) return res.status(400).json({ error: 'Missing trip data' });
-
-    let email = userEmail || trip.userEmail;
-    if (!email) {
-      const authHeader = req.headers.authorization;
-      const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
-      const decoded = verifyToken(token);
-      if (decoded && decoded.email) {
-        email = decoded.email;
-      }
-    }
-    if (email) {
-      email = email.trim().toLowerCase();
-    }
-
-    const tripDoc = {
-      ...trip,
-      localId: trip.id || trip.localId,
-      userEmail: email || null,
-      updatedAt: new Date()
-    };
-    delete tripDoc.id;
-
-    // Upsert trip by title & startTime or existing _id
-    const filter = trip._id && ObjectId.isValid(trip._id)
-      ? { _id: new ObjectId(trip._id) }
-      : { startTime: trip.startTime, title: trip.title, ...(email ? { userEmail: email } : {}) };
-
-    await db.collection('trips').updateOne(
-      filter,
-      { $set: tripDoc },
-      { upsert: true }
-    );
-
-    const savedTrip = await db.collection('trips').findOne(filter);
-    const savedTripId = savedTrip._id.toString();
-
-    // Store points if provided
-    if (Array.isArray(points) && points.length > 0) {
-      await db.collection('track_points').deleteMany({ tripId: savedTripId });
-      const pointDocs = points.map((p, idx) => ({
-        ...p,
-        tripId: savedTripId,
-        userEmail: email || null,
-        pointIndex: idx + 1
-      }));
-      delete pointDocs.id;
-      await db.collection('track_points').insertMany(pointDocs);
-    }
-
-    res.json({
-      success: true,
-      message: 'Trip synced successfully with MongoDB',
-      tripId: savedTripId,
-      userEmail: email || null
-    });
-  } catch (err) {
-    console.error('Sync error:', err);
-    res.status(500).json({ error: err.message });
+app.post('/api/trips/sync', requireSession, requireRider, async (req, res) => {
+  const { trip, points } = req.body || {};
+  if (!trip || !Number.isFinite(new Date(trip.startTime).getTime()) || !Array.isArray(points)) {
+    return res.status(400).json({ error: 'A trip with a start time and track points is required.' });
   }
+  const userEmail = req.user.email;
+  const sourceId = typeof trip._id === 'string' && /^trip_[0-9a-f-]{36}$/.test(trip._id) ? trip._id : null;
+  const filter = { userEmail, startTime: trip.startTime, title: String(trip.title || 'Ride') };
+  if (sourceId) filter.sourceId = sourceId;
+  const summary = {
+    ...trip,
+    ...filter,
+    localId: trip.id || trip.localId || null,
+    updatedAt: new Date()
+  };
+  for (const key of ['_id', 'id', 'points', 'pointBatch']) delete summary[key];
+
+  const trips = req.db.collection('trips');
+  const tripId = (await trips.findOneAndUpdate(filter, {
+    $setOnInsert: summary
+  }, { upsert: true, returnDocument: 'after', projection: { _id: 1 } }))._id;
+  const pointBatch = crypto.randomUUID();
+  const trackPoints = req.db.collection('track_points');
+  if (points.length) {
+    await trackPoints.insertMany(points.map((point, index) => {
+      const { _id, ...data } = point;
+      return { ...data, tripId: tripId.toString(), userEmail, pointBatch, pointIndex: index + 1 };
+    }));
+  }
+  const previous = await trips.findOneAndUpdate(
+    { _id: tripId, userEmail }, { $set: { ...summary, pointBatch } }
+  );
+  if (!previous) {
+    await trackPoints.deleteMany({ tripId: tripId.toString(), pointBatch });
+    return res.status(409).json({ error: 'This ride changed while syncing. Try again.' });
+  }
+  await trackPoints.deleteMany({
+    tripId: tripId.toString(),
+    pointBatch: previous.pointBatch || { $exists: false }
+  }).catch(error => console.warn('[Rhody] Old track point cleanup failed:', error.name));
+  res.json({ success: true, message: 'Ride synced to Rhody Cloud.', tripId: tripId.toString() });
 });
 
-// API: Delete trip
-app.delete('/api/trips/:id', async (req, res) => {
-  if (!db) return res.status(503).json({ error: 'Database disconnected' });
-  try {
-    const tripId = req.params.id;
-    let query = { _id: tripId };
-    if (ObjectId.isValid(tripId)) {
-      query = { _id: new ObjectId(tripId) };
-    }
-
-    const trip = await db.collection('trips').findOne(query);
-    if (trip) {
-      const idStr = trip._id.toString();
-      await db.collection('track_points').deleteMany({ tripId: idStr });
-      await db.collection('trips').deleteOne({ _id: trip._id });
-    }
-
-    res.json({ success: true, message: 'Trip deleted' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+app.delete('/api/trips/:id', requireSession, requireRider, async (req, res) => {
+  const trip = await req.db.collection('trips').findOneAndDelete(tripFilter(req.params.id, req.user.email));
+  if (trip) await req.db.collection('track_points').deleteMany({ tripId: trip._id.toString() });
+  res.json({ success: true });
 });
 
-// API: Export GPX
-app.get('/api/trips/:id/export/gpx', async (req, res) => {
-  if (!db) return res.status(503).json({ error: 'Database disconnected' });
-  try {
-    const tripId = req.params.id;
-    const trip = await db.collection('trips').findOne(ObjectId.isValid(tripId) ? { _id: new ObjectId(tripId) } : { _id: tripId });
-    if (!trip) return res.status(404).send('Trip not found');
-
-    const points = await db.collection('track_points')
-      .find({ tripId: trip._id.toString() })
-      .sort({ timestamp: 1 })
-      .toArray();
-
-    const gpx = buildGpx(trip, points);
-    res.setHeader('Content-Type', 'application/gpx+xml');
-    res.setHeader('Content-Disposition', `attachment; filename="roadpulse_${trip._id}.gpx"`);
-    res.send(gpx);
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-});
-
-// API: Export CSV
-app.get('/api/trips/:id/export/csv', async (req, res) => {
-  if (!db) return res.status(503).json({ error: 'Database disconnected' });
-  try {
-    const tripId = req.params.id;
-    const trip = await db.collection('trips').findOne(ObjectId.isValid(tripId) ? { _id: new ObjectId(tripId) } : { _id: tripId });
-    if (!trip) return res.status(404).send('Trip not found');
-
-    const points = await db.collection('track_points')
-      .find({ tripId: trip._id.toString() })
-      .sort({ timestamp: 1 })
-      .toArray();
-
-    const csv = buildCsv(trip, points);
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="roadpulse_${trip._id}.csv"`);
-    res.send(csv);
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
+app.get('/api/trips/:id/export/:format', requireSession, requireRider, async (req, res) => {
+  const builders = { gpx: buildGpx, csv: buildCsv };
+  const format = req.params.format;
+  if (!Object.hasOwn(builders, format)) return res.status(404).json({ error: 'Export format not found.' });
+  const trip = await req.db.collection('trips').findOne(tripFilter(req.params.id, req.user.email));
+  if (!trip) return res.status(404).json({ error: 'Trip not found.' });
+  const points = await tripPoints(req.db, trip);
+  res.type(format === 'gpx' ? 'application/gpx+xml' : 'text/csv');
+  res.attachment(`rhody_${trip._id}.${format}`).send(builders[format](trip, points));
 });
 
 function buildGpx(trip, points) {
@@ -910,8 +581,8 @@ function buildCsv(trip, points) {
   let csv = `# Rhody Cloud Export\n# Title: ${trip.title}\n# Start: ${new Date(trip.startTime).toISOString()}\n`;
   csv += `point_index,timestamp,latitude,longitude,speed_kmh,cumulative_distance_km,altitude_m\n`;
   points.forEach((p, i) => {
-    const speedKmh = ((p.speedMps || 0) * 3.6).toFixed(1);
-    const distKm = ((p.cumulativeDistanceMeters || 0) / 1000).toFixed(3);
+    const speedKmh = Number(p.speedKmh ?? (p.speedMps || 0) * 3.6).toFixed(1);
+    const distKm = Number(p.distanceKm ?? (p.cumulativeDistanceMeters || 0) / 1000).toFixed(3);
     csv += `${i + 1},${new Date(p.timestamp).toISOString()},${p.latitude},${p.longitude},${speedKmh},${distKm},${p.altitudeMeters || ''}\n`;
   });
   return csv;
@@ -1016,384 +687,125 @@ app.get('/api/sketchfab/search', async (req, res) => {
 // ----------------------------------------------------
 // PARENT / GUARDIAN PORTAL ENDPOINTS & NOTIFICATIONS
 // ----------------------------------------------------
-let parentNotifications = [];
 
-// Two-Way Guardian Consent & Connection State
-let guardianConnections = new Map();
 
-// POST /api/parent/login
-app.post('/api/parent/login', async (req, res) => {
-  const { email, riderCode } = req.body;
-  const parentEmail = (email && String(email).trim().toLowerCase()) || 'guardian@family.io';
-  const targetRider = 'pilot@rhody.io';
-
-  let conn = guardianConnections.get(parentEmail);
-  if (!conn) {
-    conn = {
-      id: 'req_' + parentEmail.replace(/[^a-zA-Z0-9]/g, '_'),
-      parentEmail,
-      parentName: 'Family Guardian (Dad & Mom)',
-      riderEmail: targetRider,
-      status: 'pending_approval',
-      requestedAt: new Date().toISOString(),
-      approvedAt: null
-    };
-    guardianConnections.set(parentEmail, conn);
-  }
-
-  const parentProfile = {
-    parentEmail,
-    parentName: conn.parentName,
-    connectedRiderEmail: targetRider,
-    connectedRiderName: 'Natesh',
-    status: conn.status,
-    role: 'parent',
-    token: 'parent_token_' + Date.now()
-  };
-
-  res.json({
-    success: true,
-    message: 'Parent / Guardian login successful',
-    profile: parentProfile,
-    isApproved: conn.status === 'approved'
+// Guardian links and consent live in MongoDB so requests work across devices.
+app.post('/api/parent/connect-rider', requireSession, requireGuardian, async (req, res) => {
+  const riderEmail = normalizeEmail(req.body?.riderCodeOrEmail);
+  const rider = riderEmail !== req.user.email && await req.db.collection('users').findOne({
+    email: riderEmail, role: { $ne: 'parent' }, passwordHash: { $type: 'string' }
   });
-});
-
-// POST /api/parent/connect-rider
-app.post('/api/parent/connect-rider', async (req, res) => {
-  const { parentEmail, parentName, riderCodeOrEmail } = req.body;
-  const pEmail = (parentEmail && String(parentEmail).trim().toLowerCase()) || 'guardian@family.io';
-  const rEmail = (riderCodeOrEmail && String(riderCodeOrEmail).trim().toLowerCase().includes('@'))
-    ? riderCodeOrEmail.trim().toLowerCase()
-    : 'pilot@rhody.io';
-
+  if (!rider) return res.status(400).json({ error: 'Enter the email of a registered rider.' });
   const connection = {
-    id: 'req_' + pEmail.replace(/[^a-zA-Z0-9]/g, '_'),
-    parentEmail: pEmail,
-    parentName: parentName || 'Family Guardian (Dad & Mom)',
-    riderEmail: rEmail,
+    parentEmail: req.user.email,
+    parentName: publicUser(req.user).name,
+    riderEmail,
     status: 'pending_approval',
-    requestedAt: new Date().toISOString(),
-    approvedAt: null
+    requestedAt: new Date()
   };
-  guardianConnections.set(pEmail, connection);
+  await req.db.collection('guardian_connections').updateOne(
+    { parentEmail: req.user.email, riderEmail },
+    { $setOnInsert: connection },
+    { upsert: true }
+  );
+  await req.db.collection('users').updateOne({ _id: req.user._id }, { $set: { wardEmail: riderEmail } });
+  res.json({ success: true, riderEmail });
+});
 
-  // High-priority notification for rider to accept
-  const riderReqNotif = {
-    id: 'req_' + Date.now(),
-    riderEmail: rEmail,
-    type: 'guardian_request',
-    title: 'Guardian Link Request',
-    message: `${connection.parentName} (${pEmail}) is requesting live safety tracking access.`,
-    guardianEmail: pEmail,
-    guardianName: connection.parentName,
-    severity: 'warning',
-    timestamp: new Date().toISOString()
-  };
-  parentNotifications.unshift(riderReqNotif);
+app.get('/api/rider/guardian-requests', requireSession, requireRider, async (req, res) => {
+  const requests = await req.db.collection('guardian_connections')
+    .find({ riderEmail: req.user.email, status: 'pending_approval' }).toArray();
+  res.json({ success: true, requests: requests.map(request => ({ ...request, id: request._id.toString() })) });
+});
 
+app.post('/api/rider/respond-guardian-request', requireSession, requireRider, async (req, res) => {
+  const { requestId, action } = req.body || {};
+  if (!ObjectId.isValid(requestId) || !['approved', 'rejected', 'revoked'].includes(action)) {
+    return res.status(400).json({ error: 'Select a valid guardian request.' });
+  }
+  const result = await req.db.collection('guardian_connections').updateOne(
+    { _id: new ObjectId(requestId), riderEmail: req.user.email },
+    { $set: { status: action, updatedAt: new Date(), riderConfirmed: true } }
+  );
+  if (!result.matchedCount) return res.status(404).json({ error: 'Guardian request not found.' });
+  res.json({ success: true, status: action });
+});
+
+app.get('/api/parent/rider-status', requireSession, requireGuardian, async (req, res) => {
+  const riderEmail = req.user.wardEmail;
+  const connections = req.db.collection('guardian_connections');
+  const link = { parentEmail: req.user.email, riderEmail };
+  let connection = riderEmail && await connections.findOne(link);
+  if (riderEmail && (!connection || (connection.status === 'approved' && !connection.riderConfirmed))) {
+    await connections.updateOne(
+      { ...link, riderConfirmed: { $ne: true } },
+      { $set: { ...link, status: 'pending_approval', parentName: publicUser(req.user).name, requestedAt: new Date() } },
+      { upsert: !connection }
+    );
+    connection = await connections.findOne(link);
+  }
+
+  if (connection?.status !== 'approved' || !connection.riderConfirmed) {
+    return res.json({ authorized: false, status: connection?.status || 'unpaired', rider: { email: riderEmail || '' } });
+  }
+  const rider = await req.db.collection('users').findOne({ email: riderEmail, role: { $ne: 'parent' } });
+  if (!rider) return res.json({ authorized: false, status: 'unpaired' });
+  const [bike, beacon, trips, notifications] = await Promise.all([
+    getBikeManagement(req.db, riderEmail),
+    req.db.collection('live_beacons').findOne({
+      userEmail: riderEmail, updatedAt: { $gte: new Date(Date.now() - 30000) }
+    }, { sort: { updatedAt: -1 }, projection: { _id: 0, userEmail: 0 } }),
+    req.db.collection('trips').find({ userEmail: riderEmail }).sort({ startTime: -1 }).limit(5).toArray(),
+    guardianNotifications(req.db, riderEmail, req.user.email)
+  ]);
+  const { name, email, avatar, bikeModel, bikePlate } = publicUser(rider);
   res.json({
-    success: true,
-    status: 'pending_approval',
-    message: `Connection request sent to rider ${rEmail}. Awaiting rider authorization in their cockpit.`,
-    connection
+    success: true, authorized: true, status: 'approved',
+    rider: { name, email, avatar, bikeModel, bikePlate }, bike, beacon, trips,
+    documents: bike.documents, notifications
   });
 });
 
-// GET /api/rider/guardian-requests
-app.get('/api/rider/guardian-requests', (req, res) => {
-  const riderEmail = req.query.riderEmail || 'pilot@rhody.io';
-  const requests = [];
-  for (const conn of guardianConnections.values()) {
-    if (!conn.riderEmail || conn.riderEmail === riderEmail) {
-      requests.push(conn);
-    }
-  }
-  res.json({ success: true, requests });
+function guardianNotifications(database, riderEmail, parentEmail) {
+  return database.collection('parent_notifications')
+    .find({ riderEmail, dismissedBy: { $ne: parentEmail } })
+    .sort({ timestamp: -1 }).limit(50).toArray();
+}
+
+app.delete('/api/parent/notifications/:id', requireSession, requireGuardian, async (req, res) => {
+  const { id } = req.params;
+  const riderEmail = req.user.wardEmail;
+  const link = await req.db.collection('guardian_connections').findOne({
+    parentEmail: req.user.email, riderEmail, riderConfirmed: true, status: 'approved'
+  });
+  if (!link) return res.status(403).json({ error: 'The rider has not approved access.' });
+  await req.db.collection('parent_notifications').updateMany(
+    { riderEmail, ...(id === 'all' ? {} : { id }) },
+    { $addToSet: { dismissedBy: req.user.email } }
+  );
+  res.json({ success: true });
 });
 
-// POST /api/rider/respond-guardian-request
-app.post('/api/rider/respond-guardian-request', (req, res) => {
-  const { parentEmail, requestId, action } = req.body; // action: 'accept' | 'approved' | 'reject' | 'rejected' | 'revoke'
-  let pEmail = (parentEmail && String(parentEmail).trim().toLowerCase());
-
-  if (!pEmail && requestId) {
-    for (const [email, conn] of guardianConnections.entries()) {
-      if (conn.id === requestId) {
-        pEmail = email;
-        break;
-      }
-    }
+app.post('/api/emergency/crash-event', requireSession, requireRider, async (req, res) => {
+  const { latitude, longitude, impactG, rollAngle, speedKmh } = req.body || {};
+  if (![latitude, longitude, impactG, rollAngle, speedKmh].every(Number.isFinite)
+      || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+    return res.status(400).json({ error: 'A valid GPS fix and impact readings are required.' });
   }
-  if (!pEmail) pEmail = 'guardian@family.io';
-
-  let conn = guardianConnections.get(pEmail);
-  if (!conn) {
-    conn = {
-      id: requestId || ('req_' + pEmail.replace(/[^a-zA-Z0-9]/g, '_')),
-      parentEmail: pEmail,
-      parentName: 'Family Guardian',
-      riderEmail: 'pilot@rhody.io',
-      requestedAt: new Date().toISOString()
-    };
-  }
-
-  const isApproved = (action === 'accept' || action === 'approved');
-  if (isApproved) {
-    conn.status = 'approved';
-    conn.approvedAt = new Date().toISOString();
-    guardianConnections.set(pEmail, conn);
-
-    parentNotifications.unshift({
-      id: 'notif_accept_' + Date.now(),
-      riderEmail: conn.riderEmail,
-      type: 'info',
-      title: 'Guardian Access Granted',
-      message: `Rider approved live tracking for ${conn.parentName}. Live radar telemetry and documents are now unlocked.`,
-      timestamp: new Date().toISOString(),
-      severity: 'info'
-    });
-
-    return res.json({
-      success: true,
-      message: `Access granted to ${conn.parentName}`,
-      status: 'approved',
-      connection: conn
-    });
-  } else {
-    conn.status = action === 'revoke' ? 'revoked' : 'rejected';
-    conn.revokedAt = new Date().toISOString();
-    guardianConnections.set(pEmail, conn);
-
-    return res.json({
-      success: true,
-      message: `Access ${action}ed for ${conn.parentName}`,
-      status: conn.status,
-      connection: conn
-    });
-  }
-});
-
-// GET /api/parent/rider-status
-app.get('/api/parent/rider-status', async (req, res) => {
-  try {
-    const riderEmail = req.query.riderEmail || 'pilot@rhody.io';
-    const parentEmail = (req.query.parentEmail && String(req.query.parentEmail).trim().toLowerCase()) || 'guardian@family.io';
-
-    let conn = null;
-    if (db) {
-      conn = await db.collection('guardian_connections').findOne({ parentEmail });
-    }
-    if (!conn) {
-      conn = guardianConnections.get(parentEmail);
-    }
-    const isApproved = !conn || conn.status !== 'rejected';
-
-    let rider = null;
-    if (db) {
-      rider = await db.collection('users').findOne({ email: riderEmail });
-    }
-    const profile = rider || guestProfileCache;
-
-    let bikeMgmt = null;
-    if (db) {
-      const doc = await db.collection('bike_management').findOne({ userEmail: 'guest' });
-      if (doc && doc.data) bikeMgmt = doc.data;
-    }
-    if (!bikeMgmt) bikeMgmt = guestBikeManagementStore;
-
-    let latestBeacon = null;
-    for (const beacon of liveBeacons.values()) {
-      latestBeacon = beacon;
-      break;
-    }
-    if (!latestBeacon && db) {
-      latestBeacon = await db.collection('live_beacons').findOne({}, { sort: { updatedAt: -1 } });
-    }
-
-    if (!latestBeacon) {
-      latestBeacon = {
-        tripId: 'live-safety-beacon',
-        riderName: profile.name || 'Natesh',
-        status: 'PARKED',
-        isMoving: false,
-        currentSpeedKmh: 0,
-        maxSpeedKmh: 86.4,
-        latitude: 12.9716,
-        longitude: 77.5946,
-        altitudeMeters: 920,
-        batteryPercent: 88,
-        totalDistanceKm: 0,
-        updatedAt: new Date()
-      };
-    }
-
-    let recentTrips = [];
-    if (db) {
-      recentTrips = await db.collection('trips')
-        .find({})
-        .sort({ startTime: -1 })
-        .limit(5)
-        .toArray();
-    }
-
-    res.json({
-      success: true,
-      authorized: true,
-      status: 'approved',
-      rider: {
-        name: profile.name || 'Natesh',
-        email: riderEmail,
-        avatar: profile.avatar || '',
-        bikeModel: profile.bikeModel || (bikeMgmt.specs && bikeMgmt.specs.makeModel) || '',
-        bikePlate: profile.bikePlate || (bikeMgmt.documents && (bikeMgmt.documents.rcNumber || (bikeMgmt.documents.rc && bikeMgmt.documents.rc.number))) || '',
-        odometer: (bikeMgmt.specs && bikeMgmt.specs.currentOdometer) || 0
-      },
-      documents: bikeMgmt.documents || {},
-      bike: bikeMgmt,
-      telemetry: latestBeacon,
-      beacon: latestBeacon,
-      recentTrips: recentTrips.map(t => ({
-        id: t._id ? t._id.toString() : t.id,
-        name: t.name || 'Ride Telemetry Session',
-        distanceKm: t.distanceKm || (t.totalDistanceMeters ? (t.totalDistanceMeters / 1000).toFixed(1) : 0),
-        durationFormatted: t.durationFormatted || '25 min',
-        maxSpeedKmh: t.maxSpeedKmh || (t.topSpeedKmh ? t.topSpeedKmh.toFixed(1) : 0),
-        startTime: t.startTime
-      })),
-      trips: recentTrips,
-      notifications: notifs
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET /api/parent/notifications
-app.get('/api/parent/notifications', (req, res) => {
-  const riderEmail = req.query.riderEmail || 'pilot@rhody.io';
-  const list = parentNotifications.filter(n => !n.riderEmail || n.riderEmail === riderEmail);
-  res.json({ success: true, notifications: list });
-});
-
-// POST /api/parent/notifications
-app.post('/api/parent/notifications', async (req, res) => {
-  const { type, title, message, severity, riderEmail, latitude, longitude, speedKmh } = req.body;
-  const newNotif = {
-    id: 'notif_' + Date.now(),
-    riderEmail: riderEmail || 'pilot@rhody.io',
-    riderName: 'Natesh',
-    type: type || 'alert',
-    title: title || 'Safety Alert',
-    message: message || '',
-    severity: severity || 'warning',
-    latitude: latitude || null,
-    longitude: longitude || null,
-    speedKmh: speedKmh || null,
+  const { name: riderName, email: riderEmail } = publicUser(req.user);
+  const event = {
+    id: crypto.randomUUID(), riderEmail, riderName, latitude, longitude, impactG, rollAngle, speedKmh,
     timestamp: new Date().toISOString(),
-    read: false
+    mapsUrl: `https://www.google.com/maps?q=${latitude},${longitude}`
   };
-
-  parentNotifications.unshift(newNotif);
-  if (parentNotifications.length > 50) parentNotifications.pop();
-
-  if (db) {
-    db.collection('parent_notifications').insertOne(newNotif).catch(() => {});
-  }
-
-  res.json({ success: true, notification: newNotif });
-});
-
-// DELETE /api/parent/notifications/:id
-app.delete('/api/parent/notifications/:id', (req, res) => {
-  const id = req.params.id;
-  if (id === 'all') {
-    parentNotifications = [];
-  } else {
-    parentNotifications = parentNotifications.filter(n => n.id !== id);
-  }
-  res.json({ success: true, message: 'Notification dismissed' });
-});
-
-// ========================================================
-// ADVANCED MOTORCYCLE TELEMETRY & CRASH BLACK BOX ROUTES
-// ========================================================
-
-let crashBlackBoxEvents = [];
-
-// POST /api/emergency/crash-event
-app.post('/api/emergency/crash-event', async (req, res) => {
-  try {
-    const {
-      riderEmail = 'pilot@rhody.io',
-      riderName = 'Natesh',
-      latitude = 12.9716,
-      longitude = 77.5946,
-      impactG = 4.2,
-      rollAngle = 78.5,
-      speedKmh = 54.2,
-      timestamp = new Date().toISOString()
-    } = req.body;
-
-    const crashEvent = {
-      id: 'crash_' + Date.now(),
-      riderEmail,
-      riderName,
-      latitude: Number(latitude),
-      longitude: Number(longitude),
-      impactG: Number(impactG),
-      rollAngle: Number(rollAngle),
-      speedKmh: Number(speedKmh),
-      timestamp,
-      status: 'CRITICAL_DISPATCHED',
-      mapsUrl: `https://www.google.com/maps?q=${latitude},${longitude}`
-    };
-
-    crashBlackBoxEvents.unshift(crashEvent);
-    if (crashBlackBoxEvents.length > 50) crashBlackBoxEvents.pop();
-
-    if (db) {
-      db.collection('crash_events').insertOne(crashEvent).catch(() => {});
-    }
-
-    // Immediately push high-priority critical SOS alert into Guardian Notifications Feed
-    const guardianEmergencyNotif = {
-      id: 'alert_crash_' + Date.now(),
-      riderEmail,
-      type: 'sos',
-      title: 'CRITICAL CRASH DETECTED',
-      message: `Rider ${riderName} detected in high-G impact (${impactG}G, ${rollAngle} deg tilt) at ${speedKmh} km/h. Location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}. Emergency rescue coordinates dispatched!`,
-      severity: 'critical',
-      timestamp: new Date().toISOString(),
-      location: { latitude, longitude },
-      mapsUrl: crashEvent.mapsUrl
-    };
-
-    parentNotifications.unshift(guardianEmergencyNotif);
-    if (parentNotifications.length > 50) parentNotifications.pop();
-
-    if (db) {
-      db.collection('parent_notifications').insertOne(guardianEmergencyNotif).catch(() => {});
-    }
-
-    // Broadcast live beacon distress status
-    for (const beacon of liveBeacons.values()) {
-      beacon.status = 'CRASH_IMPACT_DETECTED';
-      beacon.currentSpeedKmh = 0;
-      beacon.isMoving = false;
-      beacon.latitude = Number(latitude);
-      beacon.longitude = Number(longitude);
-      beacon.updatedAt = new Date();
-    }
-
-    res.status(201).json({
-      success: true,
-      message: 'Crash emergency beacon broadcasted to guardian network and black box recorded',
-      event: crashEvent
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  await req.db.collection('crash_events').insertOne(event);
+  await req.db.collection('parent_notifications').insertOne({
+    id: event.id, riderEmail, type: 'sos', severity: 'critical',
+    title: 'Rider crash alert',
+    message: `${riderName} sent a crash alert from Rhody.`,
+    timestamp: event.timestamp, location: { latitude, longitude }, mapsUrl: event.mapsUrl
+  });
+  res.status(201).json({ success: true, message: 'Crash alert shared with approved guardians.', event });
 });
 
 // GET /api/telemetry/advanced-metrics (100% Genuine Sensor & Telemetry Data)
@@ -1430,6 +842,14 @@ app.get('/apk', (req, res) => {
 
 app.get('/video', (req, res) => {
   res.redirect('https://github.com/NateshKannaR/Rhody/releases/download/v1.0.0/rhody_overview_2min.mp4');
+});
+
+app.use('/api', (req, res) => res.status(404).json({ error: 'API route not found.' }));
+app.use('/api', (error, req, res, next) => {
+  if (res.headersSent) return next(error);
+  console.error('[Rhody] API request failed:', error.name);
+  const status = error.status >= 400 && error.status < 500 ? error.status : 500;
+  res.status(status).json({ error: status === 413 ? 'The upload is too large.' : 'The request could not be completed.' });
 });
 
 // Fallback to SPA index.html

@@ -103,6 +103,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import org.json.JSONObject
 import com.roadpulse.app.data.sync.CloudSyncManager
 import com.roadpulse.app.domain.model.MotorcycleCatalog
 import androidx.compose.ui.tooling.preview.Preview
@@ -167,8 +169,34 @@ fun DashboardScreen(
     val liveGForce by TripRecordingController.liveGForce.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
-    var isGuardianAuthorized by remember { mutableStateOf(false) }
-    var hasPendingRiderConsent by remember { mutableStateOf(false) }
+    var guardianRequest by remember { mutableStateOf<JSONObject?>(null) }
+    var updatingConsent by remember { mutableStateOf(false) }
+
+    LaunchedEffect(authState.token) {
+        if (authState.token == null) return@LaunchedEffect
+        while (true) {
+            AuthManager.cloudRequest("/api/rider/guardian-requests").onSuccess {
+                guardianRequest = it.optJSONArray("requests")?.optJSONObject(0)
+            }
+            delay(5000)
+        }
+    }
+
+    fun respondToGuardian(request: JSONObject, action: String) {
+        if (updatingConsent) return
+        updatingConsent = true
+        coroutineScope.launch {
+            AuthManager.cloudRequest(
+                "/api/rider/respond-guardian-request", "POST",
+                JSONObject().put("requestId", request.optString("id")).put("action", action)
+            ).onSuccess {
+                guardianRequest = null
+            }.onFailure {
+                Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+            }
+            updatingConsent = false
+        }
+    }
 
     // Persistent Motorcycle State (Zero Mock Data)
     val prefs = remember { context.getSharedPreferences("rhody_bike_prefs", Context.MODE_PRIVATE) }
@@ -295,20 +323,13 @@ fun DashboardScreen(
         Spacer(modifier = Modifier.height(14.dp))
 
 
-        if (hasPendingRiderConsent) {
+        guardianRequest?.let { request ->
             DashboardRiderConsentAndActionsSection(
-                hasPendingRiderConsent = hasPendingRiderConsent,
-                onAcceptConsent = {
-                    isGuardianAuthorized = true
-                    hasPendingRiderConsent = false
-                    Toast.makeText(context, "Guardian access granted! Telemetry shared.", Toast.LENGTH_SHORT).show()
-                },
-                onDeclineConsent = {
-                    hasPendingRiderConsent = false
-                    Toast.makeText(context, "Guardian request declined", Toast.LENGTH_SHORT).show()
-                }
+                guardianEmail = request.optString("parentEmail"),
+                enabled = !updatingConsent,
+                onAcceptConsent = { respondToGuardian(request, "approved") },
+                onDeclineConsent = { respondToGuardian(request, "rejected") }
             )
-            Spacer(modifier = Modifier.height(14.dp))
         }
 
         // ================= 2. BIKE STATUS & VITALS CARD ("Tells about his bike") =================
@@ -1738,117 +1759,29 @@ fun DocVaultRow(
 // ================= EXTRACTED DASHBOARD SECTIONS =================
 
 @Composable
-fun DashboardRiderConsentAndActionsSection(
-    hasPendingRiderConsent: Boolean,
+private fun DashboardRiderConsentAndActionsSection(
+    guardianEmail: String,
+    enabled: Boolean,
     onAcceptConsent: () -> Unit,
     onDeclineConsent: () -> Unit
 ) {
-    val guardianPurple = Color(0xFFA855F7)
-    val guardianPurpleDark = Color(0xFF1E1035)
-
-    // RIDER GUARDIAN CONSENT BANNER (TWO-WAY HANDSHAKE)
-    if (hasPendingRiderConsent) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(guardianPurpleDark, MidnightCard)
-                    )
-                )
-                .border(1.dp, guardianPurple.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
-                .padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(guardianPurple.copy(alpha = 0.2f))
-                        .border(1.dp, guardianPurple.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Guardian Request",
-                        tint = guardianPurple,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = "GUARDIAN ACCESS REQUEST",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Black,
-                            color = guardianPurple,
-                            letterSpacing = 0.5.sp
-                        )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(SportAmber.copy(alpha = 0.2f))
-                                .padding(horizontal = 4.dp, vertical = 1.dp)
-                        ) {
-                            Text(
-                                text = "ACTION REQUIRED",
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SportAmber
-                            )
-                        }
-                    }
-                    Text(
-                        text = "Family Guardian (guardian@family.io) requested live GPS and telemetry.",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextPrimary,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                    Text(
-                        text = "Strict privacy: Zero telemetry is shared until you approve.",
-                        fontSize = 10.sp,
-                        color = TextSecondary
-                    )
-                }
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .background(MidnightCard, RoundedCornerShape(18.dp)).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text("Guardian access request", color = TextPrimary, fontWeight = FontWeight.Bold)
+        Text("$guardianEmail requested access to your ride telemetry.", color = TextSecondary)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = onAcceptConsent, enabled = enabled, modifier = Modifier.weight(1f)) {
+                Text("Approve")
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = onAcceptConsent,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = OptimalGreen,
-                        contentColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text("Accept & Grant Access", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-                OutlinedButton(
-                    onClick = onDeclineConsent,
-                    modifier = Modifier.weight(0.6f),
-                    shape = RoundedCornerShape(10.dp),
-                    border = BorderStroke(1.dp, CardBorder)
-                ) {
-                    Text("Decline", fontSize = 11.sp, color = TextMuted)
-                }
+            OutlinedButton(onClick = onDeclineConsent, enabled = enabled, modifier = Modifier.weight(1f)) {
+                Text("Decline")
             }
         }
-        Spacer(modifier = Modifier.height(14.dp))
     }
+    Spacer(modifier = Modifier.height(14.dp))
 }
 
 @Composable

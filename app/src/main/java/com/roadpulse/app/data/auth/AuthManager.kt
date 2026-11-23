@@ -3,22 +3,25 @@ package com.roadpulse.app.data.auth
 import android.content.Context
 import android.content.SharedPreferences
 import com.roadpulse.app.data.sync.CloudSyncManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.io.OutputStreamWriter
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
 data class AuthUser(
     val id: String,
     val email: String,
-    val name: String
+    val name: String,
+    val role: String = "rider"
 )
 
 data class AuthState(
@@ -27,192 +30,139 @@ data class AuthState(
     val token: String? = null
 )
 
+class CloudHttpException(val status: Int, message: String) : IOException(message)
+
 object AuthManager {
-    private const val PREFS_NAME = "roadpulse_auth_prefs"
-    private const val KEY_IS_LOGGED_IN = "is_logged_in"
-    private const val KEY_USER_ID = "user_id"
-    private const val KEY_EMAIL = "user_email"
-    private const val KEY_NAME = "user_name"
-    private const val KEY_TOKEN = "auth_token"
-
-    private var prefs: SharedPreferences? = null
-    private var appContext: Context? = null
-
+    private lateinit var prefs: SharedPreferences
+    private val sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _authState = MutableStateFlow(AuthState())
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     fun init(context: Context) {
-        appContext = context.applicationContext
-        if (prefs == null) {
-            prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val isLoggedIn = prefs?.getBoolean(KEY_IS_LOGGED_IN, false) ?: false
-            if (isLoggedIn) {
-                val userId = prefs?.getString(KEY_USER_ID, "") ?: ""
-                val email = prefs?.getString(KEY_EMAIL, "") ?: ""
-                val name = prefs?.getString(KEY_NAME, "") ?: ""
-                val token = prefs?.getString(KEY_TOKEN, "") ?: ""
-
-                if (email.isNotEmpty() && token.isNotEmpty()) {
-                    _authState.value = AuthState(
-                        isLoggedIn = true,
-                        user = AuthUser(id = userId, email = email, name = name),
-                        token = token
-                    )
-                    // Asynchronously sync latest bike and profile from MongoDB Atlas
-                    appContext?.let { ctx ->
-                        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
-                            CloudSyncManager.fetchUserProfileAndBike(ctx)
-                        }
+        if (::prefs.isInitialized) return
+        prefs = context.applicationContext.getSharedPreferences("roadpulse_auth_prefs", Context.MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null) ?: return
+        if (token.length != 43) {
+            clearLocalSession()
+            return
+        }
+        val id = prefs.getString("user_id", null) ?: return
+        val email = prefs.getString("user_email", null) ?: return
+        val name = prefs.getString("user_name", null) ?: email
+        val role = prefs.getString("user_role", null) ?: "rider"
+        _authState.value = AuthState(true, AuthUser(id, email, name, role), token)
+        sessionScope.launch {
+            cloudRequest("/api/auth/me", token = token)
+                .onSuccess { response ->
+                    if (_authState.value.token == token) {
+                        val user = parseUser(response.optJSONObject("user") ?: response)
+                        saveSession(user, token)
                     }
                 }
-            }
+                .onFailure { error ->
+                    if (_authState.value.token == token && (error as? CloudHttpException)?.status == 401) {
+                        clearLocalSession()
+                    }
+                }
         }
     }
 
-    suspend fun login(email: String, password: String): Result<AuthUser> = withContext(Dispatchers.IO) {
-        var connection: HttpURLConnection? = null
-        try {
-            val url = URL("${CloudSyncManager.serverBaseUrl}/api/auth/login")
-            connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 8000
-                readTimeout = 12000
-                doOutput = true
-                doInput = true
-            }
+    suspend fun login(email: String, password: String): Result<AuthUser> =
+        authenticate("/api/auth/login", JSONObject().apply {
+            put("email", email.trim())
+            put("password", password)
+        })
 
-            val payload = JSONObject().apply {
-                put("email", email.trim().lowercase())
-                put("password", password)
-            }
+    suspend fun register(
+        email: String,
+        password: String,
+        name: String,
+        role: String = "rider",
+        riderEmail: String = ""
+    ): Result<AuthUser> = authenticate("/api/auth/register", JSONObject().apply {
+        put("email", email.trim())
+        put("password", password)
+        put("name", name.trim())
+        put("role", role)
+        put("wardCodeOrEmail", riderEmail.trim())
+    })
 
-            OutputStreamWriter(connection.outputStream, "UTF-8").use { writer ->
-                writer.write(payload.toString())
-                writer.flush()
-            }
-
-            val responseCode = connection.responseCode
-            if (responseCode in 200..299) {
-                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
-                val json = JSONObject(responseText)
-                val token = json.getString("token")
-                val userJson = json.getJSONObject("user")
-                val user = AuthUser(
-                    id = userJson.getString("id"),
-                    email = userJson.getString("email"),
-                    name = userJson.optString("name", userJson.getString("email"))
-                )
-
-                saveSession(user, token)
-                appContext?.let { ctx ->
-                    try {
-                        CloudSyncManager.fetchUserProfileAndBike(ctx)
-                    } catch (_: Exception) {}
-                }
-                Result.success(user)
-            } else {
-                val errText = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
-                val errMsg = try {
-                    JSONObject(errText).optString("error", "Login failed ($responseCode)")
-                } catch (_: Exception) {
-                    "Login failed ($responseCode)"
-                }
-                Result.failure(Exception(errMsg))
-            }
-        } catch (e: Exception) {
-            Result.failure(Exception(e.localizedMessage ?: "Network connection error"))
-        } finally {
-            connection?.disconnect()
+    private suspend fun authenticate(path: String, payload: JSONObject): Result<AuthUser> =
+        cloudRequest(path, method = "POST", body = payload, token = null).mapCatching { response ->
+            val user = parseUser(response.getJSONObject("user"))
+            saveSession(user, response.getString("token"))
+            user
         }
-    }
 
-    suspend fun register(email: String, password: String, name: String): Result<AuthUser> = withContext(Dispatchers.IO) {
+    suspend fun cloudRequest(
+        path: String,
+        method: String = "GET",
+        body: JSONObject? = null,
+        token: String? = _authState.value.token
+    ): Result<JSONObject> = withContext(Dispatchers.IO) {
         var connection: HttpURLConnection? = null
         try {
-            val url = URL("${CloudSyncManager.serverBaseUrl}/api/auth/register")
-            connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
-                setRequestProperty("Accept", "application/json")
+            connection = (URL("${CloudSyncManager.serverBaseUrl}$path").openConnection() as HttpURLConnection).apply {
+                requestMethod = method
                 connectTimeout = 8000
-                readTimeout = 12000
-                doOutput = true
-                doInput = true
-            }
-
-            val payload = JSONObject().apply {
-                put("email", email.trim().lowercase())
-                put("password", password)
-                put("name", name.trim())
-            }
-
-            OutputStreamWriter(connection.outputStream, "UTF-8").use { writer ->
-                writer.write(payload.toString())
-                writer.flush()
-            }
-
-            val responseCode = connection.responseCode
-            if (responseCode in 200..299) {
-                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
-                val json = JSONObject(responseText)
-                val token = json.getString("token")
-                val userJson = json.getJSONObject("user")
-                val user = AuthUser(
-                    id = userJson.getString("id"),
-                    email = userJson.getString("email"),
-                    name = userJson.optString("name", userJson.getString("email"))
-                )
-
-                saveSession(user, token)
-                appContext?.let { ctx ->
-                    try {
-                        CloudSyncManager.fetchUserProfileAndBike(ctx)
-                    } catch (_: Exception) {}
+                readTimeout = 15000
+                setRequestProperty("Accept", "application/json")
+                if (!token.isNullOrBlank()) setRequestProperty("Authorization", "Bearer $token")
+                if (body != null) {
+                    setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                    doOutput = true
                 }
-                Result.success(user)
+            }
+            if (body != null) connection.outputStream.writer(Charsets.UTF_8).use { it.write(body.toString()) }
+            val status = connection.responseCode
+            if (status == 204) return@withContext Result.success(JSONObject())
+            val valid = status in 200..299
+            val raw = (if (valid) connection.inputStream else connection.errorStream)
+                ?.bufferedReader()?.use { it.readText() }
+            if (valid) {
+                Result.success(JSONObject(raw ?: "{}"))
             } else {
-                val errText = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
-                val errMsg = try {
-                    JSONObject(errText).optString("error", "Registration failed ($responseCode)")
-                } catch (_: Exception) {
-                    "Registration failed ($responseCode)"
-                }
-                Result.failure(Exception(errMsg))
+                val error = runCatching { JSONObject(raw ?: "{}").optString("error") }.getOrNull()
+                Result.failure(CloudHttpException(status, error?.ifBlank { null } ?: "Rhody Cloud request failed."))
             }
-        } catch (e: Exception) {
-            Result.failure(Exception(e.localizedMessage ?: "Network connection error"))
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            Result.failure(IOException("Could not connect to Rhody Cloud. Try again.", error))
         } finally {
             connection?.disconnect()
         }
     }
 
     fun logout() {
-        prefs?.edit()?.apply {
-            putBoolean(KEY_IS_LOGGED_IN, false)
-            remove(KEY_USER_ID)
-            remove(KEY_EMAIL)
-            remove(KEY_NAME)
-            remove(KEY_TOKEN)
-            apply()
+        val token = _authState.value.token
+        clearLocalSession()
+        if (token != null) sessionScope.launch {
+            cloudRequest("/api/auth/logout", method = "POST", token = token)
         }
+    }
+
+    private fun clearLocalSession() {
+        prefs.edit().clear().apply()
         _authState.value = AuthState()
     }
 
+    private fun parseUser(json: JSONObject): AuthUser = AuthUser(
+        id = json.getString("id"),
+        email = json.getString("email"),
+        name = json.optString("name", json.getString("email")),
+        role = json.optString("role", "rider")
+    )
+
     private fun saveSession(user: AuthUser, token: String) {
-        prefs?.edit()?.apply {
-            putBoolean(KEY_IS_LOGGED_IN, true)
-            putString(KEY_USER_ID, user.id)
-            putString(KEY_EMAIL, user.email)
-            putString(KEY_NAME, user.name)
-            putString(KEY_TOKEN, token)
-            apply()
-        }
-        _authState.value = AuthState(
-            isLoggedIn = true,
-            user = user,
-            token = token
-        )
+        prefs.edit()
+            .putBoolean("is_logged_in", true)
+            .putString("user_id", user.id)
+            .putString("user_email", user.email)
+            .putString("user_name", user.name)
+            .putString("user_role", user.role)
+            .putString("auth_token", token)
+            .apply()
+        _authState.value = AuthState(true, user, token)
     }
 }

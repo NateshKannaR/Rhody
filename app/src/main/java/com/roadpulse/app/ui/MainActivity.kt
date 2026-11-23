@@ -5,8 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -22,9 +22,6 @@ import com.roadpulse.app.domain.model.TripMetrics
 import com.roadpulse.app.domain.model.TripStatus
 import com.roadpulse.app.service.TripRecordingController
 import com.roadpulse.app.service.TripRecordingService
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import com.roadpulse.app.data.auth.AuthManager
 import com.roadpulse.app.ui.screens.auth.AuthScreen
 import com.roadpulse.app.ui.navigation.BottomBar
@@ -33,7 +30,6 @@ import com.roadpulse.app.ui.screens.analytics.AnalyticsScreen
 import com.roadpulse.app.ui.screens.dashboard.DashboardScreen
 import com.roadpulse.app.ui.screens.history.HistoryScreen
 import com.roadpulse.app.ui.screens.history.TripDetailScreen
-import android.content.Context
 import com.roadpulse.app.ui.screens.parent.ParentPanelScreen
 import com.roadpulse.app.ui.screens.livetrip.LiveTripScreen
 import com.roadpulse.app.ui.screens.profile.ProfileScreen
@@ -109,32 +105,17 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             RoadPulseTheme {
-                val parentPrefs = remember { getSharedPreferences("rhody_parent_prefs", Context.MODE_PRIVATE) }
-                val isParentLoggedIn = remember { parentPrefs.getBoolean("is_parent_logged_in", false) }
                 val authState by AuthManager.authState.collectAsState()
-                var guestModeActive by remember { mutableStateOf(isParentLoggedIn) }
-                var activeRole by remember { mutableStateOf(if (isParentLoggedIn) "parent" else "rider") }
-
-                LaunchedEffect(authState.isLoggedIn) {
-                    if (!authState.isLoggedIn && activeRole != "parent") {
-                        guestModeActive = false
-                    }
-                }
-
-                if (!authState.isLoggedIn && !guestModeActive) {
-                    AuthScreen(
-                        onAuthenticated = { role ->
-                            activeRole = role
-                            guestModeActive = true
-                        }
-                    )
+                val activeRole = authState.user?.role ?: "rider"
+                if (!authState.isLoggedIn) {
+                    AuthScreen()
                 } else {
                     val navController = rememberNavController()
                     val metrics by TripRecordingController.metrics.collectAsState()
 
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
-                        containerColor = CarbonDark,
+                        containerColor = if (activeRole == "parent") MaterialTheme.colorScheme.background else CarbonDark,
                         bottomBar = {
                             if (activeRole == "rider") {
                                 BottomBar(
@@ -151,17 +132,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             composable(Screen.Dashboard.route) {
                                 if (activeRole == "parent") {
-                                    ParentPanelScreen(
-                                        onNavigateToTripDetail = { tripId ->
-                                            navController.navigate(Screen.createTripDetailRoute(tripId))
-                                        },
-                                        onLogout = {
-                                            parentPrefs.edit().clear().apply()
-                                            AuthManager.logout()
-                                            activeRole = "rider"
-                                            guestModeActive = false
-                                        }
-                                    )
+                                    ParentPanelScreen(onLogout = AuthManager::logout)
                                 } else {
                                     DashboardScreen(
                                         onNavigateToLiveTrip = {

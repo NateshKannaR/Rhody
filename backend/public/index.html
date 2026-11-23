@@ -280,6 +280,94 @@
     @media (prefers-reduced-motion: reduce) {
       .status-pulse { animation: none; }
     }
+    .auth-page {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      color: #eef3f8;
+      background: #0a1019;
+      color-scheme: dark;
+      padding: clamp(1rem, 4vw, 3rem);
+    }
+    html.light .auth-page {
+      color: #15243b;
+      background: #edf2f7;
+      color-scheme: light;
+    }
+    .auth-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      max-width: 960px;
+      width: 100%;
+      margin: auto;
+      border: 1px solid var(--border-card);
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--bg-card);
+      box-shadow: 0 24px 64px rgb(0 0 0 / 16%);
+    }
+    .auth-brand {
+      min-width: 0;
+      padding: clamp(1.75rem, 5vw, 3.25rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 4rem;
+      color: #f0f8ff;
+      background: radial-gradient(ellipse at 85% 85%, #173d55, transparent 65%), #101c2c;
+    }
+    .auth-wordmark { display: flex; gap: .7rem; align-items: center; font-size: 1.25rem; font-weight: 700; }
+    .auth-wordmark img { border-radius: 10px; }
+    .auth-display { font-size: clamp(2.4rem, 5vw, 4.4rem); line-height: 1; letter-spacing: -.055em; font-weight: 700; }
+    .auth-brand-copy p + p { margin-top: 1rem; color: #c2d5e5; max-width: 26ch; }
+    .auth-panel { min-width: 0; padding: clamp(1.25rem, 4vw, 2.75rem); }
+    .auth-panel h1 { font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 700; letter-spacing: -.04em; line-height: 1.1; }
+    .auth-description, .auth-help { color: var(--text-secondary); }
+    .auth-description { margin: .5rem 0 1.4rem; }
+    .auth-help { display: block; margin-top: .4rem; font-size: .85rem; }
+    .auth-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: var(--bg-inset); }
+    .auth-switch button { min-height: 44px; border-radius: 9px; color: var(--text-secondary); font-weight: 600; }
+    .auth-switch button[aria-pressed="true"] { background: var(--bg-card-elevated); color: var(--text-primary); box-shadow: inset 0 0 0 1px var(--border-card); }
+    .auth-form { display: grid; gap: .9rem; margin-top: 1.25rem; }
+    #parentAuthorizedGrid.hidden, #riderGuardianRequestBanner.hidden,
+    .auth-page.hidden, .auth-form.hidden, .auth-error.hidden, .auth-form label.hidden { display: none; }
+    .auth-form label, .auth-form legend { display: block; font-size: .875rem; font-weight: 600; }
+    .auth-form legend { margin-bottom: .45rem; }
+    .auth-form input {
+      display: block;
+      width: 100%;
+      min-height: 48px;
+      margin-top: .4rem;
+      padding: .7rem .8rem;
+      border: 1px solid var(--border-card);
+      border-radius: 10px;
+      color: var(--text-primary);
+      background: var(--bg-card-subtle);
+      font-size: 16px;
+    }
+    .auth-form input:focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 2px; }
+    .auth-password { position: relative; }
+    .auth-password input { padding-right: 5rem; }
+    .auth-password button { position: absolute; inset: 2px 4px 2px auto; padding: 0 .7rem; color: var(--text-secondary); font-size: .85rem; }
+    .auth-primary { min-height: 48px; border-radius: 10px; background: #67dcf5; color: #09212d; font-weight: 700; }
+    .auth-primary:hover { background: #9beaf8; }
+    .auth-primary:disabled { opacity: .6; cursor: wait; }
+    .auth-error { margin-top: 1rem; padding: .75rem; border-radius: 10px; background: #361f2b; color: #ffceda; }
+    html.light .auth-error { background: #fff0f2; color: #981b37; }
+    main > div, main .glass-panel { min-width: 0; }
+    main img, main video { max-width: 100%; }
+    #navProfileName { max-width: 10ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 639px) {
+      .auth-shell { grid-template-columns: minmax(0, 1fr); }
+      .auth-brand { padding: 1rem 1.25rem; }
+      .auth-brand-copy { display: none; }
+      .auth-panel { padding: 1.35rem 1.15rem; }
+      #mobileBottomNav button { min-width: 0; }
+      #mobileBottomNav button span { overflow-wrap: anywhere; line-height: 1.1; }
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col bg-[#07090E] text-slate-100 selection:bg-cyan-500 selection:text-black pb-20 md:pb-0 relative overflow-x-hidden">
@@ -289,7 +377,7 @@
   <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-rose-500/5 rounded-full blur-[140px] pointer-events-none"></div>
 
   <!-- ================= MODERN FLOATING GLASS NAVIGATION BAR (ZEBEYOND ENGINEERING STYLE) ================= -->
-  <header class="sticky top-0 z-40 px-3 sm:px-6 pt-3 pb-1 max-w-[1600px] mx-auto w-full transition-all duration-300">
+  <header inert class="sticky top-0 z-40 px-3 sm:px-6 pt-3 pb-1 max-w-[1600px] mx-auto w-full transition-all duration-300">
     <div class="bg-[#080B11]/90 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.7)] px-4 sm:px-6 h-16 flex items-center justify-between">
       
       <!-- Brand Identity -->
@@ -449,7 +537,7 @@
   </header>
 
   <!-- Mobile and tablet navigation -->
-  <nav id="mobileBottomNav" aria-label="Mobile navigation" class="fixed bottom-0 left-0 right-0 z-40 bg-[#0A0D14]/95 backdrop-blur-2xl border-t border-white/[0.08] px-2 py-1.5 flex items-center justify-around shadow-2xl">
+  <nav inert id="mobileBottomNav" aria-label="Mobile navigation" class="fixed bottom-0 left-0 right-0 z-40 bg-[#0A0D14]/95 backdrop-blur-2xl border-t border-white/[0.08] px-2 py-1.5 flex items-center justify-around shadow-2xl">
     <button id="mobileTabDashboard" aria-current="page" onclick="switchMainView('dashboard')" class="flex flex-col items-center justify-center flex-1 py-1 text-cyan-300 font-bold transition">
       <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/>
@@ -484,13 +572,22 @@
   </nav>
 
   <!-- ================= MAIN BODY CONTAINER ================= -->
-  <main class="flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 pb-28 xl:pb-8">
+  <main inert class="flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 pb-28 xl:pb-8">
 
     <!-- ======================================================== -->
     <!-- TAB 1: DASHBOARD                                         -->
     <!-- Welcome, Profile, Bike Specs, Map & Places, YouTube Hub -->
     <!-- ======================================================== -->
     <div id="viewDashboard" class="space-y-6">
+
+      <section id="riderGuardianRequestBanner" class="glass-panel hidden p-5" aria-labelledby="guardianRequestTitle">
+        <h2 id="guardianRequestTitle" class="text-lg font-bold">Guardian access request</h2>
+        <p class="mt-2 text-sm text-slate-400"><span id="guardianRequesterName"></span> (<span id="guardianRequesterEmail"></span>) requested access to your ride telemetry.</p>
+        <div class="ride-overview-actions">
+          <button type="button" class="ride-primary" onclick="respondGuardianRequest('accept')">Approve</button>
+          <button type="button" onclick="respondGuardianRequest('reject')">Decline</button>
+        </div>
+      </section>
 
       <section class="glass-panel ride-overview" aria-labelledby="rideOverviewTitle">
         <div class="min-w-0">
@@ -1374,6 +1471,9 @@
             <!-- FINISH TRIP BUTTON -->
             <button id="btnFinishTrip" onclick="finishTripSession()" class="hidden px-6 py-3 text-xs font-black rounded-2xl bg-rose-500 hover:bg-rose-400 text-white shadow-[0_0_25px_rgba(244,63,94,0.4)] transition active:scale-95 font-mono tracking-wider">
               <span data-i18n="trip_finish">FINISH &amp; SAVE RUN</span>
+            </button>
+            <button id="btnRetryTripSync" type="button" onclick="syncFinishedTrip()" class="hidden px-5 py-3 text-sm font-bold rounded-xl bg-cyan-400 text-slate-950 disabled:opacity-50">
+              Retry cloud sync
             </button>
           </div>
         </div>
@@ -2501,7 +2601,7 @@
 
           <!-- Quick Action Hotlines -->
           <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-            <a id="parentCallRiderBtn" href="tel:+919876543210" class="flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 transition flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+            <a id="parentCallRiderBtn" class="hidden flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 transition flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
               <span>Call Rider</span>
             </a>
@@ -2509,7 +2609,7 @@
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               <span>112 SOS</span>
             </a>
-            <button onclick="handlePlatformLogout()" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition flex items-center justify-center space-x-1.5" title="Log out of guardian session">
+            <button onclick="handlePlatformLogout()" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition flex items-center justify-center space-x-1.5" title="Sign out of guardian session">
               <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                 <polyline points="16 17 21 12 16 7"></polyline>
@@ -2525,10 +2625,10 @@
           <div class="flex items-center space-x-2 text-slate-300">
             <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             <span class="text-purple-300 font-bold">Paired Connection:</span>
-            <span id="parentPairedCodeDisplay" class="font-mono bg-black/40 px-2 py-0.5 rounded text-cyan-300 border border-white/10">RHODY-8821 (pilot@rhody.io)</span>
+            <span id="parentPairedCodeDisplay" class="font-mono bg-black/40 px-2 py-0.5 rounded text-cyan-300 border border-white/10">No rider linked</span>
           </div>
           <div class="flex items-center space-x-2 w-full sm:w-auto">
-            <input id="parentPairingCodeInput" type="text" placeholder="Enter Rider Code or Email" class="w-full sm:w-56 px-3 py-1.5 bg-[#07090E] border border-white/10 rounded-lg text-white text-xs placeholder-slate-500 focus:outline-none focus:border-purple-400 font-mono" />
+            <input id="parentPairingCodeInput" type="email" placeholder="Rider email" class="w-full sm:w-56 px-3 py-1.5 bg-[#07090E] border border-white/10 rounded-lg text-white text-xs placeholder-slate-500 focus:outline-none focus:border-purple-400 font-mono" />
             <button onclick="connectParentRider()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-500 hover:bg-purple-400 text-white shrink-0 transition">
               Connect
             </button>
@@ -2536,8 +2636,14 @@
         </div>
       </div>
 
+      <section id="parentWaitingApprovalBanner" class="glass-panel p-5" aria-labelledby="guardianLinkHeading">
+        <h2 id="guardianLinkHeading" class="text-lg font-bold">Rider access</h2>
+        <p id="parentWaitingRiderEmail" class="mt-2 break-all text-sm"></p>
+        <p id="guardianWaitStatus" class="mt-2 text-sm text-slate-400" role="status">Checking rider access…</p>
+      </section>
+
       <!-- Main Parent Cockpit Grid (Unlocked once rider authorizes) -->
-      <div id="parentAuthorizedGrid" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div id="parentAuthorizedGrid" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         <!-- Left Column: Live Radar Map & Telemetry Readouts (8 Cols) -->
         <div class="lg:col-span-8 space-y-6">
@@ -2659,14 +2765,6 @@
               <!-- Injected via JavaScript -->
             </div>
 
-            <!-- Simulate Test Alert Button for Verification -->
-            <div class="pt-3 border-t border-white/[0.08] flex items-center justify-between text-xs">
-              <span class="text-[10px] text-slate-500">Test Guardian Alert:</span>
-              <button onclick="simulateSpeedAlert()" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-400/30 transition flex items-center space-x-1">
-                <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                <span>Test Speed Warning</span>
-              </button>
-            </div>
           </div>
 
           <!-- Guardian Safety Guidance -->
@@ -2815,150 +2913,74 @@
     </div>
   </div>
 
-  <!-- ================= PRODUCTION AUTHENTICATION GATEWAY ================= -->
-  <div id="platformEntryModal" class="fixed inset-0 z-50 bg-[#04060A]/95 backdrop-blur-3xl flex items-center justify-center p-3 sm:p-5 hidden overflow-y-auto">
-    <div class="glass-panel max-w-xl w-full p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.95)] relative border border-cyan-500/30 rounded-3xl my-auto overflow-hidden bg-gradient-to-b from-[#0A0E18] to-[#050810]">
-      
-      <!-- Top Cyber Brand Strip -->
-      <div class="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-5">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-400 via-blue-600 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.4)] border border-cyan-400/40">
-            <svg class="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+  <section id="platformEntryModal" class="auth-page" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div class="auth-shell">
+      <aside class="auth-brand">
+        <div class="auth-wordmark">
+          <img src="/rhody_app_icon.png" alt="" width="40" height="40">
+          <span>Rhody</span>
+        </div>
+        <div class="auth-brand-copy">
+          <p class="auth-display">Ride tracking and telemetry</p>
+          <p>Record your rides, review telemetry, and share live updates with a guardian you approve.</p>
+        </div>
+      </aside>
+
+      <div class="auth-panel">
+        <h1 id="authTitle">Sign in</h1>
+        <p id="authDescription" class="auth-description">Use your Rhody email and password.</p>
+        <div class="auth-switch" role="group" aria-label="Account access">
+          <button id="authTabSignIn" type="button" aria-pressed="true" onclick="switchAuthMode('signin')">Sign in</button>
+          <button id="authTabRegister" type="button" aria-pressed="false" onclick="switchAuthMode('register')">Create account</button>
+        </div>
+
+        <p id="authAlertBanner" class="auth-error hidden" role="alert"><span id="authAlertText"></span></p>
+
+        <form id="authFormSignIn" class="auth-form" onsubmit="handleProductionLogin(event)">
+          <label for="authSignInEmail">Email
+            <input id="authSignInEmail" name="email" type="email" autocomplete="username" inputmode="email" maxlength="254" required>
+          </label>
           <div>
-            <div class="flex items-center space-x-2">
-              <span class="text-sm sm:text-base font-black text-white tracking-wider">RHODY PRECISION TELEMETRY</span>
-              <span class="px-2 py-0.5 text-[9px] font-mono font-bold rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">SECURE ACCESS</span>
-            </div>
-            <p class="text-xs text-slate-400 mt-0.5">Production Motorsport Telemetry &amp; Guardian Gateway</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Mode Switcher: Sign In vs Register -->
-      <div class="flex p-1 bg-black/40 border border-white/10 rounded-2xl mb-5 text-xs font-bold">
-        <button id="authTabSignIn" onclick="switchAuthMode('signin')" type="button" class="flex-1 py-2 rounded-xl text-center transition bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-sm">
-          Sign In
-        </button>
-        <button id="authTabRegister" onclick="switchAuthMode('register')" type="button" class="flex-1 py-2 rounded-xl text-center transition text-slate-400 hover:text-white">
-          Create Account
-        </button>
-      </div>
-
-      <!-- Role Selector (Rider vs Guardian) -->
-      <div class="mb-5">
-        <span class="text-[10px] font-mono uppercase text-slate-400 block mb-2 font-bold tracking-wider">SELECT OPERATIONAL ROLE</span>
-        <div class="grid grid-cols-2 gap-3">
-          <!-- Rider Role -->
-          <button id="authRoleRiderBtn" onclick="selectAuthRole('rider')" type="button" class="p-3.5 rounded-2xl bg-cyan-500/10 border-2 border-cyan-400 text-left transition relative group shadow-[0_0_15px_rgba(0,240,255,0.2)]">
-            <div class="flex items-center space-x-2 mb-1">
-              <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/></svg>
-              <span class="text-xs font-black text-white">Rider Cockpit</span>
-            </div>
-            <p class="text-[10px] text-slate-400">Piloting the motorcycle &amp; telemetry</p>
-          </button>
-
-          <!-- Guardian Role -->
-          <button id="authRoleParentBtn" onclick="selectAuthRole('parent')" type="button" class="p-3.5 rounded-2xl bg-white/[0.02] border-2 border-white/10 text-left transition relative group hover:border-purple-400/40">
-            <div class="flex items-center space-x-2 mb-1">
-              <svg class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-              <span class="text-xs font-black text-slate-300">Guardian Radar</span>
-            </div>
-            <p class="text-[10px] text-slate-400">Family tracking &amp; crash SOS</p>
-          </button>
-        </div>
-      </div>
-
-      <!-- Error / Notification Banner -->
-      <div id="authAlertBanner" class="hidden mb-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs flex items-center space-x-2">
-        <svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span id="authAlertText" class="font-medium"></span>
-      </div>
-
-      <!-- ================= SIGN IN FORM ================= -->
-      <form id="authFormSignIn" onsubmit="handleProductionLogin(event)" class="space-y-4">
-        <div>
-          <label class="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">Email Address</label>
-          <div class="relative">
-            <svg class="w-4 h-4 text-cyan-400 absolute left-3.5 top-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            <input type="email" id="authSignInEmail" placeholder="pilot@rhody.io or guardian@family.io" class="w-full pl-10 pr-4 py-3 bg-[#050811] border border-white/10 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition" required />
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">Password</label>
-          <div class="relative">
-            <svg class="w-4 h-4 text-cyan-400 absolute left-3.5 top-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input type="password" id="authSignInPassword" placeholder="••••••••" class="w-full pl-10 pr-4 py-3 bg-[#050811] border border-white/10 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition" required />
-          </div>
-        </div>
-
-        <button id="authSignInBtn" type="submit" class="w-full py-3.5 text-xs font-black rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_0_20px_rgba(0,240,255,0.35)] transition active:scale-95 flex items-center justify-center space-x-2 font-mono tracking-wider">
-          <span id="authSignInBtnText">SIGN IN TO COCKPIT</span>
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-      </form>
-
-      <!-- ================= REGISTER FORM ================= -->
-      <form id="authFormRegister" onsubmit="handleProductionRegister(event)" class="space-y-4 hidden">
-        <div>
-          <label id="authRegNameLabel" class="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">Full Name</label>
-          <input type="text" id="authRegName" placeholder="e.g. Alex Vance" class="w-full px-3.5 py-2.5 bg-[#050811] border border-white/10 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition" required />
-        </div>
-
-        <div>
-          <label id="authRegEmailLabel" class="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">Email Address</label>
-          <input type="email" id="authRegEmail" placeholder="pilot@rhody.io" class="w-full px-3.5 py-2.5 bg-[#050811] border border-white/10 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition" required />
-        </div>
-
-        <div>
-          <label class="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">Password (min 6 characters)</label>
-          <input type="password" id="authRegPassword" placeholder="••••••••" minlength="6" class="w-full px-3.5 py-2.5 bg-[#050811] border border-white/10 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition" required />
-        </div>
-
-        <!-- Rider-specific fields -->
-        <div id="authRegRiderFields" class="space-y-3">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">Motorcycle Model</label>
-              <input type="text" id="authRegBikeModel" placeholder="e.g. Kawasaki Ninja ZX-10R" class="w-full px-3.5 py-2.5 bg-[#050811] border border-white/10 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">Registration Plate</label>
-              <input type="text" id="authRegBikePlate" placeholder="e.g. MH-12-RP-8821" class="w-full px-3.5 py-2.5 bg-[#050811] border border-white/10 rounded-xl text-white text-xs font-mono uppercase placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition" />
+            <label for="authSignInPassword">Password</label>
+            <div class="auth-password">
+              <input id="authSignInPassword" name="password" type="password" autocomplete="current-password" maxlength="256" required>
+              <button type="button" aria-controls="authSignInPassword" onclick="toggleAuthPassword(this)">Show</button>
             </div>
           </div>
+          <button id="authSignInBtn" type="submit" class="auth-primary">Sign in</button>
+        </form>
+
+        <form id="authFormRegister" class="auth-form hidden" onsubmit="handleProductionRegister(event)">
+          <fieldset>
+            <legend>Account type</legend>
+            <div class="auth-switch">
+              <button id="authRoleRiderBtn" type="button" aria-pressed="true" onclick="selectAuthRole('rider')">Rider</button>
+              <button id="authRoleParentBtn" type="button" aria-pressed="false" onclick="selectAuthRole('parent')">Guardian</button>
+            </div>
+          </fieldset>
+          <label for="authRegName">Full name
+            <input id="authRegName" name="name" autocomplete="name" maxlength="120" required>
+          </label>
+          <label for="authRegEmail">Email
+            <input id="authRegEmail" name="email" type="email" autocomplete="username" inputmode="email" maxlength="254" required>
+          </label>
           <div>
-            <label class="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">Emergency SOS Phone</label>
-            <input type="tel" id="authRegEmergencyPhone" placeholder="+91 98765 43210" class="w-full px-3.5 py-2.5 bg-[#050811] border border-white/10 rounded-xl text-white text-xs font-mono placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition" />
+            <label for="authRegPassword">Password</label>
+            <div class="auth-password">
+              <input id="authRegPassword" name="password" type="password" autocomplete="new-password" minlength="6" maxlength="256" aria-describedby="authPasswordHelp" required>
+              <button type="button" aria-controls="authRegPassword" onclick="toggleAuthPassword(this)">Show</button>
+            </div>
+            <p id="authPasswordHelp" class="auth-help">Use at least 6 characters.</p>
           </div>
-        </div>
-
-        <!-- Guardian-specific fields -->
-        <div id="authRegParentFields" class="space-y-3 hidden">
-          <div>
-            <label class="block text-[11px] font-mono font-bold text-purple-300 uppercase mb-1">Ward's Rider Email or Pairing Code *</label>
-            <input type="text" id="authRegWardEmail" placeholder="e.g. pilot@rhody.io or RHODY-8821" class="w-full px-3.5 py-2.5 bg-[#050811] border border-purple-400/40 rounded-xl text-white text-xs font-mono placeholder-slate-500 focus:outline-none focus:border-purple-400 transition" />
-            <p class="text-[10px] text-slate-400 mt-1">Must be different from your guardian email address.</p>
-          </div>
-        </div>
-
-        <button id="authRegBtn" type="submit" class="w-full py-3.5 text-xs font-black rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_0_20px_rgba(0,240,255,0.35)] transition active:scale-95 flex items-center justify-center space-x-2 font-mono tracking-wider">
-          <span id="authRegBtnText">CREATE SECURE ACCOUNT</span>
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-      </form>
-
-      <!-- Security Trust Footer -->
-      <div class="mt-5 pt-4 border-t border-white/[0.08] text-center text-[10px] font-mono text-slate-500 flex items-center justify-center space-x-1.5">
-        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <span>256-Bit Encrypted Telemetry Authentication &bull; MongoDB Cloud Verified</span>
+          <label id="authRegParentFields" class="hidden" for="authRegWardEmail">Rider email
+            <input id="authRegWardEmail" name="riderEmail" type="email" inputmode="email" maxlength="254" aria-describedby="authRiderHelp" disabled>
+            <span id="authRiderHelp" class="auth-help">The rider must approve access before you can see their telemetry.</span>
+          </label>
+          <button id="authRegBtn" type="submit" class="auth-primary">Create account</button>
+        </form>
       </div>
-
     </div>
-  </div>
+  </section>
 
   <!-- ================= DOCUMENT VAULT UPLOAD / EDIT MODAL ================= -->
   <div id="docVaultModal" onclick="if(event.target === this) closeDocModal()" class="fixed inset-0 z-50 bg-[#07090E]/90 backdrop-blur-xl flex items-center justify-center p-4 hidden">
@@ -3280,6 +3302,6 @@
   </div>
 
   <!-- Application Logic -->
-  <script src="/app.js?v=2.4.6"></script>
+  <script src="/app.js?v=2.5"></script>
 </body>
 </html>
