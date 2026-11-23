@@ -225,20 +225,36 @@ var i18nTranslations = {
     en: "Log Out", es: "Cerrar Sesión", fr: "Déconnexion", de: "Abmelden",
     it: "Disconnetti", ja: "ログアウト", hi: "लॉग आउट", ta: "வெளியேறு"
   },
+  nav_analysis: {
+    en: "Analysis", es: "Análisis", fr: "Analyse", de: "Analyse",
+    it: "Analisi", ja: "分析", hi: "विश्लेषण", ta: "பகுப்பாய்வு"
+  },
+  rider_dashboard: {
+    en: "Rider dashboard", es: "Panel del piloto", fr: "Tableau de bord du pilote", de: "Fahrerübersicht",
+    it: "Dashboard del pilota", ja: "ライダーダッシュボード", hi: "राइडर डैशबोर्ड", ta: "ஓட்டுநர் முகப்பு"
+  },
+  open_trips: {
+    en: "Open trips", es: "Ver viajes", fr: "Voir les trajets", de: "Fahrten öffnen",
+    it: "Apri viaggi", ja: "走行履歴を開く", hi: "यात्राएँ खोलें", ta: "பயணங்களைத் திற"
+  },
+  view_analysis: {
+    en: "View analysis", es: "Ver análisis", fr: "Voir l’analyse", de: "Analyse ansehen",
+    it: "Vedi analisi", ja: "分析を見る", hi: "विश्लेषण देखें", ta: "பகுப்பாய்வைக் காண்க"
+  },
   career_distance: {
-    en: "CAREER DISTANCE", es: "DISTANCIA TOTAL", fr: "DISTANCE TOTALE", de: "GESAMTSTRECKE",
+    en: "Distance / odometer", es: "DISTANCIA TOTAL", fr: "DISTANCE TOTALE", de: "GESAMTSTRECKE",
     it: "DISTANZA TOTALE", ja: "総走行距離", hi: "कुल दूरी", ta: "மொத்த தூரம்"
   },
   peak_velocity: {
-    en: "PEAK VELOCITY", es: "VELOCIDAD MÁXIMA", fr: "VITESSE MAXIMALE", de: "SPITZENGESCHWINDIGKEIT",
+    en: "Peak speed", es: "VELOCIDAD MÁXIMA", fr: "VITESSE MAXIMALE", de: "SPITZENGESCHWINDIGKEIT",
     it: "VELOCITÀ MASSIMA", ja: "最高速度", hi: "अधिकतम गति", ta: "அதிவேகம்"
   },
   max_lean: {
-    en: "MAX APEX LEAN", es: "INCLINACIÓN MÁXIMA", fr: "INCLINAISON MAX", de: "MAX. SCHRÄGLAGE",
+    en: "Max lean", es: "INCLINACIÓN MÁXIMA", fr: "INCLINAISON MAX", de: "MAX. SCHRÄGLAGE",
     it: "PIEGA MASSIMA", ja: "最大バンク角", hi: "अधिकतम झुकाव", ta: "அதிகபட்ச சாய்வு"
   },
   runs_logged: {
-    en: "RUNS LOGGED", es: "VIAJES REGISTRADOS", fr: "TRAJETS ENREGISTRÉS", de: "AUFGEZEICHNETE FAHRTEN",
+    en: "Recorded trips", es: "VIAJES REGISTRADOS", fr: "TRAJETS ENREGISTRÉS", de: "AUFGEZEICHNETE FAHRTEN",
     it: "CORSE REGISTRATE", ja: "記録済み走行数", hi: "दर्ज की गई यात्राएं", ta: "பதிவுசெய்த சவாரிகள்"
   },
   telemetry_ready: {
@@ -464,6 +480,14 @@ function switchMainView(viewName) {
     const tabBtn = document.getElementById('navTab' + capitalizeFirst(v));
     const mobileBtn = document.getElementById('mobileTab' + capitalizeFirst(v));
 
+    [tabBtn, mobileBtn].filter(Boolean).forEach(button => {
+      if (v === viewName) {
+        button.setAttribute('aria-current', 'page');
+      } else {
+        button.removeAttribute('aria-current');
+      }
+    });
+
     if (el) {
       if (v === viewName) {
         el.classList.remove('hidden');
@@ -640,9 +664,6 @@ function renderCareerStatsFromTrips() {
   const speedEl = document.getElementById('careerPeakSpeedVal');
   const leanEl = document.getElementById('careerMaxLeanVal');
   const runsEl = document.getElementById('careerRunsLoggedVal');
-  const seasonEl = document.getElementById('careerSeasonStatus');
-  const apexStatusEl = document.getElementById('careerApexStatus');
-  const runsStatusEl = document.getElementById('careerRunsStatus');
 
   let totalTripDistance = 0;
   let maxSpeed = 0;
@@ -668,15 +689,6 @@ function renderCareerStatsFromTrips() {
   if (leanEl) leanEl.textContent = maxLean > 0 ? maxLean.toFixed(1) : '0.0';
   if (runsEl) runsEl.textContent = runsCount;
 
-  if (seasonEl) {
-    seasonEl.textContent = runsCount > 0 ? (runsCount > 10 ? 'High Season' : 'Active Telemetry') : 'Telemetry Ready';
-  }
-  if (apexStatusEl) {
-    apexStatusEl.textContent = maxLean > 35 ? 'Apex Knee Down' : (maxLean > 0 ? 'Cornering Logged' : 'Gyro Calibrated');
-  }
-  if (runsStatusEl) {
-    runsStatusEl.textContent = runsCount > 0 ? `${runsCount} Logged Runs` : 'Awaiting Ride';
-  }
 }
 
 // =============================================================================

@@ -412,7 +412,7 @@ fun LiveTripScreen(
                     ) {
                         Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(22.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "START RECORDING TRIP", fontSize = 13.sp, fontWeight = FontWeight.Black, letterSpacing = 0.8.sp)
+                        Text(text = "Start recording", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
                 }
                 TripStatus.RECORDING -> {

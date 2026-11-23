@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -257,6 +258,15 @@ fun DashboardScreen(
             .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        DashboardCockpitLauncherHeroCard(
+            metrics = metrics,
+            isMachineConfigured = isMachineConfigured,
+            bikeModel = bikeModel,
+            onNavigateToLiveTrip = onNavigateToLiveTrip
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // ================= 1. PILOT TELEMETRY & CAREER MATRIX (ZEBEYOND ENGINEERING DOSSIER) =================
         val displayName = if (authState.isLoggedIn && !authState.user?.name.isNullOrBlank()) {
             authState.user!!.name
@@ -310,16 +320,6 @@ fun DashboardScreen(
             bikeOdo = bikeOdo,
             metrics = metrics,
             onOpenRegisterDialog = { showBikeRegisterDialog = true }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // ================= 3. HERO PILOT TELEMETRY COCKPIT LAUNCHER =================
-        DashboardCockpitLauncherHeroCard(
-            metrics = metrics,
-            isMachineConfigured = isMachineConfigured,
-            bikeModel = bikeModel,
-            onNavigateToLiveTrip = onNavigateToLiveTrip
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -2086,118 +2086,75 @@ fun DashboardCockpitLauncherHeroCard(
     onNavigateToLiveTrip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isRecording = metrics.tripStatus == TripStatus.RECORDING || metrics.tripStatus == TripStatus.PAUSED
+    val isRideActive = metrics.tripStatus == TripStatus.RECORDING ||
+        metrics.tripStatus == TripStatus.PAUSED
+    val accent = if (isRideActive) RacingRed else NeonCyan
+    val shape = RoundedCornerShape(24.dp)
 
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MidnightCard)
-            .border(
-                1.dp,
-                if (isRecording) RacingRed.copy(alpha = 0.5f) else CardBorder,
-                RoundedCornerShape(16.dp)
-            )
-            .padding(18.dp)
+            .clip(shape)
+            .background(Brush.linearGradient(listOf(ObsidianSurface, MidnightCard)))
+            .border(1.dp, CardBorderGlow, shape)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            // Header Row: Status Chip + Machine Badge
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    modifier = Modifier
-                        .background(
-                            if (isRecording) RacingRed.copy(alpha = 0.15f) else HyperCyan.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .border(
-                            1.dp,
-                            if (isRecording) RacingRed.copy(alpha = 0.4f) else HyperCyan.copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(7.dp)
-                            .clip(CircleShape)
-                            .background(if (isRecording) RacingRed else OptimalGreen)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isRecording) "TRIP IN PROGRESS" else "STANDBY • READY TO RIDE",
-                        color = if (isRecording) RacingRed else OptimalGreen,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.8.sp
-                    )
-                }
-
+        Text(
+            text = "Rider dashboard",
+            color = TextPrimary,
+            fontSize = 32.sp,
+            lineHeight = 36.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = when (metrics.tripStatus) {
+                    TripStatus.RECORDING -> "Recording"
+                    TripStatus.PAUSED -> "Paused"
+                    else -> "Ready to record"
+                },
+                color = accent,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            if (isRideActive) {
                 Text(
-                    text = if (isMachineConfigured && bikeModel.isNotBlank()) bikeModel.uppercase() else "ALL MACHINES",
+                    text = String.format(
+                        Locale.getDefault(),
+                        "%.0f km/h  ·  %.2f km",
+                        metrics.currentSpeedKmh,
+                        metrics.totalDistanceKm
+                    ),
                     color = TextSecondary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
+                    fontSize = 14.sp
                 )
+            } else if (isMachineConfigured && bikeModel.isNotBlank()) {
+                Text(text = bikeModel, color = TextSecondary, fontSize = 14.sp)
             }
-
-            // Title & Description
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = if (isRecording) "LIVE TELEMETRY ACTIVE" else "PILOT TELEMETRY COCKPIT",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.2).sp
-                )
-                Text(
-                    text = if (isRecording) {
-                        "Speed: ${String.format(Locale.US, "%.0f", metrics.currentSpeedKmh)} km/h • Distance: ${String.format(Locale.US, "%.2f", metrics.totalDistanceKm)} km"
-                    } else {
-                        "High-frequency IMU lean angle fusion, velocity radar & live Guardian parent beacon in the dedicated Trips tab."
-                    },
-                    color = TextSecondary,
-                    fontSize = 12.sp,
-                    lineHeight = 17.sp
-                )
-            }
-
-            // Action Button
-            Button(
-                onClick = onNavigateToLiveTrip,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isRecording) RacingRed else HyperCyan,
-                    contentColor = if (isRecording) Color.White else CarbonDark
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(
-                    imageVector = if (isRecording) Icons.Default.Visibility else Icons.Default.Explore,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (isRecording) "OPEN LIVE COCKPIT" else "LAUNCH TRIPS COCKPIT",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
+        }
+        Button(
+            onClick = onNavigateToLiveTrip,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 52.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isRideActive) TextPrimary else NeonCyan,
+                contentColor = CarbonDark
+            ),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Icon(
+                imageVector = if (isRideActive) Icons.Default.Visibility else Icons.Default.Explore,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = if (isRideActive) "Open current ride" else "Open trips",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }

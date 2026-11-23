@@ -45,11 +45,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Leaflet CSS & JS for Real GPS Mapping -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
+  <script src="/vendor/leaflet/leaflet.js"></script>
 
   <!-- Chart.js for Interactive Telemetry Profiles -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/vendor/chartjs/chart.umd.min.js"></script>
 
   <style>
     /* ======================================================== */
@@ -219,9 +219,66 @@
     html.light #langDropdownMenu button:hover {
       background-color: #F1F5F9 !important;
     }
-    html.light .md\\:hidden.fixed.bottom-0 {
+    html.light #mobileBottomNav {
       background-color: rgba(255, 255, 255, 0.96) !important;
       border-top-color: #E2E8F0 !important;
+    }
+    .ride-overview {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: clamp(1.5rem, 4vw, 4rem);
+      align-items: center;
+      padding: clamp(1.25rem, 4vw, 3rem);
+      background: linear-gradient(125deg, var(--bg-card-elevated), var(--bg-card) 65%);
+      border-color: var(--border-card);
+    }
+    .ride-overview h1 {
+      font-size: clamp(2.2rem, 5vw, 4.25rem);
+      letter-spacing: -0.06em;
+      line-height: 1;
+      font-weight: 700;
+    }
+    .ride-overview p { color: var(--text-secondary); overflow-wrap: anywhere; }
+    .ride-overview .ride-stat {
+      min-width: 0;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card-subtle);
+      padding: .9rem 1rem;
+      border-radius: .85rem;
+      overflow-wrap: anywhere;
+    }
+    .ride-stat-label { display: block; color: var(--text-secondary); font-size: .8rem; }
+    .ride-overview-actions { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1.25rem; }
+    .ride-overview-actions button {
+      min-height: 44px;
+      padding: .6rem 1rem;
+      border-radius: .65rem;
+      border: 1px solid var(--border-card);
+      font-weight: 700;
+    }
+    .ride-overview-actions button:hover { border-color: var(--accent-cyan); }
+    .ride-overview-actions .ride-primary { background: #67DCF5; color: #09212D; border-color: transparent; }
+    .ride-overview-actions .ride-primary:hover { background: #9BEAF8; }
+    button:focus-visible, a:focus-visible {
+      outline: 2px solid var(--accent-cyan);
+      outline-offset: 3px;
+    }
+    #topNavTabs.hidden, #mobileBottomNav.hidden { display: none; }
+    @media (max-width: 1279px) {
+      #topNavTabs { display: none; }
+    }
+    @media (min-width: 1280px) {
+      #mobileBottomNav { display: none; }
+    }
+    #mobileBottomNav { padding-bottom: max(.375rem, env(safe-area-inset-bottom)); }
+    #mobileBottomNav button { min-height: 48px; border-radius: .65rem; }
+    #mobileBottomNav button[aria-current="page"] { background: var(--bg-card-elevated); color: var(--accent-cyan); }
+    html.light #topNavTabs button[aria-current="page"] { color: #036987; }
+    @media (max-width: 767px) {
+      .ride-overview { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .status-pulse { animation: none; }
     }
   </style>
 </head>
@@ -236,25 +293,21 @@
     <div class="bg-[#080B11]/90 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.7)] px-4 sm:px-6 h-16 flex items-center justify-between">
       
       <!-- Brand Identity -->
-      <div class="flex items-center space-x-3 cursor-pointer shrink-0" onclick="switchMainView('dashboard')">
+      <button type="button" class="flex items-center space-x-3 shrink-0" onclick="switchMainView('dashboard')">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-400 via-blue-600 to-indigo-600 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.35)] border border-cyan-400/30">
           <svg class="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 24 24">
             <path d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
         <div>
-          <div class="flex items-center space-x-2">
-            <span class="text-sm font-black tracking-[0.2em] text-white">RHODY</span>
-            <span class="px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase tracking-wider rounded bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">PLATFORM v2.4</span>
-          </div>
-          <span class="text-[9px] block text-slate-400 font-mono tracking-wider">MOTORSPORT TELEMETRY SYSTEM</span>
+          <span class="text-sm font-black tracking-[0.2em] text-white">RHODY</span>
         </div>
-      </div>
+      </button>
 
       <!-- STREAMLINED MODERN ENGINEERING NAVIGATION TABS -->
-      <nav id="topNavTabs" class="hidden lg:flex items-center p-1 bg-white/[0.03] border border-white/[0.06] rounded-xl space-x-1 backdrop-blur-md">
+      <nav id="topNavTabs" aria-label="Main navigation" class="flex items-center p-1 bg-white/[0.03] border border-white/[0.06] rounded-xl space-x-1 backdrop-blur-md">
         <!-- 1. COCKPIT & GARAGE -->
-        <button id="navTabDashboard" onclick="switchMainView('dashboard')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 shadow-[0_0_12px_rgba(0,240,255,0.2)] flex items-center space-x-2 transition">
+        <button id="navTabDashboard" aria-current="page" onclick="switchMainView('dashboard')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 shadow-[0_0_12px_rgba(0,240,255,0.2)] flex items-center space-x-2 transition">
           <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/>
           </svg>
@@ -268,6 +321,10 @@
           </svg>
           <span data-i18n="nav_trips">Telemetry &amp; Trips</span>
           <span id="navLiveTripPulse" class="hidden w-1.5 h-1.5 rounded-full bg-emerald-400 status-pulse"></span>
+        </button>
+
+        <button id="navTabAnalysis" onclick="switchMainView('analysis')" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition flex items-center space-x-2">
+          <span data-i18n="nav_analysis">Analysis</span>
         </button>
 
         <!-- 3. SPECS & VAULT -->
@@ -358,7 +415,6 @@
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
           <span class="hidden sm:inline" data-i18n="nav_app">App</span>
-          <span class="px-1 py-0.2 text-[8px] font-black rounded bg-emerald-400/20 text-emerald-300">v1.0</span>
         </a>
 
         <!-- Rider Profile Quick Pill -->
@@ -392,9 +448,9 @@
     </div>
   </header>
 
-  <!-- ================= MOBILE STICKY BOTTOM NAV BAR (EXACT 4 TABS) ================= -->
-  <div id="mobileBottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0A0D14]/95 backdrop-blur-2xl border-t border-white/[0.08] px-2 py-1.5 flex items-center justify-around shadow-2xl">
-    <button id="mobileTabDashboard" onclick="switchMainView('dashboard')" class="flex flex-col items-center justify-center flex-1 py-1 text-cyan-300 font-bold transition">
+  <!-- Mobile and tablet navigation -->
+  <nav id="mobileBottomNav" aria-label="Mobile navigation" class="fixed bottom-0 left-0 right-0 z-40 bg-[#0A0D14]/95 backdrop-blur-2xl border-t border-white/[0.08] px-2 py-1.5 flex items-center justify-around shadow-2xl">
+    <button id="mobileTabDashboard" aria-current="page" onclick="switchMainView('dashboard')" class="flex flex-col items-center justify-center flex-1 py-1 text-cyan-300 font-bold transition">
       <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="5" cy="16" r="3"/><circle cx="19" cy="16" r="3"/><path d="M12 17h4l2-6H9l-2 3"/><path d="M9 11l3-6h4"/>
       </svg>
@@ -405,6 +461,10 @@
         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
       </svg>
       <span class="text-[10px] mt-0.5" data-i18n="nav_trips">Trips</span>
+    </button>
+    <button id="mobileTabAnalysis" onclick="switchMainView('analysis')" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 font-medium">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18M7 14l4-4 4 3 5-7"/></svg>
+      <span class="text-[10px] mt-0.5" data-i18n="nav_analysis">Analysis</span>
     </button>
     <button id="mobileTabSettings" onclick="switchMainView('settings')" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-300 font-medium transition">
       <svg class="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -421,10 +481,10 @@
       </svg>
       <span class="text-[10px] mt-0.5" data-i18n="nav_logout">Logout</span>
     </button>
-  </div>
+  </nav>
 
   <!-- ================= MAIN BODY CONTAINER ================= -->
-  <main class="flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 pb-28 md:pb-8">
+  <main class="flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 pb-28 xl:pb-8">
 
     <!-- ======================================================== -->
     <!-- TAB 1: DASHBOARD                                         -->
@@ -432,13 +492,10 @@
     <!-- ======================================================== -->
     <div id="viewDashboard" class="space-y-6">
 
-      <!-- ================= PILOT TELEMETRY & CAREER MATRIX (ZEBEYOND ENGINEERING DOSSIER) ================= -->
-      <div class="glass-panel p-5 sm:p-6 bg-[#080B11]/90 relative overflow-hidden shadow-2xl border border-white/[0.08]">
-        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
-          
-          <!-- Left: Identity & Telemetry Sensor Health -->
-          <div class="flex items-center space-x-4">
-            <!-- Micro-Precise Avatar with Status Ring -->
+      <section class="glass-panel ride-overview" aria-labelledby="rideOverviewTitle">
+        <div class="min-w-0">
+          <h1 id="rideOverviewTitle" data-i18n="rider_dashboard">Rider dashboard</h1>
+          <div class="mt-5 flex items-center gap-3">
             <div class="relative group shrink-0">
               <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border border-cyan-400/40 p-0.5 bg-[#07090E] shadow-[0_0_20px_rgba(0,240,255,0.2)] relative">
                 <div class="w-full h-full rounded-[14px] overflow-hidden relative">
@@ -446,91 +503,47 @@
                   <div id="dashAvatarPlaceholder" class="w-full h-full bg-gradient-to-br from-[#101726] to-[#0A0D14] flex items-center justify-center text-xl sm:text-2xl font-black text-cyan-400 font-mono">P</div>
                   
                   <!-- Hover Upload Overlay -->
-                  <label for="dashPhotoFileInput" class="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
+                  <button type="button" aria-label="Change profile photo" onclick="document.getElementById('dashPhotoFileInput').click()" class="absolute inset-0 bg-black/80 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
                     <svg class="w-4 h-4 text-cyan-300 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
                     <span class="text-[8px] font-bold">Edit</span>
-                  </label>
+                  </button>
                 </div>
               </div>
               <input type="file" id="dashPhotoFileInput" accept="image/png, image/jpeg, image/webp" onchange="handleProfilePhotoUpload(event)" class="hidden" />
             </div>
-
-            <!-- Identity & Real-Time Connection Chips -->
-            <div class="space-y-1.5">
+            <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="text-[10px] uppercase font-mono font-bold tracking-widest text-cyan-400 block">TELEMETRY PILOT DOSSIER</span>
-                <span class="px-1.5 py-0.2 text-[8px] font-mono font-bold uppercase rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">ONLINE &bull; 60Hz</span>
+                <strong id="dashWelcomeName" class="break-all">Rider</strong>
+                <span id="dashHandle" class="text-sm text-slate-400 break-all">@pilot</span>
+                <button type="button" id="btnRemovePhoto" onclick="removeRiderAvatar()" class="hidden text-sm text-slate-400 hover:text-rose-400" aria-label="Reset profile photo">×</button>
               </div>
-
-              <div class="flex items-center space-x-2">
-                <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  <span id="dashWelcomeName">Pilot</span>
-                </h1>
-                <span id="dashHandle" class="text-xs font-mono text-cyan-400/90 font-medium">@pilot</span>
-                <button id="btnRemovePhoto" onclick="removeRiderAvatar()" title="Reset photo" class="text-slate-500 hover:text-rose-400 transition hidden">
-                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-              </div>
-
-              <!-- Hardware Bus Status Indicators -->
-              <div class="flex flex-wrap items-center gap-2 text-[10px] font-mono text-slate-400 pt-0.5">
-                <span class="flex items-center space-x-1.5 text-emerald-400 font-semibold">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 status-pulse"></span>
-                  <span>ECU K-LINE: 60Hz</span>
-                </span>
-                <span class="text-slate-700">&bull;</span>
-                <span class="text-cyan-300">GPS RTK: 10Hz</span>
-                <span class="text-slate-700">&bull;</span>
-                <span class="text-purple-300">BLACK BOX: ARMED</span>
-              </div>
-
-              <p id="dashBio" class="text-[11px] text-slate-400 max-w-md line-clamp-1">
-                Precision motorcycle telemetry &amp; dynamic apex trajectory tracking.
-              </p>
+              <p id="dashBio" class="text-sm mt-1"></p>
             </div>
           </div>
-
-          <!-- Right: Dynamic Career Telemetry Readouts (100% Calculated From Saved Trips) -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full lg:w-auto shrink-0">
-            <!-- Distance -->
-            <div class="bg-[#05070B] p-3 rounded-xl border border-white/[0.06] text-center min-w-[115px]">
-              <span class="text-[9px] uppercase tracking-wider font-mono font-semibold text-slate-500 block" data-i18n="career_distance">CAREER DISTANCE</span>
-              <span class="text-base sm:text-lg font-black text-white font-mono-numbers block mt-0.5">
-                <span id="careerOdoVal">0.0</span> <span class="text-[10px] text-cyan-400 font-normal">KM</span>
-              </span>
-              <span id="careerSeasonStatus" class="text-[8px] font-mono text-slate-400 block mt-0.5" data-i18n="telemetry_ready">Telemetry Ready</span>
-            </div>
-
-            <!-- Peak Speed -->
-            <div class="bg-[#05070B] p-3 rounded-xl border border-white/[0.06] text-center min-w-[115px]">
-              <span class="text-[9px] uppercase tracking-wider font-mono font-semibold text-slate-500 block" data-i18n="peak_velocity">PEAK VELOCITY</span>
-              <span class="text-base sm:text-lg font-black text-rose-400 font-mono-numbers block mt-0.5">
-                <span id="careerPeakSpeedVal">0</span> <span class="text-[10px] text-slate-400 font-normal">KM/H</span>
-              </span>
-              <span class="text-[8px] font-mono text-slate-400 block mt-0.5" data-i18n="gps_clocked">GPS Clocked</span>
-            </div>
-
-            <!-- Max Lean Angle -->
-            <div class="bg-[#05070B] p-3 rounded-xl border border-white/[0.06] text-center min-w-[115px]">
-              <span class="text-[9px] uppercase tracking-wider font-mono font-semibold text-slate-500 block" data-i18n="max_lean">MAX APEX LEAN</span>
-              <span class="text-base sm:text-lg font-black text-cyan-300 font-mono-numbers block mt-0.5">
-                <span id="careerMaxLeanVal">0.0</span>&deg; <span class="text-[10px] text-cyan-400 font-normal">MAX</span>
-              </span>
-              <span id="careerApexStatus" class="text-[8px] font-mono text-cyan-400/90 block mt-0.5" data-i18n="gyro_calibrated">Gyro Calibrated</span>
-            </div>
-
-            <!-- Runs Logged -->
-            <div class="bg-[#05070B] p-3 rounded-xl border border-white/[0.06] text-center min-w-[115px]">
-              <span class="text-[9px] uppercase tracking-wider font-mono font-semibold text-slate-500 block" data-i18n="runs_logged">RUNS LOGGED</span>
-              <span class="text-base sm:text-lg font-black text-emerald-400 font-mono-numbers block mt-0.5">
-                <span id="careerRunsLoggedVal">0</span> <span class="text-[10px] text-slate-400 font-normal">RUNS</span>
-              </span>
-              <span id="careerRunsStatus" class="text-[8px] font-mono text-slate-400 block mt-0.5" data-i18n="awaiting_ride">Awaiting Ride</span>
-            </div>
+          <div class="ride-overview-actions">
+            <button type="button" class="ride-primary" onclick="switchMainView('trips')"><span data-i18n="open_trips">Open trips</span> <span aria-hidden="true">→</span></button>
+            <button type="button" onclick="switchMainView('analysis')" data-i18n="view_analysis">View analysis</button>
           </div>
-
         </div>
-      </div>
+        <dl class="grid grid-cols-2 gap-3" aria-label="Ride totals">
+          <div class="ride-stat">
+            <dt class="ride-stat-label" data-i18n="career_distance">Distance / odometer</dt>
+            <dd class="text-xl sm:text-2xl font-bold font-mono-numbers"><span id="careerOdoVal">0.0</span> <span class="text-xs">km</span></dd>
+          </div>
+          <div class="ride-stat">
+            <dt class="ride-stat-label" data-i18n="peak_velocity">Peak speed</dt>
+            <dd class="text-xl sm:text-2xl font-bold font-mono-numbers"><span id="careerPeakSpeedVal">0</span> <span class="text-xs">km/h</span></dd>
+          </div>
+          <div class="ride-stat">
+            <dt class="ride-stat-label" data-i18n="max_lean">Max lean</dt>
+            <dd class="text-xl sm:text-2xl font-bold font-mono-numbers"><span id="careerMaxLeanVal">0.0</span>°</dd>
+          </div>
+          <div class="ride-stat">
+            <dt class="ride-stat-label" data-i18n="runs_logged">Recorded trips</dt>
+            <dd id="careerRunsLoggedVal" class="text-xl sm:text-2xl font-bold font-mono-numbers">0</dd>
+          </div>
+        </dl>
+      </section>
 
       <!-- ================= ACTIVE MOTORCYCLE GARAGE & LIVE DIAGNOSTICS (ZERO MOCK DATA) ================= -->
       <div class="glass-panel p-5 sm:p-6 space-y-4 shadow-xl border border-white/[0.08]">
@@ -3267,6 +3280,6 @@
   </div>
 
   <!-- Application Logic -->
-  <script src="/app.js?v=2.4.5"></script>
+  <script src="/app.js?v=2.4.6"></script>
 </body>
 </html>

@@ -42,9 +42,7 @@ import com.roadpulse.app.ui.theme.CobaltBlue
 import com.roadpulse.app.ui.theme.HyperCyan
 import com.roadpulse.app.ui.theme.MidnightCard
 import com.roadpulse.app.ui.theme.NeonCyan
-import com.roadpulse.app.ui.theme.OptimalGreen
 import com.roadpulse.app.ui.theme.RacingRed
-import com.roadpulse.app.ui.theme.TextMuted
 import com.roadpulse.app.ui.theme.TextPrimary
 import com.roadpulse.app.ui.theme.TextSecondary
 import java.util.Locale
@@ -108,9 +106,9 @@ fun PilotTelemetryDossierCard(
 
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = "PILOT TELEMETRY",
+                        text = "Rider profile",
                         color = HyperCyan,
-                        fontSize = 9.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     )
@@ -165,46 +163,31 @@ fun PilotTelemetryDossierCard(
             }
         }
 
-        // ================= 4-CARD CAREER MATRIX =================
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            CareerStatBox(
-                title = "TOTAL DIST",
-                value = String.format(Locale.US, "%.1f", careerDistanceKm),
-                unit = "KM",
-                subtext = "Accumulated",
-                valueColor = TextPrimary,
-                modifier = Modifier.weight(1f)
-            )
-
-            CareerStatBox(
-                title = "TOP SPEED",
-                value = "$careerPeakSpeedKmh",
-                unit = "KM/H",
-                subtext = "Personal Best",
-                valueColor = RacingRed,
-                modifier = Modifier.weight(1f)
-            )
-
-            CareerStatBox(
-                title = "MAX LEAN",
-                value = "${String.format(Locale.US, "%.1f", careerMaxLeanDeg)}°",
-                unit = "MAX",
-                subtext = "Apex Angle",
-                valueColor = HyperCyan,
-                modifier = Modifier.weight(1f)
-            )
-
-            CareerStatBox(
-                title = "RECORDED",
-                value = "$careerRunsLogged",
-                unit = "RUNS",
-                subtext = if (careerRunsLogged > 0) "Completed" else "Ready",
-                valueColor = OptimalGreen,
-                modifier = Modifier.weight(1f)
-            )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CareerStatBox(
+                    title = "Distance / odometer",
+                    value = String.format(Locale.getDefault(), "%.1f km", careerDistanceKm),
+                    modifier = Modifier.weight(1f)
+                )
+                CareerStatBox(
+                    title = "Peak speed",
+                    value = "$careerPeakSpeedKmh km/h",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CareerStatBox(
+                    title = "Max lean",
+                    value = String.format(Locale.getDefault(), "%.1f°", careerMaxLeanDeg),
+                    modifier = Modifier.weight(1f)
+                )
+                CareerStatBox(
+                    title = "Recorded trips",
+                    value = "$careerRunsLogged",
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }
@@ -213,57 +196,24 @@ fun PilotTelemetryDossierCard(
 private fun CareerStatBox(
     title: String,
     value: String,
-    unit: String,
-    subtext: String,
-    valueColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    val shape = RoundedCornerShape(12.dp)
+    Column(
         modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
+            .clip(shape)
             .background(CarbonDark)
-            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
-            .padding(vertical = 10.dp, horizontal = 4.dp),
-        contentAlignment = Alignment.Center
+            .border(1.dp, CardBorder, shape)
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = title,
-                color = TextMuted,
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
-                maxLines = 1
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = value,
-                    color = valueColor,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                    maxLines = 1
-                )
-                Spacer(modifier = Modifier.width(2.dp))
-                Text(
-                    text = unit,
-                    color = HyperCyan,
-                    fontSize = 7.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 1.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = subtext,
-                color = TextSecondary,
-                fontSize = 7.5.sp,
-                maxLines = 1
-            )
-        }
+        Text(text = title, color = TextSecondary, fontSize = 12.sp)
+        Text(
+            text = value,
+            color = TextPrimary,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Monospace
+        )
     }
 }
